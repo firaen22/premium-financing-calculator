@@ -16,15 +16,15 @@ import {
   ReferenceLine,
   Legend
 } from 'recharts';
-import { 
-  Settings, 
-  Shield, 
-  TrendingUp, 
-  DollarSign, 
-  PieChart, 
-  Lock, 
-  Unlock, 
-  Download, 
+import {
+  Settings,
+  Shield,
+  TrendingUp,
+  DollarSign,
+  PieChart,
+  Lock,
+  Unlock,
+  Download,
   X,
   LayoutDashboard,
   Briefcase,
@@ -151,9 +151,9 @@ const TRANSLATIONS = {
     year: "Year",
     cumBondInt: "Cum. Bond Int.",
     bondCapitalNet: "Bond Capital (Net)",
-    bondPrincipalNet: "Bond Principal (Net)", 
-    policyValue: "Policy Value", 
-    policy: "Policy", 
+    bondPrincipalNet: "Bond Principal (Net)",
+    policyValue: "Policy Value",
+    policy: "Policy",
     totalLoan: "Total Loan",
     loan: "Loan",
     cumLoanInt: "Cum. Loan Int.",
@@ -523,20 +523,20 @@ const THEME = {
 
 // --- Components ---
 
-const Card = ({ 
-  children, 
-  className = "", 
-  title, 
+const Card = ({
+  children,
+  className = "",
+  title,
   subtitle,
   action,
   goldAccent = false,
   collapsible = false,
   defaultCollapsed = false
-}: { 
-  children?: React.ReactNode; 
-  className?: string, 
-  title?: React.ReactNode, 
-  subtitle?: string, 
+}: {
+  children?: React.ReactNode;
+  className?: string,
+  title?: React.ReactNode,
+  subtitle?: string,
   action?: React.ReactNode,
   goldAccent?: boolean,
   collapsible?: boolean,
@@ -555,7 +555,7 @@ const Card = ({
           <div className="ml-4 flex items-center gap-2">
             {action}
             {collapsible && (
-              <button 
+              <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className="p-1 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#c5a059] transition-colors focus:outline-none"
                 aria-label={isCollapsed ? "Expand" : "Collapse"}
@@ -575,12 +575,12 @@ const Card = ({
   );
 };
 
-const InputField = ({ 
-  label, 
-  value, 
-  onChange, 
-  type = "number", 
-  prefix = "$", 
+const InputField = ({
+  label,
+  value,
+  onChange,
+  type = "number",
+  prefix = "$",
   step = 1000,
   suffix = "",
   disabled = false
@@ -610,8 +610,8 @@ const SelectField = ({ label, value, onChange, options, disabled = false }: any)
     <label className="absolute -top-2.5 left-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white pr-2 group-focus-within:text-[#c5a059]">
       {label}
     </label>
-    <select 
-      value={value} 
+    <select
+      value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       className="w-full bg-transparent border-b border-slate-200 text-slate-900 font-serif text-xl py-1 pt-2 focus:ring-0 focus:border-[#c5a059] focus:outline-none block disabled:text-slate-300 disabled:cursor-not-allowed appearance-none rounded-none"
@@ -627,7 +627,7 @@ const SelectField = ({ label, value, onChange, options, disabled = false }: any)
 const ToggleField = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (val: boolean) => void }) => (
   <div className="mb-8 flex items-center justify-between">
     <span className="text-sm font-medium text-slate-700">{label}</span>
-    <button 
+    <button
       onClick={() => onChange(!checked)}
       className={`w-12 h-6 rounded-full p-1 transition-colors duration-200 ease-in-out ${checked ? 'bg-[#c5a059]' : 'bg-slate-200'}`}
     >
@@ -654,76 +654,76 @@ const KPICard = ({ label, value, subtext, highlight = false, alert = false }: { 
 const Heatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels: number[], data: number[][] }) => {
   return (
     <div className="w-full overflow-x-auto">
-       <div className="min-w-[400px]">
-          {/* Header Row */}
-          <div className="flex">
-             <div className="w-16 flex-none bg-slate-50"></div> {/* Corner */}
-             {xLabels.map(x => (
-               <div key={x} className="flex-1 text-center py-2 text-[10px] font-bold text-slate-500 bg-slate-50 border-b border-slate-100">
-                  HIBOR {x}%
-               </div>
-             ))}
-          </div>
-          {/* Rows */}
-          {yLabels.map((y, i) => (
-             <div key={y} className="flex h-12">
-               {/* Y Axis Label */}
-               <div className="w-16 flex-none flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border-r border-slate-100 px-2">
-                 Yield {y}%
-               </div>
-               {/* Cells */}
-               {data[i].map((val, j) => {
-                 const isPositive = val > 0;
-                 // Calculate opacity based on magnitude relative to max (clamped)
-                 const opacity = Math.min(Math.abs(val) / 2000000, 1) * 0.8 + 0.1; 
-                 const bgColor = isPositive 
-                   ? `rgba(5, 150, 105, ${opacity})` // emerald
-                   : `rgba(220, 38, 38, ${opacity})`; // red
-                 
-                 return (
-                   <div 
-                      key={`${i}-${j}`} 
-                      className="flex-1 flex items-center justify-center text-[10px] font-mono border border-white transition-all hover:scale-105 z-0 hover:z-10 shadow-none hover:shadow-md cursor-default"
-                      style={{ backgroundColor: bgColor, color: opacity > 0.5 ? 'white' : '#1e293b' }}
-                      title={`Yield ${y}%, HIBOR ${xLabels[j]}%: ${formatCurrency(val)}`}
-                   >
-                      {val > 0 ? '+' : ''}{(val / 1000).toFixed(0)}k
-                   </div>
-                 )
-               })}
-             </div>
+      <div className="min-w-[400px]">
+        {/* Header Row */}
+        <div className="flex">
+          <div className="w-16 flex-none bg-slate-50"></div> {/* Corner */}
+          {xLabels.map(x => (
+            <div key={x} className="flex-1 text-center py-2 text-[10px] font-bold text-slate-500 bg-slate-50 border-b border-slate-100">
+              HIBOR {x}%
+            </div>
           ))}
-       </div>
-       <div className="text-[10px] text-slate-400 text-right mt-2 font-mono">
-         *Values in '000s USD
-       </div>
+        </div>
+        {/* Rows */}
+        {yLabels.map((y, i) => (
+          <div key={y} className="flex h-12">
+            {/* Y Axis Label */}
+            <div className="w-16 flex-none flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border-r border-slate-100 px-2">
+              Yield {y}%
+            </div>
+            {/* Cells */}
+            {data[i].map((val, j) => {
+              const isPositive = val > 0;
+              // Calculate opacity based on magnitude relative to max (clamped)
+              const opacity = Math.min(Math.abs(val) / 2000000, 1) * 0.8 + 0.1;
+              const bgColor = isPositive
+                ? `rgba(5, 150, 105, ${opacity})` // emerald
+                : `rgba(220, 38, 38, ${opacity})`; // red
+
+              return (
+                <div
+                  key={`${i}-${j}`}
+                  className="flex-1 flex items-center justify-center text-[10px] font-mono border border-white transition-all hover:scale-105 z-0 hover:z-10 shadow-none hover:shadow-md cursor-default"
+                  style={{ backgroundColor: bgColor, color: opacity > 0.5 ? 'white' : '#1e293b' }}
+                  title={`Yield ${y}%, HIBOR ${xLabels[j]}%: ${formatCurrency(val)}`}
+                >
+                  {val > 0 ? '+' : ''}{(val / 1000).toFixed(0)}k
+                </div>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="text-[10px] text-slate-400 text-right mt-2 font-mono">
+        *Values in '000s USD
+      </div>
     </div>
   )
 }
 
 // --- Custom Flow Visualization (Vertical Portrait Style) ---
-const FlowDiagram = ({ 
-  budget, 
-  cash, 
-  bond, 
-  equity, 
-  loan, 
+const FlowDiagram = ({
+  budget,
+  cash,
+  bond,
+  equity,
+  loan,
   premium,
   labels,
   sourceType
-}: { 
+}: {
   budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: any, sourceType: 'cash' | 'mortgage'
 }) => {
   return (
     <div className="w-full flex justify-center py-8">
       {/* Increased viewBox width to 500 for more breathing room for larger blocks, height to 600 */}
-      <svg width="100%" height="600" viewBox="0 0 500 600" className="w-full max-w-lg font-sans" style={{overflow: 'visible'}}>
+      <svg width="100%" height="600" viewBox="0 0 500 600" className="w-full max-w-lg font-sans" style={{ overflow: 'visible' }}>
         <defs>
           <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
           </marker>
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.05"/>
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.05" />
           </filter>
         </defs>
 
@@ -732,13 +732,13 @@ const FlowDiagram = ({
           <rect x="130" y="10" width="240" height="80" rx="8" fill="#ffffff" stroke={sourceType === 'mortgage' ? '#f59e0b' : '#e2e8f0'} strokeWidth={sourceType === 'mortgage' ? 2 : 1} />
           <circle cx="170" cy="50" r="22" fill={sourceType === 'mortgage' ? '#fffbeb' : '#f8fafc'} stroke={sourceType === 'mortgage' ? '#fcd34d' : '#f1f5f9'} />
           {sourceType === 'mortgage' ? (
-             <Home x={158} y={38} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
+            <Home x={158} y={38} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
           ) : (
-             <Briefcase x={158} y={38} width={24} height={24} stroke="#0f172a" strokeWidth={1.5} />
+            <Briefcase x={158} y={38} width={24} height={24} stroke="#0f172a" strokeWidth={1.5} />
           )}
-          
-          <text x={210} y={42} textAnchor="start" fill="#64748b" fontSize="10" fontWeight="bold" letterSpacing="1.5" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.capital}</text>
-          <text x={210} y={68} textAnchor="start" fill="#0f172a" fontSize="20" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(budget)}</text>
+
+          <text x={210} y={42} textAnchor="start" fill="#64748b" fontSize="10" fontWeight="bold" letterSpacing="1.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.capital}</text>
+          <text x={210} y={68} textAnchor="start" fill="#0f172a" fontSize="20" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(budget)}</text>
         </g>
 
         {/* Connectors */}
@@ -752,8 +752,8 @@ const FlowDiagram = ({
           <rect x="10" y="140" width="150" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
           <circle cx="45" cy="180" r="20" fill="#f0fdf4" stroke="#dcfce7" />
           <Wallet x={33} y={168} width={24} height={24} stroke="#15803d" strokeWidth={1.5} />
-          <text x={75} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.liquidity}</text>
-          <text x={75} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(cash)}</text>
+          <text x={75} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.liquidity}</text>
+          <text x={75} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(cash)}</text>
         </g>
 
         {/* Level 2 Right: Yield Fund */}
@@ -761,8 +761,8 @@ const FlowDiagram = ({
           <rect x="330" y="140" width="170" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
           <circle cx="365" cy="180" r="20" fill="#fefce8" stroke="#fef9c3" />
           <TrendingUp x={353} y={168} width={24} height={24} stroke="#ca8a04" strokeWidth={1.5} />
-          <text x={395} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.yieldFundNet}</text>
-          <text x={395} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(bond)}</text>
+          <text x={395} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.yieldFundNet}</text>
+          <text x={395} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
         </g>
 
         {/* Level 3: Policy Initial */}
@@ -770,23 +770,23 @@ const FlowDiagram = ({
           <rect x="150" y="260" width="200" height="80" rx="8" fill="#ffffff" stroke="#020617" strokeWidth="2" />
           <circle cx="190" cy="300" r="22" fill="#f1f5f9" stroke="#e2e8f0" />
           <FileText x={178} y={288} width={24} height={24} stroke="#334155" strokeWidth={1.5} />
-          <text x={225} y={285} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="1" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.policyEquityCaps}</text>
-          <text x={225} y={312} textAnchor="start" fill="#0f172a" fontSize="18" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(equity)}</text>
+          <text x={225} y={285} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.policyEquityCaps}</text>
+          <text x={225} y={312} textAnchor="start" fill="#0f172a" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
         </g>
 
         {/* Connector Premium to Exposure */}
         <path d="M250 340 L 250 450" fill="none" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
-        
+
         {/* Junction Point */}
         <circle cx="250" cy="395" r="4" fill="#94a3b8" />
 
         {/* Bank Loan (New Rectangle) */}
         <g filter="url(#shadow)">
-            <rect x="20" y="360" width="160" height="70" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="1" />
-            <circle cx="50" cy="395" r="20" fill="#fffbeb" stroke="#fcd34d" />
-            <Landmark x={38} y={383} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
-            <text x={80} y={382} textAnchor="start" fill="#b45309" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.leverage}</text>
-            <text x={80} y={405} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(loan)}</text>
+          <rect x="20" y="360" width="160" height="70" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="1" />
+          <circle cx="50" cy="395" r="20" fill="#fffbeb" stroke="#fcd34d" />
+          <Landmark x={38} y={383} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
+          <text x={80} y={382} textAnchor="start" fill="#b45309" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.leverage}</text>
+          <text x={80} y={405} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(loan)}</text>
         </g>
 
         {/* Connector Loan to Junction */}
@@ -796,12 +796,12 @@ const FlowDiagram = ({
         <g filter="url(#shadow)">
           <rect x="90" y="450" width="320" height="100" rx="8" fill="#020617" stroke="#020617" strokeWidth="1" />
           <rect x="94" y="454" width="312" height="92" rx="6" fill="none" stroke="#1e293b" strokeWidth="1" />
-          
+
           <circle cx="135" cy="500" r="26" fill="#1e293b" stroke="#334155" />
           <Shield x={119} y={484} width={32} height={32} stroke="#c5a059" strokeWidth={1.5} />
-          
-          <text x={175} y={488} textAnchor="start" fill="#94a3b8" fontSize="10" fontWeight="bold" letterSpacing="1" style={{textTransform: 'uppercase', fontFamily: 'sans-serif'}}>{labels.totalExposure}</text>
-          <text x={175} y={520} textAnchor="start" fill="#ffffff" fontSize="22" fontWeight="500" style={{fontFamily: 'serif'}}>{formatCurrency(premium)}</text>
+
+          <text x={175} y={488} textAnchor="start" fill="#94a3b8" fontSize="10" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.totalExposure}</text>
+          <text x={175} y={520} textAnchor="start" fill="#ffffff" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
         </g>
 
       </svg>
@@ -815,13 +815,13 @@ const CustomLabel = (props: any) => {
   // Last index is 30 for 30-year projection (0-30)
   if (index === 30) {
     return (
-      <text 
-        x={x + 10} 
-        y={y} 
-        dy={4} 
-        fill={color} 
-        fontSize={11} 
-        fontFamily="sans-serif" 
+      <text
+        x={x + 10}
+        y={y}
+        dy={4}
+        fill={color}
+        fontSize={11}
+        fontFamily="sans-serif"
         fontWeight="bold"
         textAnchor="start"
       >
@@ -833,14 +833,14 @@ const CustomLabel = (props: any) => {
 };
 
 // --- Return Studio Component ---
-const ReturnStudio = ({ 
-  data, 
-  labels, 
+const ReturnStudio = ({
+  data,
+  labels,
   bondYield,
-  loanRate 
-}: { 
-  data: any[], 
-  labels: any, 
+  loanRate
+}: {
+  data: any[],
+  labels: any,
   bondYield: number,
   loanRate: number
 }) => {
@@ -851,10 +851,10 @@ const ReturnStudio = ({
     // We now use cumulative data matching the Ledger Statement
     const currData = data[year];
     // Start from Inception (Year 0) to show total growth
-    const initialData = data[0]; 
-    
+    const initialData = data[0];
+
     if (!currData || !initialData) return null;
-    
+
     // Principal Repaid Calculation (Decrease in Mtg Balance)
     const initialMtg = initialData.mortgageBalance || 0;
     const currentMtg = currData.mortgageBalance || 0;
@@ -879,7 +879,7 @@ const ReturnStudio = ({
   const stats = getCurrentYearData(selectedYear);
 
   if (!stats) return <div>No data available</div>;
-  
+
   // Use cumulativeNetGain (Profit) for the Net Gain Box, but Net Equity (Balance Sheet) for Closing Equity Box.
   // Note: netGain = netEquity - openingEquity - externalCosts.
 
@@ -893,11 +893,11 @@ const ReturnStudio = ({
             <p className="text-slate-400 text-xs uppercase tracking-widest">{labels.analysisYear}: <span className="text-[#c5a059] font-bold text-lg">Year {selectedYear}</span></p>
           </div>
           <div className="flex-1 max-w-md">
-            <input 
-              type="range" 
-              min="1" 
-              max="30" 
-              value={selectedYear} 
+            <input
+              type="range"
+              min="1"
+              max="30"
+              value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#c5a059]"
             />
@@ -936,139 +936,139 @@ const ReturnStudio = ({
       {/* Waterfall / Breakdown Logic Visual */}
       <Card title={labels.attributionAnalysis} subtitle={`Cumulative Performance to ${labels.year} ${selectedYear}`}>
         <div className="flex flex-col lg:flex-row gap-12 mt-4">
-          
+
           {/* Visual Equation */}
           <div className="flex-1 space-y-3">
-             {/* Income Block */}
-             <div className="relative pl-8 border-l-2 border-slate-100 pb-8">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center">
-                  <PlusCircle className="w-3 h-3 text-emerald-600" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.totalInflow}</h4>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
-                        <TrendingUp className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-slate-700">{labels.bondIncome}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">Yield: {bondYield.toFixed(2)}%</div>
-                      </div>
-                    </div>
-                    <div className="font-serif text-emerald-700 font-medium">{formatCurrency(stats.bondIncome)}</div>
-                  </div>
+            {/* Income Block */}
+            <div className="relative pl-8 border-l-2 border-slate-100 pb-8">
+              <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center">
+                <PlusCircle className="w-3 h-3 text-emerald-600" />
+              </div>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.totalInflow}</h4>
 
-                  <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
-                        <Shield className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-slate-700">{labels.policyGrowth}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">Organic Growth</div>
-                      </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
+                      <TrendingUp className="w-5 h-5" />
                     </div>
-                    <div className={`font-serif font-medium ${stats.policyGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                      {formatCurrency(stats.policyGrowth)}
-                    </div>
-                  </div>
-                  
-                  {/* Mortgage Repayment Gain (Asset Building) */}
-                  {stats.mortgagePrincipalRepaid > 0 && (
-                     <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                       <div className="flex items-center gap-3">
-                         <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
-                           <Home className="w-5 h-5" />
-                         </div>
-                         <div>
-                           <div className="text-sm font-bold text-slate-700">{labels.mtgRepaid}</div>
-                           <div className="text-[10px] text-slate-400 font-mono">Liability Reduction</div>
-                         </div>
-                       </div>
-                       <div className="font-serif text-emerald-700 font-medium">+{formatCurrency(stats.mortgagePrincipalRepaid)}</div>
-                     </div>
-                  )}
-                </div>
-             </div>
-
-             {/* Cost Block */}
-             <div className="relative pl-8 border-l-2 border-slate-100 pb-8">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center">
-                  <MinusCircle className="w-3 h-3 text-red-600" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.costOfFunding}</h4>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded shadow-sm text-red-600">
-                          <Landmark className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-slate-700">{labels.loanInterest}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">Rate: {loanRate.toFixed(2)}%</div>
-                        </div>
-                      </div>
-                      <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.loanInterest)}</div>
-                  </div>
-                </div>
-             </div>
-
-             {/* Result Block */}
-             <div className="relative pl-8">
-                <div className="absolute -left-[9px] top-2 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-800 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                </div>
-                
-                <div className="flex items-center justify-between p-6 bg-[#020617] text-white rounded-lg shadow-lg">
                     <div>
-                        <div className="text-sm font-bold text-[#c5a059] uppercase tracking-wider mb-1">Net Equity</div>
-                        <div className="text-[10px] text-slate-400">Total Assets - Liabilities</div>
+                      <div className="text-sm font-bold text-slate-700">{labels.bondIncome}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">Yield: {bondYield.toFixed(2)}%</div>
                     </div>
-                    <div className="text-2xl font-serif">
-                       {formatCurrency(stats.closingEquity)}
-                    </div>
+                  </div>
+                  <div className="font-serif text-emerald-700 font-medium">{formatCurrency(stats.bondIncome)}</div>
                 </div>
-             </div>
+
+                <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-slate-700">{labels.policyGrowth}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">Organic Growth</div>
+                    </div>
+                  </div>
+                  <div className={`font-serif font-medium ${stats.policyGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    {formatCurrency(stats.policyGrowth)}
+                  </div>
+                </div>
+
+                {/* Mortgage Repayment Gain (Asset Building) */}
+                {stats.mortgagePrincipalRepaid > 0 && (
+                  <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
+                        <Home className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-slate-700">{labels.mtgRepaid}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">Liability Reduction</div>
+                      </div>
+                    </div>
+                    <div className="font-serif text-emerald-700 font-medium">+{formatCurrency(stats.mortgagePrincipalRepaid)}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Cost Block */}
+            <div className="relative pl-8 border-l-2 border-slate-100 pb-8">
+              <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center">
+                <MinusCircle className="w-3 h-3 text-red-600" />
+              </div>
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.costOfFunding}</h4>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded shadow-sm text-red-600">
+                      <Landmark className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-slate-700">{labels.loanInterest}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">Rate: {loanRate.toFixed(2)}%</div>
+                    </div>
+                  </div>
+                  <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.loanInterest)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Result Block */}
+            <div className="relative pl-8">
+              <div className="absolute -left-[9px] top-2 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-800 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+              </div>
+
+              <div className="flex items-center justify-between p-6 bg-[#020617] text-white rounded-lg shadow-lg">
+                <div>
+                  <div className="text-sm font-bold text-[#c5a059] uppercase tracking-wider mb-1">Net Equity</div>
+                  <div className="text-[10px] text-slate-400">Total Assets - Liabilities</div>
+                </div>
+                <div className="text-2xl font-serif">
+                  {formatCurrency(stats.closingEquity)}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Simple Chart Visualization */}
           <div className="lg:w-1/3 h-[400px]">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={[
-                    { name: 'Start', value: stats.openingEquity, fill: '#94a3b8' },
-                    { name: 'Bond', value: stats.bondIncome, fill: '#059669' },
-                    { name: 'Policy', value: stats.policyGrowth, fill: stats.policyGrowth >= 0 ? '#10b981' : '#ef4444' },
-                    { name: 'Interest', value: -stats.loanInterest, fill: '#dc2626' },
-                    ...(stats.mortgagePrincipalRepaid > 0 ? [{ name: 'Repaid', value: stats.mortgagePrincipalRepaid, fill: '#c5a059' }] : []),
-                    { name: 'End', value: stats.closingEquity, fill: '#0f172a' },
-                  ]}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{fontSize: 10}} axisLine={false} tickLine={false} />
-                  <YAxis hide />
-                  <Tooltip 
-                     formatter={(val: number) => formatCurrency(val)}
-                     cursor={{fill: 'transparent'}}
-                  />
-                  <ReferenceLine y={0} stroke="#000" />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    <Cell fill="#cbd5e1" /> {/* Start */}
-                    <Cell fill="#059669" /> {/* Bond */}
-                    <Cell fill={stats.policyGrowth >= 0 ? "#10b981" : "#ef4444"} /> {/* Policy */}
-                    <Cell fill="#ef4444" /> {/* Interest */}
-                    {stats.mortgagePrincipalRepaid > 0 && <Cell fill="#c5a059" />} {/* Mortgage Repayment */}
-                    <Cell fill="#020617" /> {/* End */}
-                  </Bar>
-                </BarChart>
-             </ResponsiveContainer>
-             <div className="text-center text-[10px] text-slate-400 mt-2 italic">
-                *Equity Walk: Start Equity + Income + Growth - Interest + Debt Repaid = End Equity
-             </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: 'Start', value: stats.openingEquity, fill: '#94a3b8' },
+                  { name: 'Bond', value: stats.bondIncome, fill: '#059669' },
+                  { name: 'Policy', value: stats.policyGrowth, fill: stats.policyGrowth >= 0 ? '#10b981' : '#ef4444' },
+                  { name: 'Interest', value: -stats.loanInterest, fill: '#dc2626' },
+                  ...(stats.mortgagePrincipalRepaid > 0 ? [{ name: 'Repaid', value: stats.mortgagePrincipalRepaid, fill: '#c5a059' }] : []),
+                  { name: 'End', value: stats.closingEquity, fill: '#0f172a' },
+                ]}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip
+                  formatter={(val: number) => formatCurrency(val)}
+                  cursor={{ fill: 'transparent' }}
+                />
+                <ReferenceLine y={0} stroke="#000" />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Cell fill="#cbd5e1" /> {/* Start */}
+                  <Cell fill="#059669" /> {/* Bond */}
+                  <Cell fill={stats.policyGrowth >= 0 ? "#10b981" : "#ef4444"} /> {/* Policy */}
+                  <Cell fill="#ef4444" /> {/* Interest */}
+                  {stats.mortgagePrincipalRepaid > 0 && <Cell fill="#c5a059" />} {/* Mortgage Repayment */}
+                  <Cell fill="#020617" /> {/* End */}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="text-center text-[10px] text-slate-400 mt-2 italic">
+              *Equity Walk: Start Equity + Income + Growth - Interest + Debt Repaid = End Equity
+            </div>
           </div>
 
         </div>
@@ -1091,13 +1091,13 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
   return (
     <>
       {/* Mobile Overlay */}
-      <div 
+      <div
         className={`fixed inset-0 bg-slate-900/50 z-40 transition-opacity duration-300 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
-      
+
       {/* Sidebar Container */}
-      <aside 
+      <aside
         className={`fixed top-0 left-0 h-full w-72 bg-[#020617] text-white z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {/* Header */}
@@ -1117,25 +1117,7 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
         </div>
 
         {/* Client Profile Snippet */}
-        <div className="px-6 py-6 border-b border-slate-800/50 bg-[#0f172a]/30">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600">
-               <User className="w-4 h-4 text-slate-300" />
-            </div>
-            <div>
-               <div className="text-xs font-bold text-white">{labels.estateOf}</div>
-               <div className="text-[9px] text-slate-400 font-mono">ID: 8839-2910</div>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-             <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#c5a059]/10 text-[#c5a059] border border-[#c5a059]/20">
-               Ultra HNW
-             </span>
-             <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-900/30 text-emerald-400 border border-emerald-800/30">
-               Low Risk
-             </span>
-          </div>
-        </div>
+
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
@@ -1145,11 +1127,10 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  isActive 
-                    ? 'bg-[#c5a059] text-white shadow-lg shadow-orange-900/20' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${isActive
+                  ? 'bg-[#c5a059] text-white shadow-lg shadow-orange-900/20'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                  }`}
               >
                 <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`} />
                 {item.label}
@@ -1159,20 +1140,10 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
           })}
         </nav>
 
-        {/* Footer info */}
         <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50">
-           <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.rm}</span>
-              <span className="text-[10px] font-mono text-slate-300">J. Sterling</span>
-           </div>
-           <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.seniorBanker}</span>
-              <span className="text-[10px] font-mono text-slate-300">A. Wong</span>
-           </div>
-           <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-600">
-              <span className="flex items-center gap-1"><LogOut className="w-3 h-3" /> Sign Out</span>
-              <span className="font-mono">v2.4.0</span>
-           </div>
+          <div className="flex items-center justify-end text-[10px] text-slate-600">
+            <span className="font-mono">v2.4.0</span>
+          </div>
         </div>
       </aside>
     </>
@@ -1186,7 +1157,7 @@ const App = () => {
   const [activeView, setActiveView] = useState('allocation');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lang, setLang] = useState<Language>('en');
-  
+
   // Source Fund State
   const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
   const [budget, setBudget] = useState(1000000);
@@ -1206,14 +1177,14 @@ const App = () => {
   const [cashReserve, setCashReserve] = useState(200000);
   const [bondAlloc, setBondAlloc] = useState(300000);
   const [bondYield, setBondYield] = useState(4.5);
-  
+
   // Bank Settings
   const [hibor, setHibor] = useState(4.15);
   const [spread, setSpread] = useState(1.30);
   const [leverageLTV, setLeverageLTV] = useState(90); // 90 or 95
   const [capRate, setCapRate] = useState(9.00);
   const [handlingFee, setHandlingFee] = useState(1.0); // Fund Handling Fee %
-  
+
   // Market Risk Settings
   const [simulatedHibor, setSimulatedHibor] = useState(hibor);
   const [bondPriceDrop, setBondPriceDrop] = useState(0); // 0 to 50%
@@ -1234,9 +1205,9 @@ const App = () => {
   const t = TRANSLATIONS[lang];
 
   // Notification State
-  const [notifications, setNotifications] = useState<{id: number, title: string, message: string, time: string, type: 'info'|'warning'|'success'}[]>([
-     { id: 1, title: t.systemReady, message: 'Ledger synchronization complete.', time: '2m ago', type: 'success' },
-     { id: 2, title: t.complianceAlert, message: 'Client risk profile review due.', time: '1h ago', type: 'warning' }
+  const [notifications, setNotifications] = useState<{ id: number, title: string, message: string, time: string, type: 'info' | 'warning' | 'success' }[]>([
+    { id: 1, title: t.systemReady, message: 'Ledger synchronization complete.', time: '2m ago', type: 'success' },
+    { id: 2, title: t.complianceAlert, message: 'Client risk profile review due.', time: '1h ago', type: 'warning' }
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(1);
@@ -1250,7 +1221,7 @@ const App = () => {
   };
 
   const unlockedCash = Math.max(0, (propertyValue * (mortgageLtv / 100)) - existingMortgage);
-  
+
   // Effective Mortgage Rate Calculation (Min of H+Spread and P-Cap)
   const effectiveMortgageRate = Math.min(hibor + mortgageHSpread, primeRate - mortgagePModifier);
   const monthlyMortgagePmt = calculatePMT(effectiveMortgageRate, mortgageTenor, unlockedCash);
@@ -1268,36 +1239,36 @@ const App = () => {
         // that handles the CORS request to the HKAB website.
         // For this demo, we simulate the network delay and return a realistic current rate.
         try {
-           // Simulate network delay
-           await new Promise(resolve => setTimeout(resolve, 1500));
-           
-           // Mock parsing logic from https://www.hkab.org.hk/tc/rates/hibor
-           // Current 1M HIBOR is fluctuating around 4.12 - 4.16
-           const simulatedLiveRate = 4.13571; // Specific value to look authentic
-           
-           setHibor(simulatedLiveRate);
-           setSimulatedHibor(simulatedLiveRate);
-           setLastRateUpdate(new Date());
-           
-           // Add notification
-           setNotifications(prev => [{
-               id: Date.now(),
-               title: t.marketDataUpdate,
-               message: `HIBOR Rate refreshed: ${simulatedLiveRate}%`,
-               time: 'Just now',
-               type: 'info'
-           }, ...prev]);
-           setUnreadCount(c => c + 1);
-           
-           // Cache it
-           localStorage.setItem('hibor_live_cache', JSON.stringify({
-             rate: simulatedLiveRate,
-             timestamp: new Date().toISOString()
-           }));
+          // Simulate network delay
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          // Mock parsing logic from https://www.hkab.org.hk/tc/rates/hibor
+          // Current 1M HIBOR is fluctuating around 4.12 - 4.16
+          const simulatedLiveRate = 4.13571; // Specific value to look authentic
+
+          setHibor(simulatedLiveRate);
+          setSimulatedHibor(simulatedLiveRate);
+          setLastRateUpdate(new Date());
+
+          // Add notification
+          setNotifications(prev => [{
+            id: Date.now(),
+            title: t.marketDataUpdate,
+            message: `HIBOR Rate refreshed: ${simulatedLiveRate}%`,
+            time: 'Just now',
+            type: 'info'
+          }, ...prev]);
+          setUnreadCount(c => c + 1);
+
+          // Cache it
+          localStorage.setItem('hibor_live_cache', JSON.stringify({
+            rate: simulatedLiveRate,
+            timestamp: new Date().toISOString()
+          }));
         } catch (e) {
-           console.error("Failed to fetch live rates", e);
+          console.error("Failed to fetch live rates", e);
         } finally {
-           setIsFetchingRates(false);
+          setIsFetchingRates(false);
         }
       };
 
@@ -1309,11 +1280,11 @@ const App = () => {
         const now = new Date();
         // Use cache if less than 1 hour old
         if ((now.getTime() - cacheTime.getTime()) < 3600000) {
-           setHibor(parsed.rate);
-           setSimulatedHibor(parsed.rate);
-           setLastRateUpdate(cacheTime);
+          setHibor(parsed.rate);
+          setSimulatedHibor(parsed.rate);
+          setLastRateUpdate(cacheTime);
         } else {
-           fetchLiveHibor();
+          fetchLiveHibor();
         }
       } else {
         fetchLiveHibor();
@@ -1338,11 +1309,11 @@ const App = () => {
   } = useMemo(() => {
     const equity = budget - cashReserve - bondAlloc;
     const ltvDecimal = leverageLTV / 100.0;
-    
+
     // Use the base factors directly
     const currentFactors = BASE_FACTORS;
-    const initialCSVFactor = currentFactors[0] || 0; 
-    
+    const initialCSVFactor = currentFactors[0] || 0;
+
     let tPremium = 0;
     const denominator = 1 - (ltvDecimal * initialCSVFactor);
     if (denominator > 0 && equity > 0) {
@@ -1365,33 +1336,33 @@ const App = () => {
     // Generate Mortgage Schedule if applicable
     const mortgageSchedule = [];
     if (fundSource === 'mortgage') {
-       let balance = unlockedCash; // We assume the "Budget" is the Loan amount
-       const annualPmt = monthlyMortgagePmt * 12;
-       
-       for (let y = 0; y <= 30; y++) {
-          if (y === 0) {
-             mortgageSchedule.push({ balance: balance, annualPmt: 0 });
-          } else if (y <= mortgageTenor) {
-             // Simple annual amortization approximation for ledger
-             const interestPart = balance * (effectiveMortgageRate / 100);
-             const principalPart = annualPmt - interestPart;
-             balance -= principalPart;
-             if (balance < 0) balance = 0;
-             mortgageSchedule.push({ balance: balance, annualPmt: annualPmt });
-          } else {
-             mortgageSchedule.push({ balance: 0, annualPmt: 0 });
-          }
-       }
+      let balance = unlockedCash; // We assume the "Budget" is the Loan amount
+      const annualPmt = monthlyMortgagePmt * 12;
+
+      for (let y = 0; y <= 30; y++) {
+        if (y === 0) {
+          mortgageSchedule.push({ balance: balance, annualPmt: 0 });
+        } else if (y <= mortgageTenor) {
+          // Simple annual amortization approximation for ledger
+          const interestPart = balance * (effectiveMortgageRate / 100);
+          const principalPart = annualPmt - interestPart;
+          balance -= principalPart;
+          if (balance < 0) balance = 0;
+          mortgageSchedule.push({ balance: balance, annualPmt: annualPmt });
+        } else {
+          mortgageSchedule.push({ balance: 0, annualPmt: 0 });
+        }
+      }
     }
 
     const data = [];
-    
+
     // Initialize Year 0
     const yr0Factor = currentFactors[0];
     const yr0Surrender = tPremium * yr0Factor;
     const yr0Assets = yr0Surrender + netBondAlloc + cashReserve;
     const yr0Liabilities = loan;
-    
+
     // If Mortgage is source, we have an additional liability (The Mortgage Loan)
     // Net Equity = (Assets - PremiumLoan) - MortgageBalance
     const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
@@ -1427,37 +1398,37 @@ const App = () => {
     for (let yr = 1; yr <= 30; yr++) {
       const factor = currentFactors[yr] || currentFactors[30];
       const surrenderValue = tPremium * factor;
-      
+
       const cumulativeBondInterest = netBondAlloc * (bondYield / 100) * yr;
       const bondFundNetValue = netBondAlloc + cumulativeBondInterest;
       const cumulativeInterest = loan * (effRate / 100) * yr;
       const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-      const currentLiabilities = loan; 
-      
+      const currentLiabilities = loan;
+
       let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
-      
+
       // Mortgage Logic
       let mtgBal = 0;
       let annualMtgPmt = 0;
       if (fundSource === 'mortgage') {
-         mtgBal = mortgageSchedule[yr]?.balance || 0;
-         annualMtgPmt = mortgageSchedule[yr]?.annualPmt || 0;
-         runningCumMtgCost += annualMtgPmt;
-         // Subtract Mortgage Balance from Net Equity (Balance Sheet Logic)
-         // Net Equity = Assets - Liabilities. Liabilities include Mortgage Balance.
-         netEquity -= mtgBal;
-         // Note: We do NOT subtract runningCumMtgCost from NetEquity here. 
-         // Net Equity is what you own vs what you owe. Sunk costs (payments) are gone but handled in Net Gain.
+        mtgBal = mortgageSchedule[yr]?.balance || 0;
+        annualMtgPmt = mortgageSchedule[yr]?.annualPmt || 0;
+        runningCumMtgCost += annualMtgPmt;
+        // Subtract Mortgage Balance from Net Equity (Balance Sheet Logic)
+        // Net Equity = Assets - Liabilities. Liabilities include Mortgage Balance.
+        netEquity -= mtgBal;
+        // Note: We do NOT subtract runningCumMtgCost from NetEquity here. 
+        // Net Equity is what you own vs what you owe. Sunk costs (payments) are gone but handled in Net Gain.
       }
 
       const prev = data[yr - 1];
       const annualBondIncome = cumulativeBondInterest - prev.cumulativeBondInterest;
       const annualLoanInterest = cumulativeInterest - prev.cumulativeInterest;
       const annualPolicyGrowth = surrenderValue - prev.surrenderValue;
-      
+
       // Net Gain for the year
       let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualMtgPmt;
-      
+
       let annualRoC = 0;
       // If Mortgage, initial equity is near 0. Using budget as denominator for relative perf.
       const denom = fundSource === 'mortgage' ? budget : prev.netEquity;
@@ -1466,7 +1437,7 @@ const App = () => {
       }
 
       const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
-      
+
       // Cumulative Net Gain (Performance / Profit)
       // Profit = Current Net Equity - Initial Equity - External Costs Paid (Mortgage Payments)
       const cumulativeNetGain = netEquity - yr0NetEquity - (fundSource === 'mortgage' ? runningCumMtgCost : 0);
@@ -1474,9 +1445,9 @@ const App = () => {
       data.push({
         year: yr,
         surrenderValue,
-        bondPrincipal: netBondAlloc, 
-        cumulativeBondInterest,      
-        bondFundNetValue,            
+        bondPrincipal: netBondAlloc,
+        cumulativeBondInterest,
+        bondFundNetValue,
         cashValue: cashReserve,
         totalAssets: currentAssets,
         loan: currentLiabilities,
@@ -1499,10 +1470,10 @@ const App = () => {
 
     // Final Equity is the Balance Sheet value
     const final = data[30].netEquity;
-    
+
     // ROI based on Cumulative Net Gain
     const totalGain = data[30].cumulativeNetGain;
-    
+
     // For ROI denominator:
     // If Mortgage: Denominator is difficult as initial equity is ~0. Can use Budget (Exposure) or Total Costs Paid.
     // Usually clients ask "Return on Capital Employed". If Capital is 0 (100% financed), ROI is infinite.
@@ -1532,166 +1503,166 @@ const App = () => {
 
   // --- Stressed Projections (For Market Risk) ---
   const { stressedProjection, stressStats, sensitivityData } = useMemo(() => {
-     // Recalculate based on stress parameters
-     const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
-     
-     // 1. Bond Shock (Immediate drop at T=0 applied to principal)
-     // The prompt implies a scenario where assets drop. We will model this as the bond fund value dropping.
-     // However, usually stress tests apply to the *current* situation. 
-     // For simplicity in this projection, we assume the bond fund starts at (1 - drop) value.
-     const stressedBondPrincipal = netBondPrincipal * (1 - bondPriceDrop / 100);
-     
-     // 2. Simulated HIBOR Rate
-     const stressedRate = Math.min(simulatedHibor + spread, capRate);
+    // Recalculate based on stress parameters
+    const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
 
-     const data = [];
-     const baselineData = projectionData; // For comparison
+    // 1. Bond Shock (Immediate drop at T=0 applied to principal)
+    // The prompt implies a scenario where assets drop. We will model this as the bond fund value dropping.
+    // However, usually stress tests apply to the *current* situation. 
+    // For simplicity in this projection, we assume the bond fund starts at (1 - drop) value.
+    const stressedBondPrincipal = netBondPrincipal * (1 - bondPriceDrop / 100);
 
-     // Initial Setup (Year 0)
-     // Year 0 Equity reflects the immediate shock if any
-     const yr0Factor = factors[0] || 0;
-     const yr0Surrender = totalPremium * yr0Factor;
-     const yr0Assets = yr0Surrender + stressedBondPrincipal + cashReserve;
-     const yr0Liabilities = bankLoan;
-     // Mortgage Logic
-     const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
-     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
+    // 2. Simulated HIBOR Rate
+    const stressedRate = Math.min(simulatedHibor + spread, capRate);
 
-     data.push({
-        year: 0,
-        netEquity: yr0NetEquity,
-        baselineNetEquity: baselineData[0].netEquity,
-        ltv: (yr0Liabilities / (yr0Surrender + stressedBondPrincipal)) * 100
-     });
+    const data = [];
+    const baselineData = projectionData; // For comparison
 
-     let lowestEquity = yr0NetEquity;
+    // Initial Setup (Year 0)
+    // Year 0 Equity reflects the immediate shock if any
+    const yr0Factor = factors[0] || 0;
+    const yr0Surrender = totalPremium * yr0Factor;
+    const yr0Assets = yr0Surrender + stressedBondPrincipal + cashReserve;
+    const yr0Liabilities = bankLoan;
+    // Mortgage Logic
+    const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
+    const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
 
-     // Calculate Mortgage Schedule for Stress Test (Assuming Rate stays same as it's usually fixed or P-linked, not HIBOR linked directly in this context, or we simplify)
-     // We will use the same mortgage schedule as baseline for simplicity
-     let runningCumMtgCost = 0;
+    data.push({
+      year: 0,
+      netEquity: yr0NetEquity,
+      baselineNetEquity: baselineData[0].netEquity,
+      ltv: (yr0Liabilities / (yr0Surrender + stressedBondPrincipal)) * 100
+    });
 
-     for (let yr = 1; yr <= 30; yr++) {
-        const factor = factors[yr] || factors[30];
-        const surrenderValue = totalPremium * factor;
-        
-        // Bond grows from the stressed principal
-        const cumulativeBondInterest = stressedBondPrincipal * (bondYield / 100) * yr;
-        const bondFundNetValue = stressedBondPrincipal + cumulativeBondInterest;
+    let lowestEquity = yr0NetEquity;
 
-        const cumulativeInterest = bankLoan * (stressedRate / 100) * yr;
+    // Calculate Mortgage Schedule for Stress Test (Assuming Rate stays same as it's usually fixed or P-linked, not HIBOR linked directly in this context, or we simplify)
+    // We will use the same mortgage schedule as baseline for simplicity
+    let runningCumMtgCost = 0;
 
-        const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-        const currentLiabilities = bankLoan;
-        
-        let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
+    for (let yr = 1; yr <= 30; yr++) {
+      const factor = factors[yr] || factors[30];
+      const surrenderValue = totalPremium * factor;
 
-        // Mortgage Deductions
+      // Bond grows from the stressed principal
+      const cumulativeBondInterest = stressedBondPrincipal * (bondYield / 100) * yr;
+      const bondFundNetValue = stressedBondPrincipal + cumulativeBondInterest;
+
+      const cumulativeInterest = bankLoan * (stressedRate / 100) * yr;
+
+      const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
+      const currentLiabilities = bankLoan;
+
+      let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
+
+      // Mortgage Deductions
+      if (fundSource === 'mortgage') {
+        const mtgBal = baselineData[yr]?.mortgageBalance || 0;
+        // const annualPmt = baselineData[yr]?.annualMortgagePayment || 0;
+        // runningCumMtgCost += annualPmt;
+        netEquity -= mtgBal;
+        // REMOVED: netEquity -= runningCumMtgCost; (Match balance sheet logic)
+      }
+
+      if (netEquity < lowestEquity) lowestEquity = netEquity;
+
+      // LTV Calculation: Loan / (Policy + Bond)
+      const collateralValue = surrenderValue + bondFundNetValue;
+      const ltv = collateralValue > 0 ? (currentLiabilities / collateralValue) * 100 : 0;
+
+      data.push({
+        year: yr,
+        netEquity,
+        baselineNetEquity: baselineData[yr]?.netEquity || 0,
+        ltv,
+        surrenderValue,
+        bondFundNetValue
+      });
+    }
+
+    // --- Break-even HIBOR Calculation (Simplified) ---
+    // Solve for Rate where (BondYield + PolicyYield) - CostOfFunds = 0
+    // We use Year 1 run-rate for immediate risk.
+    // Income = (StressedBond * Yield) + (Policy_Y1 - Policy_Y0) 
+    // Cost = Loan * (X + Spread)
+    // This is an approximation. 
+    // Better metric: What HIBOR rate makes Year 30 Net Equity = Initial Budget? (Break-even on Capital)
+    // Or Year 1 Cashflow Break-even. 
+    // Let's use "Net Carry Break-even": The rate where annual asset income equals annual loan cost.
+    // Policy income is tricky as it's not cash, but growth. We'll use Year 1 growth.
+
+    const policyGrowthY1 = (totalPremium * (factors[1] || 0)) - (totalPremium * (factors[0] || 0));
+    const annualBondIncome = stressedBondPrincipal * (bondYield / 100);
+    const totalAnnualIncome = annualBondIncome + policyGrowthY1;
+
+    // Mortgage Cost needs to be covered too for true break even
+    const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
+
+    // totalAnnualIncome - MortgagePmt = Loan * (BE_Rate + Spread)
+    // (totalAnnualIncome - MortgagePmt) / Loan = BE_Rate + Spread
+
+    let breakEvenHibor = 0;
+    if (bankLoan > 0) {
+      breakEvenHibor = (((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100) - spread;
+    } else {
+      breakEvenHibor = 100; // Infinite if no loan
+    }
+
+    // --- Sensitivity Heatmap Data ---
+    // X: HIBOR (1, 2, 3, 4, 5, 6)
+    // Y: Bond Yield (3, 4, 5, 6, 7)
+    // Value: Net Equity at Year 15
+    const xLabels = [1, 2, 3, 4, 5, 6];
+    const yLabels = [3, 4, 5, 6, 7];
+    const heatMapRows = [];
+
+    for (const yieldVal of yLabels) {
+      const row = [];
+      for (const hiborVal of xLabels) {
+        // Quick Calc for Year 15 Net Equity
+        // Re-use current params but swap yield & hibor
+        const rate = Math.min(hiborVal + spread, capRate);
+        const yr = sensitivityYear;
+
+        // Policy at Y15 (Using current Stress toggle settings)
+        const surr = totalPremium * (factors[yr] || 0);
+
+        // Bond at Y15 (using stressed principal)
+        const bondVal = stressedBondPrincipal + (stressedBondPrincipal * (yieldVal / 100) * yr);
+
+        // Loan Cost
+        const interest = bankLoan * (rate / 100) * yr;
+
+        let result = (surr + bondVal + cashReserve) - bankLoan - interest;
+
         if (fundSource === 'mortgage') {
-           const mtgBal = baselineData[yr]?.mortgageBalance || 0;
-           // const annualPmt = baselineData[yr]?.annualMortgagePayment || 0;
-           // runningCumMtgCost += annualPmt;
-           netEquity -= mtgBal;
-           // REMOVED: netEquity -= runningCumMtgCost; (Match balance sheet logic)
+          const mtgBal = baselineData[yr]?.mortgageBalance || 0;
+          // const cumMtgCost = baselineData[yr]?.cumulativeMortgageCost || 0;
+          result = result - mtgBal;
+          // REMOVED: result = result - cumMtgCost;
         }
 
-        if (netEquity < lowestEquity) lowestEquity = netEquity;
-
-        // LTV Calculation: Loan / (Policy + Bond)
-        const collateralValue = surrenderValue + bondFundNetValue;
-        const ltv = collateralValue > 0 ? (currentLiabilities / collateralValue) * 100 : 0;
-
-        data.push({
-           year: yr,
-           netEquity,
-           baselineNetEquity: baselineData[yr]?.netEquity || 0,
-           ltv,
-           surrenderValue,
-           bondFundNetValue
-        });
-     }
-
-     // --- Break-even HIBOR Calculation (Simplified) ---
-     // Solve for Rate where (BondYield + PolicyYield) - CostOfFunds = 0
-     // We use Year 1 run-rate for immediate risk.
-     // Income = (StressedBond * Yield) + (Policy_Y1 - Policy_Y0) 
-     // Cost = Loan * (X + Spread)
-     // This is an approximation. 
-     // Better metric: What HIBOR rate makes Year 30 Net Equity = Initial Budget? (Break-even on Capital)
-     // Or Year 1 Cashflow Break-even. 
-     // Let's use "Net Carry Break-even": The rate where annual asset income equals annual loan cost.
-     // Policy income is tricky as it's not cash, but growth. We'll use Year 1 growth.
-     
-     const policyGrowthY1 = (totalPremium * (factors[1] || 0)) - (totalPremium * (factors[0] || 0));
-     const annualBondIncome = stressedBondPrincipal * (bondYield / 100);
-     const totalAnnualIncome = annualBondIncome + policyGrowthY1;
-     
-     // Mortgage Cost needs to be covered too for true break even
-     const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
-
-     // totalAnnualIncome - MortgagePmt = Loan * (BE_Rate + Spread)
-     // (totalAnnualIncome - MortgagePmt) / Loan = BE_Rate + Spread
-     
-     let breakEvenHibor = 0;
-     if (bankLoan > 0) {
-        breakEvenHibor = (((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100) - spread;
-     } else {
-        breakEvenHibor = 100; // Infinite if no loan
-     }
-
-     // --- Sensitivity Heatmap Data ---
-     // X: HIBOR (1, 2, 3, 4, 5, 6)
-     // Y: Bond Yield (3, 4, 5, 6, 7)
-     // Value: Net Equity at Year 15
-     const xLabels = [1, 2, 3, 4, 5, 6];
-     const yLabels = [3, 4, 5, 6, 7];
-     const heatMapRows = [];
-
-     for (const yieldVal of yLabels) {
-        const row = [];
-        for (const hiborVal of xLabels) {
-           // Quick Calc for Year 15 Net Equity
-           // Re-use current params but swap yield & hibor
-           const rate = Math.min(hiborVal + spread, capRate);
-           const yr = sensitivityYear;
-           
-           // Policy at Y15 (Using current Stress toggle settings)
-           const surr = totalPremium * (factors[yr] || 0);
-           
-           // Bond at Y15 (using stressed principal)
-           const bondVal = stressedBondPrincipal + (stressedBondPrincipal * (yieldVal / 100) * yr);
-           
-           // Loan Cost
-           const interest = bankLoan * (rate / 100) * yr;
-           
-           let result = (surr + bondVal + cashReserve) - bankLoan - interest;
-           
-           if (fundSource === 'mortgage') {
-               const mtgBal = baselineData[yr]?.mortgageBalance || 0;
-               // const cumMtgCost = baselineData[yr]?.cumulativeMortgageCost || 0;
-               result = result - mtgBal;
-               // REMOVED: result = result - cumMtgCost;
-           }
-
-           // Profit relative to Budget
-           const profit = result - (fundSource === 'mortgage' ? 0 : budget); 
-           row.push(profit);
-        }
-        heatMapRows.push(row);
-     }
+        // Profit relative to Budget
+        const profit = result - (fundSource === 'mortgage' ? 0 : budget);
+        row.push(profit);
+      }
+      heatMapRows.push(row);
+    }
 
 
-     return {
-        stressedProjection: data,
-        stressStats: {
-           breakEvenHibor,
-           lowestEquity
-        },
-        sensitivityData: {
-           xLabels,
-           yLabels,
-           data: heatMapRows
-        }
-     }
+    return {
+      stressedProjection: data,
+      stressStats: {
+        breakEvenHibor,
+        lowestEquity
+      },
+      sensitivityData: {
+        xLabels,
+        yLabels,
+        data: heatMapRows
+      }
+    }
 
   }, [projectionData, simulatedHibor, bondPriceDrop, showGuaranteed, totalPremium, netBondPrincipal, bondYield, bankLoan, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash]);
 
@@ -1699,13 +1670,13 @@ const App = () => {
   // --- Export Function ---
   const handleExportCSV = () => {
     const headers = [
-      "Year", 
+      "Year",
       "Cum. Bond Interest",
-      "Cash Reserve", 
-      "Bond Principal (Net)", 
-      "Policy Cash Value", 
-      "Total Loan", 
-      "Cum. Loan Interest", 
+      "Cash Reserve",
+      "Bond Principal (Net)",
+      "Policy Cash Value",
+      "Total Loan",
+      "Cum. Loan Interest",
       ...(fundSource === 'mortgage' ? ["Mortgage Balance", "Annual Mtg Pmt"] : []),
       "Net Equity"
     ];
@@ -1740,11 +1711,11 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex font-sans">
-      
+
       {/* Sidebar */}
-      <Sidebar 
-        activeView={activeView} 
-        onNavigate={handleNavigate} 
+      <Sidebar
+        activeView={activeView}
+        onNavigate={handleNavigate}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         labels={t}
@@ -1752,382 +1723,381 @@ const App = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-72 transition-all duration-300">
-        
+
         {/* Top Header */}
         <header className="bg-white sticky top-0 z-10 px-6 md:px-10 py-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-4">
-             {/* Mobile Menu Trigger */}
-             <button 
-                onClick={() => setIsMobileMenuOpen(true)}
-                className="lg:hidden text-slate-500 hover:text-[#020617] transition-colors"
-                aria-label="Open menu"
-             >
-                <Menu className="w-6 h-6" />
-             </button>
-             
-             <div>
-                <h1 className="text-xl md:text-2xl font-serif text-[#020617]">{t.financingProposal}</h1>
-                {/* Header Reference info removed */}
-             </div>
+            {/* Mobile Menu Trigger */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden text-slate-500 hover:text-[#020617] transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            <div>
+              <h1 className="text-xl md:text-2xl font-serif text-[#020617]">{t.financingProposal}</h1>
+              {/* Header Reference info removed */}
+            </div>
           </div>
           <div className="flex items-center gap-6">
-             {/* Language Switcher */}
-             <div className="hidden sm:flex items-center space-x-2 mr-2">
-                <Globe className="w-4 h-4 text-slate-400" />
-                <select 
-                  value={lang} 
-                  onChange={(e) => setLang(e.target.value as Language)}
-                  className="bg-transparent text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none cursor-pointer hover:text-[#020617]"
-                >
-                  <option value="en">English</option>
-                  <option value="zh_hk">繁體中文</option>
-                  <option value="zh_cn">简体中文</option>
-                </select>
-             </div>
+            {/* Language Switcher */}
+            <div className="hidden sm:flex items-center space-x-2 mr-2">
+              <Globe className="w-4 h-4 text-slate-400" />
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value as Language)}
+                className="bg-transparent text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none cursor-pointer hover:text-[#020617]"
+              >
+                <option value="en">English</option>
+                <option value="zh_hk">繁體中文</option>
+                <option value="zh_cn">简体中文</option>
+              </select>
+            </div>
 
-             <div className="flex flex-col items-end hidden sm:flex">
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{t.hiborRate}</span>
-                <span className="text-lg font-serif font-bold text-[#020617]">{formatPercent(hibor)}</span>
-             </div>
-             <div className="relative">
-                 <button 
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] cursor-pointer transition-colors relative"
-                 >
-                    <Bell className="w-4 h-4 text-slate-400" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            <div className="flex flex-col items-end hidden sm:flex">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{t.hiborRate}</span>
+              <span className="text-lg font-serif font-bold text-[#020617]">{formatPercent(hibor)}</span>
+            </div>
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] cursor-pointer transition-colors relative"
+              >
+                <Bell className="w-4 h-4 text-slate-400" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                )}
+              </button>
+
+              {/* Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 top-12 w-80 bg-white shadow-xl border border-slate-100 rounded-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <div className="bg-[#f8fafc] px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.notifications}</span>
+                    <button onClick={() => setUnreadCount(0)} className="text-[10px] text-[#c5a059] font-bold hover:text-[#b45309]">{t.markRead}</button>
+                  </div>
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${n.type === 'success' ? 'text-emerald-600' :
+                            n.type === 'warning' ? 'text-orange-600' : 'text-blue-600'
+                            }`}>
+                            {n.title}
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-mono">{n.time}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message}</p>
+                      </div>
+                    ))}
+                    {notifications.length === 0 && (
+                      <div className="p-8 text-center text-xs text-slate-400">{t.noNotifications}</div>
                     )}
-                 </button>
-                 
-                 {/* Dropdown */}
-                 {showNotifications && (
-                    <div className="absolute right-0 top-12 w-80 bg-white shadow-xl border border-slate-100 rounded-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                       <div className="bg-[#f8fafc] px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t.notifications}</span>
-                          <button onClick={() => setUnreadCount(0)} className="text-[10px] text-[#c5a059] font-bold hover:text-[#b45309]">{t.markRead}</button>
-                       </div>
-                       <div className="max-h-[300px] overflow-y-auto">
-                          {notifications.map((n) => (
-                             <div key={n.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                <div className="flex justify-between items-start mb-1">
-                                   <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                                      n.type === 'success' ? 'text-emerald-600' : 
-                                      n.type === 'warning' ? 'text-orange-600' : 'text-blue-600'
-                                   }`}>
-                                      {n.title}
-                                   </span>
-                                   <span className="text-[9px] text-slate-400 font-mono">{n.time}</span>
-                                </div>
-                                <p className="text-xs text-slate-600 font-medium leading-relaxed">{n.message}</p>
-                             </div>
-                          ))}
-                          {notifications.length === 0 && (
-                             <div className="p-8 text-center text-xs text-slate-400">{t.noNotifications}</div>
-                          )}
-                       </div>
-                    </div>
-                 )}
-             </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         <div className="p-4 md:p-10 max-w-[1600px] mx-auto space-y-8">
-          
+
           {/* Dashboard Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
+
             {/* Left Column: Inputs & Controls (Always Visible) */}
             <div className="lg:col-span-4 space-y-8">
-               
-               {activeView === 'marketRisk' ? (
-                  // --- Stress Test Controls ---
-                  <Card title={t.stressTest} subtitle={t.marketRisk} goldAccent>
-                      <InputField 
-                        label={t.simulatedHibor} 
-                        value={simulatedHibor} 
-                        onChange={setSimulatedHibor} 
-                        step={0.1} 
-                        suffix="%" 
-                      />
-                      <InputField 
-                        label={t.bondPriceDrop} 
-                        value={bondPriceDrop} 
-                        onChange={setBondPriceDrop} 
-                        step={5} 
-                        suffix="%" 
-                      />
-                      <ToggleField 
-                        label={t.showGuaranteed} 
-                        checked={showGuaranteed} 
-                        onChange={setShowGuaranteed} 
-                      />
-                  </Card>
-               ) : activeView === 'systemConfig' ? (
-                  // --- System Config Sidebar Controls (Optional) ---
-                  <Card title={t.providerStatus} subtitle="System Health" goldAccent>
-                      <div className="space-y-4">
-                         <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
-                            <div className="flex items-center gap-3">
-                               <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                               <span className="text-xs font-bold text-slate-700">Bloomberg API</span>
-                            </div>
-                            <span className={`text-[10px] uppercase font-bold ${dataSource === 'live' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                              {dataSource === 'live' ? 'Active' : 'Standby'}
-                            </span>
-                         </div>
-                         <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
-                            <div className="flex items-center gap-3">
-                               <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                               <span className="text-xs font-bold text-slate-700">Core Ledger</span>
-                            </div>
-                            <span className="text-[10px] uppercase font-bold text-emerald-600">Synced</span>
-                         </div>
-                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100">
-                            <div className="flex items-center gap-3">
-                               <div className="w-2 h-2 rounded-full bg-slate-400"></div>
-                               <span className="text-xs font-bold text-slate-500">Nightly Batch</span>
-                            </div>
-                            <span className="text-[10px] uppercase font-bold text-slate-400">Pending</span>
-                         </div>
+
+              {activeView === 'marketRisk' ? (
+                // --- Stress Test Controls ---
+                <Card title={t.stressTest} subtitle={t.marketRisk} goldAccent>
+                  <InputField
+                    label={t.simulatedHibor}
+                    value={simulatedHibor}
+                    onChange={setSimulatedHibor}
+                    step={0.1}
+                    suffix="%"
+                  />
+                  <InputField
+                    label={t.bondPriceDrop}
+                    value={bondPriceDrop}
+                    onChange={setBondPriceDrop}
+                    step={5}
+                    suffix="%"
+                  />
+                  <ToggleField
+                    label={t.showGuaranteed}
+                    checked={showGuaranteed}
+                    onChange={setShowGuaranteed}
+                  />
+                </Card>
+              ) : activeView === 'systemConfig' ? (
+                // --- System Config Sidebar Controls (Optional) ---
+                <Card title={t.providerStatus} subtitle="System Health" goldAccent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                        <span className="text-xs font-bold text-slate-700">Bloomberg API</span>
                       </div>
-                  </Card>
-               ) : (
-                  // --- Default Controls ---
-                  <>
-                    <Card 
-                      className="overflow-hidden"
-                      goldAccent 
-                      collapsible
-                      title={
-                        <div className="flex items-center gap-4">
-                          <button 
-                            onClick={(e) => {e.stopPropagation(); setFundSource('cash')}}
-                            className={`pb-1 text-sm font-bold uppercase tracking-wider transition-colors ${fundSource === 'cash' ? 'text-[#c5a059] border-b-2 border-[#c5a059]' : 'text-slate-400 hover:text-slate-600'}`}
-                          >
-                            {t.cashSource}
-                          </button>
-                          <button 
-                             onClick={(e) => {e.stopPropagation(); setFundSource('mortgage')}}
-                             className={`pb-1 text-sm font-bold uppercase tracking-wider transition-colors ${fundSource === 'mortgage' ? 'text-[#c5a059] border-b-2 border-[#c5a059]' : 'text-slate-400 hover:text-slate-600'}`}
-                          >
-                            {t.mortgageRefi}
-                          </button>
-                        </div>
-                      }
-                      subtitle={fundSource === 'cash' ? t.clientAssets : t.unlockedCapital}
-                    >
-                        {fundSource === 'cash' ? (
-                          <>
-                             <InputField label={t.totalBudget} value={budget} onChange={setBudget} />
-                          </>
-                        ) : (
-                          <div className="space-y-6">
-                             <div className="grid grid-cols-2 gap-6">
-                               <InputField label={t.propVal} value={propertyValue} onChange={setPropertyValue} />
-                               <InputField label={t.existingLoan} value={existingMortgage} onChange={setExistingMortgage} />
-                             </div>
-                             <div className="grid grid-cols-3 gap-4">
-                               <div className="col-span-1">
-                                  <InputField label={t.refiLtv} value={mortgageLtv} onChange={setMortgageLtv} suffix="%" step={1} />
-                               </div>
-                               <div className="col-span-2">
-                                  <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center">
-                                      <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.unlockedCash}</div>
-                                      <div className="text-lg font-serif font-medium text-slate-900">{formatCurrency(unlockedCash)}</div>
-                                  </div>
-                               </div>
-                             </div>
-                             
-                             {/* Mortgage Rate Terms (Replaces single input) */}
-                             <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                                <InputField label={t.primeRate} value={primeRate} onChange={setPrimeRate} suffix="%" step={0.125} />
-                                <InputField label={t.hSpread} value={mortgageHSpread} onChange={setMortgageHSpread} suffix="%" step={0.1} />
-                                <InputField label={t.pCap} value={mortgagePModifier} onChange={setMortgagePModifier} suffix="%" step={0.1} />
-                             </div>
-
-                             <div className="grid grid-cols-2 gap-6">
-                                <InputField label={t.tenor} value={mortgageTenor} onChange={setMortgageTenor} suffix="Yr" step={1} />
-                                <div className="bg-orange-50 p-2 rounded border border-orange-100 text-center flex flex-col justify-center">
-                                    <div className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">{t.effectiveMtgRate}</div>
-                                    <div className="text-xl font-serif font-bold text-orange-700">{formatPercent(effectiveMortgageRate)}</div>
-                                </div>
-                             </div>
-
-                             <div className="flex flex-col gap-3">
-                                <div className="flex justify-between items-center text-xs text-slate-500">
-                                   <span className="font-bold uppercase tracking-wider">{t.monthlyMtg}</span>
-                                   <span className="font-mono text-slate-900">{formatCurrency(monthlyMortgagePmt)}</span>
-                                </div>
-                                <button 
-                                  onClick={handleApplyCapital}
-                                  className="w-full py-3 bg-[#c5a059] hover:bg-[#b45309] text-white text-xs font-bold uppercase tracking-widest rounded shadow transition-colors"
-                                >
-                                  {t.applyCapital}
-                                </button>
-                             </div>
-                             <div className="text-center text-[10px] text-slate-400 mt-2">
-                               Current Budget: <span className="font-mono text-slate-700">{formatCurrency(budget)}</span>
-                             </div>
-                          </div>
-                        )}
-                        
-                        <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100">
-                          <InputField label={t.cashReserve} value={cashReserve} onChange={setCashReserve} />
-                          <InputField label={t.bondFund} value={bondAlloc} onChange={setBondAlloc} />
-                        </div>
-                        <InputField label={t.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" />
-                        
-                        <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-baseline">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.policyEquity}</span>
-                            <span className={`text-xl font-serif ${pfEquity < 0 ? 'text-red-700' : 'text-[#020617]'}`}>
-                              {formatCurrency(pfEquity)}
-                            </span>
-                        </div>
-                    </Card>
-
-                    <Card title={t.bankParams} subtitle={t.lendingTerms} collapsible>
+                      <span className={`text-[10px] uppercase font-bold ${dataSource === 'live' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {dataSource === 'live' ? 'Active' : 'Standby'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <span className="text-xs font-bold text-slate-700">Core Ledger</span>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-600">Synced</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                        <span className="text-xs font-bold text-slate-500">Nightly Batch</span>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Pending</span>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                // --- Default Controls ---
+                <>
+                  <Card
+                    className="overflow-hidden"
+                    goldAccent
+                    collapsible
+                    title={
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setFundSource('cash') }}
+                          className={`pb-1 text-sm font-bold uppercase tracking-wider transition-colors ${fundSource === 'cash' ? 'text-[#c5a059] border-b-2 border-[#c5a059]' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          {t.cashSource}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setFundSource('mortgage') }}
+                          className={`pb-1 text-sm font-bold uppercase tracking-wider transition-colors ${fundSource === 'mortgage' ? 'text-[#c5a059] border-b-2 border-[#c5a059]' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                          {t.mortgageRefi}
+                        </button>
+                      </div>
+                    }
+                    subtitle={fundSource === 'cash' ? t.clientAssets : t.unlockedCapital}
+                  >
+                    {fundSource === 'cash' ? (
+                      <>
+                        <InputField label={t.totalBudget} value={budget} onChange={setBudget} />
+                      </>
+                    ) : (
+                      <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
-                          <InputField 
-                            label={t.hiborRate} 
-                            value={hibor} 
-                            onChange={setHibor} 
-                            prefix="" 
-                            step={0.01} 
-                            disabled={dataSource === 'live'}
-                          />
-                          <InputField label={t.spread} value={spread} onChange={setSpread} prefix="" step={0.05} />
+                          <InputField label={t.propVal} value={propertyValue} onChange={setPropertyValue} />
+                          <InputField label={t.existingLoan} value={existingMortgage} onChange={setExistingMortgage} />
                         </div>
-                        <div className="grid grid-cols-2 gap-6 mt-2">
-                          <InputField label={t.intCap} value={capRate} onChange={setCapRate} prefix="" step={0.1} />
-                          <SelectField 
-                            label={t.leverageLtv} 
-                            value={leverageLTV} 
-                            onChange={setLeverageLTV}
-                            options={[{value: 90, label: '90% LTV'}, {value: 95, label: '95% LTV'}]}
-                          />
-                        </div>
-                        <div className="mt-6 border-t border-slate-100 pt-6">
-                          <InputField label={t.handlingFee} value={handlingFee} onChange={setHandlingFee} prefix="" step={0.1} />
-                          <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
-                            <span>{t.oneOffDeduction}:</span>
-                            <span className="font-bold text-[#c5a059]">{formatCurrency(oneOffBondFee)}</span>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="col-span-1">
+                            <InputField label={t.refiLtv} value={mortgageLtv} onChange={setMortgageLtv} suffix="%" step={1} />
+                          </div>
+                          <div className="col-span-2">
+                            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center">
+                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.unlockedCash}</div>
+                              <div className="text-lg font-serif font-medium text-slate-900">{formatCurrency(unlockedCash)}</div>
+                            </div>
                           </div>
                         </div>
-                    </Card>
-                  </>
-               )}
+
+                        {/* Mortgage Rate Terms (Replaces single input) */}
+                        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                          <InputField label={t.primeRate} value={primeRate} onChange={setPrimeRate} suffix="%" step={0.125} />
+                          <InputField label={t.hSpread} value={mortgageHSpread} onChange={setMortgageHSpread} suffix="%" step={0.1} />
+                          <InputField label={t.pCap} value={mortgagePModifier} onChange={setMortgagePModifier} suffix="%" step={0.1} />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                          <InputField label={t.tenor} value={mortgageTenor} onChange={setMortgageTenor} suffix="Yr" step={1} />
+                          <div className="bg-orange-50 p-2 rounded border border-orange-100 text-center flex flex-col justify-center">
+                            <div className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">{t.effectiveMtgRate}</div>
+                            <div className="text-xl font-serif font-bold text-orange-700">{formatPercent(effectiveMortgageRate)}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                          <div className="flex justify-between items-center text-xs text-slate-500">
+                            <span className="font-bold uppercase tracking-wider">{t.monthlyMtg}</span>
+                            <span className="font-mono text-slate-900">{formatCurrency(monthlyMortgagePmt)}</span>
+                          </div>
+                          <button
+                            onClick={handleApplyCapital}
+                            className="w-full py-3 bg-[#c5a059] hover:bg-[#b45309] text-white text-xs font-bold uppercase tracking-widest rounded shadow transition-colors"
+                          >
+                            {t.applyCapital}
+                          </button>
+                        </div>
+                        <div className="text-center text-[10px] text-slate-400 mt-2">
+                          Current Budget: <span className="font-mono text-slate-700">{formatCurrency(budget)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100">
+                      <InputField label={t.cashReserve} value={cashReserve} onChange={setCashReserve} />
+                      <InputField label={t.bondFund} value={bondAlloc} onChange={setBondAlloc} />
+                    </div>
+                    <InputField label={t.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" />
+
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-baseline">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.policyEquity}</span>
+                      <span className={`text-xl font-serif ${pfEquity < 0 ? 'text-red-700' : 'text-[#020617]'}`}>
+                        {formatCurrency(pfEquity)}
+                      </span>
+                    </div>
+                  </Card>
+
+                  <Card title={t.bankParams} subtitle={t.lendingTerms} collapsible>
+                    <div className="grid grid-cols-2 gap-6">
+                      <InputField
+                        label={t.hiborRate}
+                        value={hibor}
+                        onChange={setHibor}
+                        prefix=""
+                        step={0.01}
+                        disabled={dataSource === 'live'}
+                      />
+                      <InputField label={t.spread} value={spread} onChange={setSpread} prefix="" step={0.05} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6 mt-2">
+                      <InputField label={t.intCap} value={capRate} onChange={setCapRate} prefix="" step={0.1} />
+                      <SelectField
+                        label={t.leverageLtv}
+                        value={leverageLTV}
+                        onChange={setLeverageLTV}
+                        options={[{ value: 90, label: '90% LTV' }, { value: 95, label: '95% LTV' }]}
+                      />
+                    </div>
+                    <div className="mt-6 border-t border-slate-100 pt-6">
+                      <InputField label={t.handlingFee} value={handlingFee} onChange={setHandlingFee} prefix="" step={0.1} />
+                      <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
+                        <span>{t.oneOffDeduction}:</span>
+                        <span className="font-bold text-[#c5a059]">{formatCurrency(oneOffBondFee)}</span>
+                      </div>
+                    </div>
+                  </Card>
+                </>
+              )}
 
             </div>
 
             {/* Right Column: Visuals & Metrics (Switched based on View) */}
             <div className="lg:col-span-8 space-y-8">
-              
+
               {activeView === 'allocation' && (
                 <>
                   {/* Top KPIs */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <KPICard 
-                        label={t.totalPolicyValue} 
-                        value={formatCurrency(totalPremium)} 
-                        subtext={t.day1Exposure} 
+                    <KPICard
+                      label={t.totalPolicyValue}
+                      value={formatCurrency(totalPremium)}
+                      subtext={t.day1Exposure}
                     />
-                    <KPICard 
-                        label={t.lendingFacility} 
-                        value={formatCurrency(bankLoan)} 
-                        subtext={`@ ${formatPercent(effectiveRate)} ${t.effectiveRate}`} 
+                    <KPICard
+                      label={t.lendingFacility}
+                      value={formatCurrency(bankLoan)}
+                      subtext={`@ ${formatPercent(effectiveRate)} ${t.effectiveRate}`}
                     />
-                    <KPICard 
-                        label={t.netEquityY30} 
-                        value={formatCurrency(finalNetEquity)} 
-                        subtext={`${roi.toFixed(1)}% ${t.roi}`} 
-                        highlight 
+                    <KPICard
+                      label={t.netEquityY30}
+                      value={formatCurrency(finalNetEquity)}
+                      subtext={`${roi.toFixed(1)}% ${t.roi}`}
+                      highlight
                     />
                   </div>
 
                   {/* Monthly Cashflow Analysis */}
                   <Card title={t.monthlyCashflow} subtitle={t.incomeVsCost}>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.bondIncome}</div>
-                            <div className="text-xl font-serif text-[#059669] flex items-center">
-                              <PlusCircle className="w-4 h-4 mr-2" />
-                              {formatCurrency(monthlyBondIncome)}
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.loanInterest}</div>
-                            <div className="text-xl font-serif text-[#991b1b] flex items-center">
-                              <MinusCircle className="w-4 h-4 mr-2" />
-                              {formatCurrency(monthlyLoanInterest)}
-                            </div>
-                          </div>
-                          {fundSource === 'mortgage' && (
-                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                               <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.mtgCost}</div>
-                               <div className="text-xl font-serif text-orange-700 flex items-center">
-                                 <Home className="w-4 h-4 mr-2" />
-                                 {formatCurrency(monthlyMortgagePmt)}
-                               </div>
-                             </div>
-                          )}
-                          <div className="pt-4">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">{t.netMonthlyCashflow}</div>
-                            <div className={`text-3xl font-serif font-medium ${monthlyNetCashflow >= 0 ? 'text-slate-900' : 'text-[#991b1b]'}`}>
-                              {monthlyNetCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyNetCashflow)}
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.bondIncome}</div>
+                          <div className="text-xl font-serif text-[#059669] flex items-center">
+                            <PlusCircle className="w-4 h-4 mr-2" />
+                            {formatCurrency(monthlyBondIncome)}
                           </div>
                         </div>
-                        
-                        <div className="h-48 w-full border-l border-slate-100 pl-8">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart 
-                                layout="vertical" 
-                                data={[
-                                  { name: t.income, value: monthlyBondIncome, fill: THEME.success },
-                                  { name: t.intCost, value: monthlyLoanInterest, fill: THEME.danger },
-                                  ...(fundSource === 'mortgage' ? [{ name: t.mtgCost, value: monthlyMortgagePmt, fill: THEME.orange }] : [])
-                                ]}
-                                margin={{ top: 0, right: 30, left: 30, bottom: 0 }}
-                                barSize={24}
-                            >
-                                <XAxis type="number" hide />
-                                <YAxis 
-                                  dataKey="name" 
-                                  type="category" 
-                                  tickLine={false} 
-                                  axisLine={false} 
-                                  width={60}
-                                  tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }} 
-                                />
-                                <Tooltip 
-                                  cursor={{fill: '#f1f5f9'}}
-                                  formatter={(value: number) => formatCurrency(value)}
-                                  contentStyle={{ borderRadius: '4px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                                  {
-                                    [THEME.success, THEME.danger, THEME.orange].map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={entry} />
-                                    ))
-                                  }
-                                </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
+                        <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.loanInterest}</div>
+                          <div className="text-xl font-serif text-[#991b1b] flex items-center">
+                            <MinusCircle className="w-4 h-4 mr-2" />
+                            {formatCurrency(monthlyLoanInterest)}
+                          </div>
+                        </div>
+                        {fundSource === 'mortgage' && (
+                          <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.mtgCost}</div>
+                            <div className="text-xl font-serif text-orange-700 flex items-center">
+                              <Home className="w-4 h-4 mr-2" />
+                              {formatCurrency(monthlyMortgagePmt)}
+                            </div>
+                          </div>
+                        )}
+                        <div className="pt-4">
+                          <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">{t.netMonthlyCashflow}</div>
+                          <div className={`text-3xl font-serif font-medium ${monthlyNetCashflow >= 0 ? 'text-slate-900' : 'text-[#991b1b]'}`}>
+                            {monthlyNetCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyNetCashflow)}
+                          </div>
                         </div>
                       </div>
+
+                      <div className="h-48 w-full border-l border-slate-100 pl-8">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            layout="vertical"
+                            data={[
+                              { name: t.income, value: monthlyBondIncome, fill: THEME.success },
+                              { name: t.intCost, value: monthlyLoanInterest, fill: THEME.danger },
+                              ...(fundSource === 'mortgage' ? [{ name: t.mtgCost, value: monthlyMortgagePmt, fill: THEME.orange }] : [])
+                            ]}
+                            margin={{ top: 0, right: 30, left: 30, bottom: 0 }}
+                            barSize={24}
+                          >
+                            <XAxis type="number" hide />
+                            <YAxis
+                              dataKey="name"
+                              type="category"
+                              tickLine={false}
+                              axisLine={false}
+                              width={60}
+                              tick={{ fontSize: 10, fontWeight: 600, fill: '#64748b' }}
+                            />
+                            <Tooltip
+                              cursor={{ fill: '#f1f5f9' }}
+                              formatter={(value: number) => formatCurrency(value)}
+                              contentStyle={{ borderRadius: '4px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            />
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                              {
+                                [THEME.success, THEME.danger, THEME.orange].map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry} />
+                                ))
+                              }
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
                   </Card>
 
                   {/* Diagram */}
                   <Card title={t.structureVis} subtitle={t.fundFlow}>
-                    <FlowDiagram 
-                      budget={budget} 
-                      cash={cashReserve} 
-                      bond={netBondPrincipal} 
-                      equity={pfEquity} 
-                      loan={bankLoan} 
-                      premium={totalPremium} 
+                    <FlowDiagram
+                      budget={budget}
+                      cash={cashReserve}
+                      bond={netBondPrincipal}
+                      equity={pfEquity}
+                      loan={bankLoan}
+                      premium={totalPremium}
                       labels={t}
                       sourceType={fundSource}
                     />
@@ -2136,9 +2106,9 @@ const App = () => {
               )}
 
               {activeView === 'returnStudio' && (
-                <ReturnStudio 
-                  data={projectionData} 
-                  labels={t} 
+                <ReturnStudio
+                  data={projectionData}
+                  labels={t}
                   bondYield={bondYield}
                   loanRate={effectiveRate}
                 />
@@ -2146,123 +2116,123 @@ const App = () => {
 
               {activeView === 'holdings' && (
                 <>
-                   {/* Chart */}
+                  {/* Chart */}
                   <Card title={t.projectedPerf} subtitle={t.horizon30y}>
                     <div className="h-[400px] w-full mt-4">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={projectionData} margin={{ top: 10, right: 100, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="colorPolicy" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.navy} stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor={THEME.navy} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.navy} stopOpacity={0.8} />
+                              <stop offset="95%" stopColor={THEME.navy} stopOpacity={0.05} />
                             </linearGradient>
                             <linearGradient id="colorBond" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.gold} stopOpacity={0.6}/>
-                              <stop offset="95%" stopColor={THEME.gold} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.gold} stopOpacity={0.6} />
+                              <stop offset="95%" stopColor={THEME.gold} stopOpacity={0.05} />
                             </linearGradient>
                             <linearGradient id="colorBondInt" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.goldHighlight} stopOpacity={0.6}/>
-                              <stop offset="95%" stopColor={THEME.goldHighlight} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.goldHighlight} stopOpacity={0.6} />
+                              <stop offset="95%" stopColor={THEME.goldHighlight} stopOpacity={0.05} />
                             </linearGradient>
                             <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.success} stopOpacity={0.6}/>
-                              <stop offset="95%" stopColor={THEME.success} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.success} stopOpacity={0.6} />
+                              <stop offset="95%" stopColor={THEME.success} stopOpacity={0.05} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                          <XAxis 
-                            dataKey="year" 
-                            stroke="#94a3b8" 
-                            fontSize={10} 
-                            tickLine={false} 
-                            axisLine={false}
-                            tickMargin={15}
-                            fontFamily="sans-serif"
-                          />
-                          <YAxis 
-                            stroke="#94a3b8" 
-                            fontSize={10} 
-                            tickFormatter={(val) => `$${val/1000000}M`}
+                          <XAxis
+                            dataKey="year"
+                            stroke="#94a3b8"
+                            fontSize={10}
                             tickLine={false}
                             axisLine={false}
                             tickMargin={15}
                             fontFamily="sans-serif"
                           />
-                          <Tooltip 
+                          <YAxis
+                            stroke="#94a3b8"
+                            fontSize={10}
+                            tickFormatter={(val) => `$${val / 1000000}M`}
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={15}
+                            fontFamily="sans-serif"
+                          />
+                          <Tooltip
                             formatter={(value: number) => formatCurrency(value)}
-                            contentStyle={{ 
-                              backgroundColor: '#020617', 
-                              border: 'none', 
+                            contentStyle={{
+                              backgroundColor: '#020617',
+                              border: 'none',
                               color: '#fff',
                               fontFamily: 'sans-serif'
                             }}
                             itemStyle={{ color: '#fff' }}
                             labelStyle={{ fontWeight: 'bold', color: '#c5a059', marginBottom: '5px' }}
                           />
-                          <Area 
-                            type="monotone" 
-                            dataKey="cumulativeBondInterest" 
-                            stackId="1" 
-                            stroke={THEME.goldHighlight} 
-                            fill="url(#colorBondInt)" 
+                          <Area
+                            type="monotone"
+                            dataKey="cumulativeBondInterest"
+                            stackId="1"
+                            stroke={THEME.goldHighlight}
+                            fill="url(#colorBondInt)"
                             name={t.bondInt}
                             label={(props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} />}
                           />
-                          <Area 
-                            type="monotone" 
-                            dataKey="cashValue" 
-                            stackId="1" 
-                            stroke={THEME.success} 
-                            fill="url(#colorCash)" 
-                            name={t.cash} 
+                          <Area
+                            type="monotone"
+                            dataKey="cashValue"
+                            stackId="1"
+                            stroke={THEME.success}
+                            fill="url(#colorCash)"
+                            name={t.cash}
                             label={(props) => <CustomLabel {...props} name={t.cash} color={THEME.success} />}
                           />
-                          <Area 
-                            type="monotone" 
-                            dataKey="bondPrincipal" 
-                            stackId="1" 
-                            stroke={THEME.gold} 
-                            fill="url(#colorBond)" 
-                            name={t.bond} 
+                          <Area
+                            type="monotone"
+                            dataKey="bondPrincipal"
+                            stackId="1"
+                            stroke={THEME.gold}
+                            fill="url(#colorBond)"
+                            name={t.bond}
                             label={(props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} />}
                           />
-                          <Area 
-                            type="monotone" 
-                            dataKey="surrenderValue" 
-                            stackId="1" 
-                            stroke={THEME.navy} 
-                            fill="url(#colorPolicy)" 
-                            name={t.policy} 
+                          <Area
+                            type="monotone"
+                            dataKey="surrenderValue"
+                            stackId="1"
+                            stroke={THEME.navy}
+                            fill="url(#colorPolicy)"
+                            name={t.policy}
                             label={(props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} />}
                           />
-                          <Line 
-                            type="monotone" 
-                            dataKey="loan" 
-                            stroke={THEME.danger} 
-                            strokeWidth={2} 
-                            strokeDasharray="4 4" 
-                            dot={false} 
-                            name={t.loan} 
+                          <Line
+                            type="monotone"
+                            dataKey="loan"
+                            stroke={THEME.danger}
+                            strokeWidth={2}
+                            strokeDasharray="4 4"
+                            dot={false}
+                            name={t.loan}
                             label={(props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} />}
                           />
                           {fundSource === 'mortgage' && (
-                             <Line 
-                                type="monotone" 
-                                dataKey="mortgageBalance" 
-                                stroke={THEME.orange} 
-                                strokeWidth={2} 
-                                strokeDasharray="2 2" 
-                                dot={false} 
-                                name={t.mortgageBalance} 
-                             />
+                            <Line
+                              type="monotone"
+                              dataKey="mortgageBalance"
+                              stroke={THEME.orange}
+                              strokeWidth={2}
+                              strokeDasharray="2 2"
+                              dot={false}
+                              name={t.mortgageBalance}
+                            />
                           )}
-                          <Line 
-                            type="monotone" 
-                            dataKey="netEquity" 
-                            stroke="#000" 
-                            strokeWidth={3} 
-                            dot={false} 
-                            name={t.netEquity} 
+                          <Line
+                            type="monotone"
+                            dataKey="netEquity"
+                            stroke="#000"
+                            strokeWidth={3}
+                            dot={false}
+                            name={t.netEquity}
                             label={(props) => <CustomLabel {...props} name={t.netEquity} color="#020617" />}
                           />
                         </ComposedChart>
@@ -2271,18 +2241,18 @@ const App = () => {
                   </Card>
 
                   {/* Table */}
-                  <Card 
-                    title={t.ledgerStatement} 
+                  <Card
+                    title={t.ledgerStatement}
                     subtitle={t.fiscalYearBreakdown}
                     className="overflow-hidden"
                     action={
-                        <button 
-                          onClick={handleExportCSV}
-                          className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#020617] transition-colors uppercase tracking-wider group"
-                        >
-                          <Download className="w-4 h-4 text-[#c5a059] group-hover:text-[#020617]" />
-                          {t.exportData}
-                        </button>
+                      <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#020617] transition-colors uppercase tracking-wider group"
+                      >
+                        <Download className="w-4 h-4 text-[#c5a059] group-hover:text-[#020617]" />
+                        {t.exportData}
+                      </button>
                     }
                   >
                     <div className="overflow-x-auto max-h-[500px]">
@@ -2329,20 +2299,20 @@ const App = () => {
                 <div className="space-y-8 animate-in fade-in duration-500">
                   {/* KPI Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <KPICard 
-                      label={t.lowestNetEquity} 
-                      value={formatCurrency(stressStats.lowestEquity)} 
+                    <KPICard
+                      label={t.lowestNetEquity}
+                      value={formatCurrency(stressStats.lowestEquity)}
                       subtext="Projected Minimum"
                       alert={stressStats.lowestEquity < 0}
                     />
-                    <KPICard 
-                      label={t.breakEvenHibor} 
-                      value={formatPercent(stressStats.breakEvenHibor)} 
+                    <KPICard
+                      label={t.breakEvenHibor}
+                      value={formatPercent(stressStats.breakEvenHibor)}
                       subtext="Net Carry Neutral"
                     />
-                    <KPICard 
-                      label="Max LTV" 
-                      value={formatPercent(Math.max(...stressedProjection.map(d => d.ltv)))} 
+                    <KPICard
+                      label="Max LTV"
+                      value={formatPercent(Math.max(...stressedProjection.map(d => d.ltv)))}
                       subtext={t.marginCallThreshold}
                       alert={Math.max(...stressedProjection.map(d => d.ltv)) > 90}
                     />
@@ -2355,18 +2325,18 @@ const App = () => {
                         <AreaChart data={stressedProjection} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id="colorBaseline" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.navy} stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor={THEME.navy} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.navy} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={THEME.navy} stopOpacity={0.05} />
                             </linearGradient>
                             <linearGradient id="colorStressed" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={THEME.danger} stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor={THEME.danger} stopOpacity={0.05}/>
+                              <stop offset="5%" stopColor={THEME.danger} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={THEME.danger} stopOpacity={0.05} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                           <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                          <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `$${val/1000000}M`} tickLine={false} axisLine={false} />
-                          <Tooltip formatter={(val:number) => formatCurrency(val)} />
+                          <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `$${val / 1000000}M`} tickLine={false} axisLine={false} />
+                          <Tooltip formatter={(val: number) => formatCurrency(val)} />
                           <Legend />
                           <Area type="monotone" dataKey="baselineNetEquity" name={t.baseline} stroke={THEME.navy} fill="url(#colorBaseline)" strokeWidth={2} />
                           <Area type="monotone" dataKey="netEquity" name={t.stressed} stroke={THEME.danger} fill="url(#colorStressed)" strokeWidth={2} />
@@ -2376,183 +2346,183 @@ const App = () => {
                   </Card>
 
                   {/* Heatmap */}
-                  <Card 
-                    title={t.sensitivityAnalysis} 
+                  <Card
+                    title={t.sensitivityAnalysis}
                     subtitle={`Net Equity @ Year ${sensitivityYear} (${t.stressed})`}
                     action={
                       <div className="flex items-center gap-2">
-                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{t.analysisYear}:</span>
-                         <select 
-                            value={sensitivityYear} 
-                            onChange={(e) => setSensitivityYear(Number(e.target.value))}
-                            className="bg-slate-100 border-none text-xs font-bold text-slate-700 rounded py-1 pl-2 pr-2 cursor-pointer focus:ring-1 focus:ring-[#c5a059] outline-none"
-                         >
-                            {[10, 15, 20, 25, 30].map(y => (
-                               <option key={y} value={y}>Year {y}</option>
-                            ))}
-                         </select>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{t.analysisYear}:</span>
+                        <select
+                          value={sensitivityYear}
+                          onChange={(e) => setSensitivityYear(Number(e.target.value))}
+                          className="bg-slate-100 border-none text-xs font-bold text-slate-700 rounded py-1 pl-2 pr-2 cursor-pointer focus:ring-1 focus:ring-[#c5a059] outline-none"
+                        >
+                          {[10, 15, 20, 25, 30].map(y => (
+                            <option key={y} value={y}>Year {y}</option>
+                          ))}
+                        </select>
                       </div>
                     }
                   >
-                     <div className="mt-6 overflow-x-auto pb-4">
-                        <Heatmap 
-                           xLabels={sensitivityData.xLabels} 
-                           yLabels={sensitivityData.yLabels} 
-                           data={sensitivityData.data} 
-                        />
-                     </div>
-                     <div className="mt-4 pt-4 border-t border-slate-100">
-                        <h4 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-2">
-                          <Activity className="w-3 h-3 text-[#c5a059]" />
-                          {t.interpretation}
-                        </h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">
-                          {t.heatmapLegend}
-                        </p>
-                     </div>
+                    <div className="mt-6 overflow-x-auto pb-4">
+                      <Heatmap
+                        xLabels={sensitivityData.xLabels}
+                        yLabels={sensitivityData.yLabels}
+                        data={sensitivityData.data}
+                      />
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-[#c5a059]" />
+                        {t.interpretation}
+                      </h4>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {t.heatmapLegend}
+                      </p>
+                    </div>
                   </Card>
                 </div>
               )}
 
               {activeView === 'systemConfig' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
-                   {/* Data Feeds Config */}
-                   <Card title={t.dataFeeds} subtitle="Market Data Integration">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-4">
-                               <div className="flex items-center gap-3">
-                                  <Server className="w-5 h-5 text-slate-600" />
-                                  <h4 className="text-sm font-bold text-slate-800">HIBOR Source</h4>
-                               </div>
-                               <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${dataSource === 'live' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
-                                  {dataSource} Mode
-                               </span>
-                            </div>
-                            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                               Select the primary source for Interbank rates. 'Live' pulls from the active Bloomberg Terminal integration. 'Manual' allows override for scenario planning.
-                            </p>
-                            <SelectField 
-                               label="Primary Feed" 
-                               value={dataSource} 
-                               onChange={setDataSource}
-                               options={[{value: 'live', label: 'Bloomberg (Live)'}, {value: 'manual', label: 'Manual Input'}]}
-                            />
-                            
-                            {/* Caching Source Details */}
-                            {dataSource === 'live' && (
-                              <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
-                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                       <LinkIcon className="w-3 h-3" />
-                                       <span className="font-bold">{t.sourceUrl}</span>
-                                    </div>
-                                    <a href="https://www.hkab.org.hk/tc/rates/hibor" target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#c5a059] hover:underline truncate max-w-[150px]">
-                                       hkab.org.hk/tc/rates/hibor
-                                    </a>
-                                 </div>
-                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                       <span className="font-bold">{t.cachingStatus}</span>
-                                    </div>
-                                    <span className="text-[10px] text-emerald-600 font-mono">
-                                       {isFetchingRates ? 'Syncing...' : 'Cached (LocalStorage)'}
-                                    </span>
-                                 </div>
-                                 <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                                       <Clock className="w-3 h-3" />
-                                       <span className="font-bold">{t.lastUpdated}</span>
-                                    </div>
-                                    <span className="text-[10px] text-slate-500 font-mono">
-                                       {lastRateUpdate ? lastRateUpdate.toLocaleTimeString() : 'Pending...'}
-                                    </span>
-                                 </div>
+                  {/* Data Feeds Config */}
+                  <Card title={t.dataFeeds} subtitle="Market Data Integration">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Server className="w-5 h-5 text-slate-600" />
+                            <h4 className="text-sm font-bold text-slate-800">HIBOR Source</h4>
+                          </div>
+                          <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${dataSource === 'live' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {dataSource} Mode
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                          Select the primary source for Interbank rates. 'Live' pulls from the active Bloomberg Terminal integration. 'Manual' allows override for scenario planning.
+                        </p>
+                        <SelectField
+                          label="Primary Feed"
+                          value={dataSource}
+                          onChange={setDataSource}
+                          options={[{ value: 'live', label: 'Bloomberg (Live)' }, { value: 'manual', label: 'Manual Input' }]}
+                        />
+
+                        {/* Caching Source Details */}
+                        {dataSource === 'live' && (
+                          <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2 text-xs text-slate-600">
+                                <LinkIcon className="w-3 h-3" />
+                                <span className="font-bold">{t.sourceUrl}</span>
                               </div>
-                            )}
-                         </div>
-
-                         <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
-                            <div className="flex items-center justify-between mb-4">
-                               <div className="flex items-center gap-3">
-                                  <Database className="w-5 h-5 text-slate-600" />
-                                  <h4 className="text-sm font-bold text-slate-800">NAV Calculation</h4>
-                               </div>
-                               <RefreshCw className="w-4 h-4 text-slate-400" />
+                              <a href="https://www.hkab.org.hk/tc/rates/hibor" target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#c5a059] hover:underline truncate max-w-[150px]">
+                                hkab.org.hk/tc/rates/hibor
+                              </a>
                             </div>
-                            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                               Configure the update frequency for Net Asset Value calculations on collateralized bond funds.
-                            </p>
-                            <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-200">
-                               <span className="text-xs font-bold text-slate-600">Frequency</span>
-                               <span className="text-sm font-serif text-[#020617]">Daily (EOD)</span>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2 text-xs text-slate-600">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span className="font-bold">{t.cachingStatus}</span>
+                              </div>
+                              <span className="text-[10px] text-emerald-600 font-mono">
+                                {isFetchingRates ? 'Syncing...' : 'Cached (LocalStorage)'}
+                              </span>
                             </div>
-                         </div>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2 text-xs text-slate-600">
+                                <Clock className="w-3 h-3" />
+                                <span className="font-bold">{t.lastUpdated}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                {lastRateUpdate ? lastRateUpdate.toLocaleTimeString() : 'Pending...'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                   </Card>
 
-                   {/* Global Risk Limits */}
-                   <Card title={t.riskLimits} subtitle="Bank-wide Controls">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <InputField 
-                            label={t.globalMinSpread} 
-                            value={globalMinSpread} 
-                            onChange={setGlobalMinSpread} 
-                            step={0.05} 
-                            suffix="%" 
-                         />
-                         <InputField 
-                            label={t.globalMaxLtv} 
-                            value={globalMaxLTV} 
-                            onChange={setGlobalMaxLTV} 
-                            step={1} 
-                            suffix="%" 
-                         />
+                      <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Database className="w-5 h-5 text-slate-600" />
+                            <h4 className="text-sm font-bold text-slate-800">NAV Calculation</h4>
+                          </div>
+                          <RefreshCw className="w-4 h-4 text-slate-400" />
+                        </div>
+                        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                          Configure the update frequency for Net Asset Value calculations on collateralized bond funds.
+                        </p>
+                        <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-200">
+                          <span className="text-xs font-bold text-slate-600">Frequency</span>
+                          <span className="text-sm font-serif text-[#020617]">Daily (EOD)</span>
+                        </div>
                       </div>
-                      <div className="mt-2 p-4 bg-yellow-50 border border-yellow-100 rounded flex items-start gap-3">
-                         <AlertTriangle className="w-5 h-5 text-yellow-600 flex-none mt-0.5" />
-                         <div>
-                            <h5 className="text-xs font-bold text-yellow-800 uppercase tracking-wide mb-1">Override Warning</h5>
-                            <p className="text-xs text-yellow-700 leading-relaxed">
-                               Changing these global parameters will trigger a compliance review for all existing proposals currently in "Draft" status.
-                            </p>
-                         </div>
-                      </div>
-                   </Card>
+                    </div>
+                  </Card>
 
-                   {/* Compliance & Regulatory */}
-                   <Card title={t.compliance} subtitle="Jurisdiction Settings">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                         <SelectField 
-                            label={t.regulatoryMode} 
-                            value={regulatoryMode} 
-                            onChange={setRegulatoryMode}
-                            options={[{value: 'hkma', label: 'HKMA (Hong Kong)'}, {value: 'mas', label: 'MAS (Singapore)'}]}
-                         />
-                         <ToggleField 
-                            label={t.autoHedging} 
-                            checked={autoHedging} 
-                            onChange={setAutoHedging} 
-                         />
+                  {/* Global Risk Limits */}
+                  <Card title={t.riskLimits} subtitle="Bank-wide Controls">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <InputField
+                        label={t.globalMinSpread}
+                        value={globalMinSpread}
+                        onChange={setGlobalMinSpread}
+                        step={0.05}
+                        suffix="%"
+                      />
+                      <InputField
+                        label={t.globalMaxLtv}
+                        value={globalMaxLTV}
+                        onChange={setGlobalMaxLTV}
+                        step={1}
+                        suffix="%"
+                      />
+                    </div>
+                    <div className="mt-2 p-4 bg-yellow-50 border border-yellow-100 rounded flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 flex-none mt-0.5" />
+                      <div>
+                        <h5 className="text-xs font-bold text-yellow-800 uppercase tracking-wide mb-1">Override Warning</h5>
+                        <p className="text-xs text-yellow-700 leading-relaxed">
+                          Changing these global parameters will trigger a compliance review for all existing proposals currently in "Draft" status.
+                        </p>
                       </div>
-                      <div className="border-t border-slate-100 pt-6">
-                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Disclaimer Preview</h4>
-                         <div className="p-4 bg-slate-50 border border-slate-200 rounded text-[10px] text-slate-500 font-mono leading-relaxed">
-                            {regulatoryMode === 'hkma' 
-                               ? "This document is for High Net Worth Individuals only. The risks of borrowing to finance the purchase of an insurance policy are significant. If the value of your policy falls below a certain level, you may be called upon to pay margin."
-                               : "This document is intended for Accredited Investors. Leverage involves a high degree of risk. Ensure you understand the impact of currency fluctuation and interest rate hikes on your net equity."
-                            }
-                         </div>
+                    </div>
+                  </Card>
+
+                  {/* Compliance & Regulatory */}
+                  <Card title={t.compliance} subtitle="Jurisdiction Settings">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                      <SelectField
+                        label={t.regulatoryMode}
+                        value={regulatoryMode}
+                        onChange={setRegulatoryMode}
+                        options={[{ value: 'hkma', label: 'HKMA (Hong Kong)' }, { value: 'mas', label: 'MAS (Singapore)' }]}
+                      />
+                      <ToggleField
+                        label={t.autoHedging}
+                        checked={autoHedging}
+                        onChange={setAutoHedging}
+                      />
+                    </div>
+                    <div className="border-t border-slate-100 pt-6">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Disclaimer Preview</h4>
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded text-[10px] text-slate-500 font-mono leading-relaxed">
+                        {regulatoryMode === 'hkma'
+                          ? "This document is for High Net Worth Individuals only. The risks of borrowing to finance the purchase of an insurance policy are significant. If the value of your policy falls below a certain level, you may be called upon to pay margin."
+                          : "This document is intended for Accredited Investors. Leverage involves a high degree of risk. Ensure you understand the impact of currency fluctuation and interest rate hikes on your net equity."
+                        }
                       </div>
-                   </Card>
+                    </div>
+                  </Card>
                 </div>
               )}
 
             </div>
           </div>
         </div>
-        
+
         {/* Footer with Disclaimer */}
         <footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50">
           <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
