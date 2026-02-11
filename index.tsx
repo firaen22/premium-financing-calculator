@@ -199,7 +199,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
   const t = TRANSLATIONS[lang];
 
   const PageContainer = ({ children, pageNum }: any) => (
-    <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-12 overflow-hidden flex flex-col font-serif">
+    <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-8 overflow-hidden flex flex-col font-serif">
       <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
           <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">PRIVATE Wealth</div>
@@ -218,7 +218,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
   );
 
   const SectionTitle = ({ title, subtitle }: any) => (
-    <div className="mb-8">
+    <div className="mb-4">
       <h2 className="text-3xl font-serif text-slate-900 mb-2">{title}</h2>
       <div className="w-16 h-1 bg-[#c5a059] mb-3"></div>
       {subtitle && <p className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em]">{subtitle}</p>}
@@ -308,11 +308,11 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
         <SectionTitle title={t.capitalAllocation} subtitle="Asset Structure & Funding Source" />
 
         {/* Concept Diagram Section */}
-        <div className="mt-6 bg-slate-50 border border-slate-100 rounded p-6">
+        <div className="mt-2 bg-slate-50 border border-slate-100 rounded p-4">
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
             {t.strategyConcept}
           </div>
-          <div className="min-h-[480px] flex items-center justify-center overflow-visible">
+          <div className="min-h-[460px] flex items-center justify-center overflow-visible">
             <FlowDiagram
               budget={budget}
               cash={cashReserve}
@@ -1327,7 +1327,7 @@ const FlowDiagram = ({
   return (
     <div className="w-full flex justify-center py-4">
       {/* Increased viewBox width to 500 for more breathing room for larger blocks, height to 600 */}
-      <svg viewBox="0 0 500 600" className="w-full h-full max-w-[500px]">
+      <svg viewBox="0 0 550 500" className="w-full h-full max-w-[500px]">
         <defs>
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.1" />
@@ -1340,7 +1340,7 @@ const FlowDiagram = ({
           </marker>
         </defs>
 
-        <g transform="translate(45,20) scale(1.0)">
+        <g transform="translate(25,10) scale(1.0)">
           {/* Level 1: Capital */}
           <g filter="url(#shadow)">
             <rect x="130" y="10" width="240" height="80" rx="8" fill="#ffffff" stroke={sourceType === 'mortgage' ? '#f59e0b' : '#e2e8f0'} strokeWidth={sourceType === 'mortgage' ? 2 : 1} />
@@ -1356,66 +1356,67 @@ const FlowDiagram = ({
           </g>
 
           {/* Connectors */}
-          <path d="M250 90 L 250 120" fill="none" stroke="#cbd5e1" strokeWidth="1.5" />
-          <path d="M250 120 L 85 120 L 85 140" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
-          <path d="M250 120 L 415 120 L 415 140" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
-          <path d="M250 120 L 250 260" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          {/* Connectors */}
+          <path d="M250 90 L 250 110" fill="none" stroke="#cbd5e1" strokeWidth="1.5" />
+          <path d="M250 110 L 85 110 L 85 125" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          <path d="M250 110 L 415 110 L 415 125" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          <path d="M250 110 L 250 210" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
 
           {/* Level 2 Left: Liquidity */}
           <g filter="url(#shadow)">
-            <rect x="10" y="140" width="150" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-            <circle cx="45" cy="180" r="20" fill="#f0fdf4" stroke="#dcfce7" />
-            <Wallet x={33} y={168} width={24} height={24} stroke="#15803d" strokeWidth={1.5} />
-            <text x={75} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.liquidity}</text>
-            <text x={75} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(cash)}</text>
+            <rect x="10" y="110" width="150" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+            <circle cx="45" cy="150" r="20" fill="#f0fdf4" stroke="#dcfce7" />
+            <Wallet x={33} y={138} width={24} height={24} stroke="#15803d" strokeWidth={1.5} />
+            <text x={75} y={135} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.liquidity}</text>
+            <text x={75} y={160} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(cash)}</text>
           </g>
 
           {/* Level 2 Right: Yield Fund */}
           <g filter="url(#shadow)">
-            <rect x="330" y="140" width="170" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
-            <circle cx="365" cy="180" r="20" fill="#fefce8" stroke="#fef9c3" />
-            <TrendingUp x={353} y={168} width={24} height={24} stroke="#ca8a04" strokeWidth={1.5} />
-            <text x={395} y={165} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.yieldFundNet}</text>
-            <text x={395} y={190} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
+            <rect x="330" y="110" width="170" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+            <circle cx="365" cy="150" r="20" fill="#fefce8" stroke="#fef9c3" />
+            <TrendingUp x={353} y={138} width={24} height={24} stroke="#ca8a04" strokeWidth={1.5} />
+            <text x={395} y={135} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.yieldFundNet}</text>
+            <text x={395} y={160} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
           </g>
 
           {/* Level 3: Policy Initial */}
           <g filter="url(#shadow)">
-            <rect x="150" y="260" width="200" height="80" rx="8" fill="#ffffff" stroke="#020617" strokeWidth="2" />
-            <circle cx="190" cy="300" r="22" fill="#f1f5f9" stroke="#e2e8f0" />
-            <FileText x={178} y={288} width={24} height={24} stroke="#334155" strokeWidth={1.5} />
-            <text x={225} y={285} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.policyEquityCaps}</text>
-            <text x={225} y={312} textAnchor="start" fill="#0f172a" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
+            <rect x="150" y="210" width="200" height="80" rx="8" fill="#ffffff" stroke="#020617" strokeWidth="2" />
+            <circle cx="190" cy="250" r="22" fill="#f1f5f9" stroke="#e2e8f0" />
+            <FileText x={178} y={238} width={24} height={24} stroke="#334155" strokeWidth={1.5} />
+            <text x={225} y={235} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.policyEquityCaps}</text>
+            <text x={225} y={262} textAnchor="start" fill="#0f172a" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
           </g>
 
           {/* Connector Premium to Exposure */}
-          <path d="M250 340 L 250 450" fill="none" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          <path d="M250 290 L 250 380" fill="none" stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#arrow)" />
 
           {/* Junction Point */}
-          <circle cx="250" cy="395" r="4" fill="#94a3b8" />
+          <circle cx="250" cy="340" r="4" fill="#94a3b8" />
 
           {/* Bank Loan (New Rectangle) */}
           <g filter="url(#shadow)">
-            <rect x="20" y="360" width="160" height="70" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="1" />
-            <circle cx="50" cy="395" r="20" fill="#fffbeb" stroke="#fcd34d" />
-            <Landmark x={38} y={383} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
-            <text x={80} y={382} textAnchor="start" fill="#b45309" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.leverage}</text>
-            <text x={80} y={405} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(loan)}</text>
+            <rect x="20" y="305" width="160" height="70" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="1" />
+            <circle cx="50" cy="340" r="20" fill="#fffbeb" stroke="#fcd34d" />
+            <Landmark x={38} y={328} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
+            <text x={80} y={327} textAnchor="start" fill="#b45309" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.leverage}</text>
+            <text x={80} y={350} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(loan)}</text>
           </g>
 
           {/* Connector Loan to Junction */}
-          <path d="M180 395 L 246 395" fill="none" stroke="#c5a059" strokeWidth="1.5" strokeDasharray="4 4" markerEnd="url(#arrow)" />
+          <path d="M180 340 L 246 340" fill="none" stroke="#c5a059" strokeWidth="1.5" strokeDasharray="4 4" markerEnd="url(#arrow)" />
 
           {/* Level 4: Total Exposure */}
           <g filter="url(#shadow)">
-            <rect x="90" y="450" width="320" height="100" rx="8" fill="#020617" stroke="#020617" strokeWidth="1" />
-            <rect x="94" y="454" width="312" height="92" rx="6" fill="none" stroke="#1e293b" strokeWidth="1" />
+            <rect x="90" y="380" width="320" height="100" rx="8" fill="#020617" stroke="#020617" strokeWidth="1" />
+            <rect x="94" y="384" width="312" height="92" rx="6" fill="none" stroke="#1e293b" strokeWidth="1" />
 
-            <circle cx="135" cy="500" r="26" fill="#1e293b" stroke="#334155" />
-            <Shield x={119} y={484} width={32} height={32} stroke="#c5a059" strokeWidth={1.5} />
+            <circle cx="135" cy="430" r="26" fill="#1e293b" stroke="#334155" />
+            <Shield x={119} y={414} width={32} height={32} stroke="#c5a059" strokeWidth={1.5} />
 
-            <text x={175} y={488} textAnchor="start" fill="#94a3b8" fontSize="10" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.totalExposure}</text>
-            <text x={175} y={520} textAnchor="start" fill="#ffffff" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
+            <text x={175} y={418} textAnchor="start" fill="#94a3b8" fontSize="10" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.totalExposure}</text>
+            <text x={175} y={450} textAnchor="start" fill="#ffffff" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
           </g>
 
         </g>
