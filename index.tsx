@@ -71,6 +71,14 @@ const PrintStyles = () => (
         background: white !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+        display: block !important;
+      }
+      #root {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
       #root > aside,
       #root > main > header,
@@ -83,13 +91,18 @@ const PrintStyles = () => (
       }
       .pdf-only {
         display: block !important;
+        width: 297mm !important;
+        height: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
         position: relative !important;
         visibility: visible !important;
         z-index: 9999 !important;
+        box-sizing: border-box !important;
       }
       .page-break {
-        page-break-after: always;
-        break-after: page;
+        page-break-after: always !important;
+        break-after: page !important;
       }
     }
     .pdf-only {
@@ -2311,21 +2324,8 @@ const App = () => {
   // --- Render ---
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex font-sans">
+    <div className="min-h-screen bg-[#f1f5f9] flex font-sans no-print">
       <PrintStyles />
-      <PDFProposal
-        projectionData={projectionData}
-        lang={lang}
-        budget={budget}
-        totalPremium={totalPremium}
-        bankLoan={bankLoan}
-        roi={roi}
-        netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
-        propertyValue={propertyValue}
-        unlockedCash={unlockedCash}
-        hibor={hibor}
-        currentMtgRate={effectiveMortgageRate}
-      />
 
       {/* Sidebar */}
       <Sidebar
@@ -3235,6 +3235,22 @@ const App = () => {
         </footer >
 
       </main >
+
+      <div className="pdf-container">
+        <PDFProposal
+          projectionData={projectionData}
+          lang={lang}
+          budget={budget}
+          totalPremium={totalPremium}
+          bankLoan={bankLoan}
+          roi={roi}
+          netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+          propertyValue={propertyValue}
+          unlockedCash={unlockedCash}
+          hibor={hibor}
+          currentMtgRate={effectiveMortgageRate}
+        />
+      </div>
     </div >
   );
 };
