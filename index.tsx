@@ -62,41 +62,37 @@ import {
 
 const PrintStyles = () => (
   <style>{`
-    /* 1. Hide on screen but keep layout for calculations */
+    /* 1. Logic for Screen / Preview */
     @media screen {
       .pdf-only:not(.force-preview .pdf-only) {
         position: absolute !important;
         left: -9999px !important;
-        top: 0 !important;
         visibility: hidden !important;
-        width: 1050px !important;
-        height: 742px !important; /* Must provide initial height for charts */
-        pointer-events: none !important;
+      }
+      /* Width in Preview Mode */
+      .force-preview .pdf-only {
+        width: 1123px !important; /* Corresponds to 297mm in pixels */
+        margin: 0 auto !important;
       }
     }
 
-    /* 2. Show in print */
+    /* 2. Logic for PDF Print */
     @media print {
       @page {
         size: A4 landscape;
         margin: 0;
       }
-      body {
-        background: white !important;
-        -webkit-print-color-adjust: exact;
-      }
+      .no-print { display: none !important; }
       .pdf-only {
         display: block !important;
         visibility: visible !important;
         position: relative !important;
         left: 0 !important;
-        width: 297mm !important;
+        width: 297mm !important; /* Force A4 width */
         height: 210mm !important;
         margin: 0 !important;
         padding: 0 !important;
-        z-index: 9999 !important;
       }
-      .no-print { display: none !important; }
     }
   `}</style>
 );

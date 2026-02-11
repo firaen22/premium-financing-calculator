@@ -63,7 +63,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1123, height: 794 });
+    await page.setViewport({
+      width: 1123,
+      height: 794,
+      deviceScaleFactor: 2
+    });
 
     // Set content and include CSS
     const fullHtml = `
@@ -92,9 +96,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await page.emulateMediaType('print');
 
     const pdf = await page.pdf({
+      format: 'A4',
+      landscape: true,
       printBackground: true,
-      preferCSSPageSize: true, // Respect @page size (A4 landscape)
-      scale: 1, // Prevent shrinking
+      preferCSSPageSize: true, // Force use of CSS @page size
       margin: {
         top: '0px',
         right: '0px',
