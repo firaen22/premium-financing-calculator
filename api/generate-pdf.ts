@@ -9,6 +9,10 @@ const R2_ACCESS_KEY_ID = (process.env.R2_ACCESS_KEY_ID || '').trim();
 const R2_SECRET_ACCESS_KEY = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
 const R2_BUCKET_NAME = (process.env.R2_BUCKET_NAME || '').trim();
 
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
+  console.error('Missing R2 environment variables');
+}
+
 const s3 = new S3Client({
   region: 'auto',
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -16,7 +20,7 @@ const s3 = new S3Client({
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
   },
-  forcePathStyle: true, // Sometimes helps with compatibility
+  forcePathStyle: true,
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
