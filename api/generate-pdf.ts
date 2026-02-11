@@ -48,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </html>
     `;
 
-    await page.setContent(fullHtml, { waitUntil: 'load', timeout: 60000 });
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 60000 });
     await page.emulateMediaType('print');
 
     const pdf = await page.pdf({

@@ -106,11 +106,11 @@ const PrintStyles = () => (
       }
     }
     .pdf-only {
-      position: fixed;
+      position: absolute;
       left: -9999px;
       top: 0;
       width: 1050px;
-      opacity: 0;
+      visibility: hidden;
       pointer-events: none;
     }
     .force-preview .pdf-only {
@@ -1472,21 +1472,21 @@ const InputField = ({
   disabled = false
 }: any) => (
   <div className="mb-8 relative group">
-    <label className="absolute -top-2.5 left-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white pr-2 transition-colors group-focus-within:text-[#c5a059]">
+    <label className="absolute -top-3 left-0 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white pr-2 transition-colors group-focus-within:text-[#c5a059]">
       {label}
     </label>
-    <div className="relative pt-1">
-      {prefix && <span className="absolute left-0 bottom-2 text-slate-400 font-serif text-lg">{prefix}</span>}
+    <div className="relative pt-2">
+      {prefix && <span className="absolute left-0 bottom-3 text-slate-400 font-serif text-lg">{prefix}</span>}
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         step={step}
         disabled={disabled}
-        className={`w-full bg-transparent border-b border-slate-200 text-slate-900 font-serif text-xl py-1 focus:ring-0 focus:border-[#c5a059] focus:outline-none block transition-colors ${prefix ? 'pl-6' : ''} ${suffix ? 'pr-8' : ''} disabled:text-slate-300 disabled:cursor-not-allowed`}
+        className={`w-full bg-transparent border-b border-slate-200 text-slate-900 font-serif text-xl py-2 focus:ring-0 focus:border-[#c5a059] focus:outline-none block transition-colors ${prefix ? 'pl-6' : ''} ${suffix ? 'pr-8' : ''} disabled:text-slate-300 disabled:cursor-not-allowed`}
         placeholder="0"
       />
-      {suffix && <span className="absolute right-0 bottom-2 text-slate-400 text-xs font-medium uppercase">{suffix}</span>}
+      {suffix && <span className="absolute right-0 bottom-3 text-slate-400 text-[10px] font-bold uppercase tracking-wider">{suffix}</span>}
     </div>
   </div>
 );
@@ -2128,19 +2128,17 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang, onDown
           })}
         </nav>
 
-        <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50 space-y-4">
-          <div className="mt-auto pt-6 border-t border-slate-100">
-            <button
-              onClick={() => activeView === 'pdfPreview' ? onDownloadPDF() : onNavigate('pdfPreview')}
-              disabled={isGeneratingPDF}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50"
-            >
-              {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : activeView === 'pdfPreview' ? <Download className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
-              {activeView === 'pdfPreview'
-                ? (lang === 'en' ? 'Download PDF' : '導出報告')
-                : (lang === 'en' ? 'Generate Report' : '生成報告')}
-            </button>
-          </div>
+        <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50">
+          <button
+            onClick={() => activeView === 'pdfPreview' ? onDownloadPDF() : onNavigate('pdfPreview')}
+            disabled={isGeneratingPDF}
+            className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 disabled:opacity-50 active:scale-95"
+          >
+            {isGeneratingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : activeView === 'pdfPreview' ? <Download className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+            {activeView === 'pdfPreview'
+              ? (lang === 'en' ? 'Download PDF' : '導出報告')
+              : (lang === 'en' ? 'Generate Report' : '生成報告')}
+          </button>
 
           <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono">
             <span>v2.5.0 (Server-Side)</span>
