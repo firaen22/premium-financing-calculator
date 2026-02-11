@@ -312,7 +312,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
             {t.strategyConcept}
           </div>
-          <div className="min-h-[500px] flex items-center justify-center overflow-visible">
+          <div className="min-h-[480px] flex items-center justify-center overflow-visible">
             <FlowDiagram
               budget={budget}
               cash={cashReserve}
@@ -1340,7 +1340,7 @@ const FlowDiagram = ({
           </marker>
         </defs>
 
-        <g transform="translate(40,20) scale(1.1)">
+        <g transform="translate(45,20) scale(1.0)">
           {/* Level 1: Capital */}
           <g filter="url(#shadow)">
             <rect x="130" y="10" width="240" height="80" rx="8" fill="#ffffff" stroke={sourceType === 'mortgage' ? '#f59e0b' : '#e2e8f0'} strokeWidth={sourceType === 'mortgage' ? 2 : 1} />
