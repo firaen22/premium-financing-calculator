@@ -3,30 +3,30 @@ import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    const { html, css } = req.body;
+  const { html, css } = req.body;
 
-    if (!html) {
-        return res.status(400).json({ error: 'HTML content missing' });
-    }
+  if (!html) {
+    return res.status(400).json({ error: 'HTML content missing' });
+  }
 
-    let browser = null;
+  let browser = null;
 
-    try {
-        browser = await puppeteer.launch({
-            args: chromium.args,
-            executablePath: await chromium.executablePath(),
-            // @ts-ignore
-            headless: chromium.headless,
-        });
+  try {
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      // @ts-ignore
+      headless: chromium.headless,
+    });
 
-        const page = await browser.newPage();
+    const page = await browser.newPage();
 
-        // Set content and include CSS
-        const fullHtml = `
+    // Set content and include CSS
+    const fullHtml = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -48,30 +48,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </html>
     `;
 
-        await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(fullHtml, { waitUntil: 'load', timeout: 60000 });
+    await page.emulateMediaType('print');
 
-        const pdf = await page.pdf({
-            format: 'A4',
-            landscape: true,
-            printBackground: true,
-            margin: {
-                top: '0px',
-                right: '0px',
-                bottom: '0px',
-                left: '0px',
-            }
-        });
+    const pdf = await page.pdf({
+      format: 'A4',
+      landscape: true,
+      printBackground: true,
+      margin: {
+        top: '0px',
+        right: '0px',
+        bottom: '0px',
+        left: '0px',
+      }
+    });
 
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename=premium-financing-proposal.pdf');
-        return res.status(200).send(pdf);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=proposal.pdf');
+    res.end(pdf);
 
-    } catch (error: any) {
-        console.error('PDF Generation Error:', error);
-        return res.status(500).json({ error: error.message });
-    } finally {
-        if (browser !== null) {
-            await browser.close();
-        }
+  } catch (error: any) {
+    console.error('PDF Generation Error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to generate PDF' });
+  } finally {
+    if (browser !== null) {
+      await browser.close();
     }
+  }
 }

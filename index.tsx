@@ -106,8 +106,12 @@ const PrintStyles = () => (
       }
     }
     .pdf-only {
-      display: none !important;
-      visibility: hidden;
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 1050px;
+      opacity: 0;
+      pointer-events: none;
     }
     .force-preview .pdf-only {
       display: block !important;
@@ -2779,36 +2783,47 @@ const App = () => {
     setIsGeneratingPDF(true);
 
     try {
-      // Capture the HTML content of the PDF container
       const htmlContent = pdfRef.current.innerHTML;
-
-      // Get styles (optional, keeping it simple as cdn tailwind is in API)
-      const cssStyles = `
-        @page { size: A4 landscape; margin: 0; }
-        .pdf-only { display: block !important; width: 297mm !important; height: 210mm !important; }
-        .page-break { page-break-after: always !important; break-after: page !important; }
-      `;
+      const styleTags = Array.from(document.querySelectorAll('style')).map(s => s.innerHTML).join('\n');
+      const styles = styleTags;
 
       const response = await fetch('/api/generate-pdf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlContent, css: cssStyles }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          html: htmlContent,
+          css: styles
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to generate PDF');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server Error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/pdf')) {
+        const errorText = await response.text();
+        throw new Error(`Invalid content type: ${contentType}. Response: ${errorText}`);
+      }
 
       const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('PDF is empty');
+      }
+
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Premium-Financing-Proposal-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `premium-financing-proposal-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (error: any) {
       console.error('PDF Generation Error:', error);
-      alert('Error generating PDF. Please try printing from your browser.');
+      alert(`Error generating PDF: ${error.message}`);
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -3859,8 +3874,9 @@ const App = () => {
           </p>
         </footer >
 
-      </main >
+      </main>
 
+      {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */}
       <div className="pdf-container" ref={pdfRef}>
         <PDFProposal
           projectionData={projectionData}
@@ -3878,11 +3894,12 @@ const App = () => {
           netBondPrincipal={netBondPrincipal}
           pfEquity={pfEquity}
           fundSource={fundSource}
+          sensitivityData={sensitivityData}
           clientName={clientName}
           representativeName={representativeName}
         />
       </div>
-    </div >
+    </div>
   );
 };
 
