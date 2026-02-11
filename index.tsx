@@ -192,7 +192,7 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
   );
 };
 
-const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate }: any) => {
+const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource }: any) => {
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
 
@@ -304,49 +304,71 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
       {/* Page 3: Capital Allocation */}
       <PageContainer pageNum={3}>
         <SectionTitle title={isZh ? '資本分配' : 'Capital Allocation'} subtitle="Asset Structure & Funding Source" />
-        <div className="grid grid-cols-12 gap-10 mt-10">
-          <div className="col-span-5 space-y-8">
-            <div className="bg-slate-50 p-8 rounded border border-slate-100">
-              <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-6">Funding Source Analysis</div>
-              <div className="space-y-6">
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                  <span className="text-xs text-slate-600">Property Valuation</span>
-                  <span className="text-lg font-serif">{formatCurrency(propertyValue)}</span>
-                </div>
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                  <span className="text-xs text-slate-600">Mortgage Refinance (Unlocked)</span>
-                  <span className="text-lg font-serif text-[#c5a059]">{formatCurrency(unlockedCash)}</span>
-                </div>
-                <div className="flex justify-between items-end">
-                  <span className="text-xs font-bold text-slate-900 uppercase">Effective Strategy Budget</span>
-                  <span className="text-xl font-serif text-slate-900 font-bold underline decoration-[#c5a059] underline-offset-4">{formatCurrency(budget)}</span>
-                </div>
+
+        {/* Concept Diagram Section */}
+        <div className="mt-6 bg-slate-50 border border-slate-100 rounded p-6">
+          <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
+            {isZh ? '方案概念圖' : 'STRATEGY CONCEPT DIAGRAM'}
+          </div>
+          <FlowDiagram
+            budget={budget}
+            cash={cashReserve}
+            bond={netBondPrincipal}
+            equity={pfEquity}
+            loan={bankLoan}
+            premium={totalPremium}
+            labels={{
+              capital: isZh ? '資本' : 'CAPITAL',
+              liquidity: isZh ? '流動現金' : 'LIQUID CASH',
+              yieldFundNet: isZh ? '收益基金 (淨)' : 'YIELD FUND (NET)',
+              policyEquityCaps: isZh ? '初始保費' : 'INITIAL PREMIUM',
+              leverage: isZh ? '銀行貸款' : 'BANK LOAN',
+              totalExposure: isZh ? 'AIA 資本保全保單' : 'AIA CAPITAL PRESERVED POLICY'
+            }}
+            sourceType={fundSource}
+          />
+        </div>
+
+        {/* Funding Details */}
+        <div className="grid grid-cols-2 gap-8 mt-8">
+          <div className="bg-white p-6 rounded border border-slate-100 shadow-sm">
+            <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4">
+              {isZh ? '資金來源分析' : 'Funding Source Analysis'}
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-end border-b border-slate-100 pb-2">
+                <span className="text-xs text-slate-600">{isZh ? '物業估值' : 'Property Valuation'}</span>
+                <span className="text-sm font-serif">{formatCurrency(propertyValue)}</span>
+              </div>
+              <div className="flex justify-between items-end border-b border-slate-100 pb-2">
+                <span className="text-xs text-slate-600">{isZh ? '按揭再融資（已解鎖）' : 'Mortgage Refinance (Unlocked)'}</span>
+                <span className="text-sm font-serif text-[#c5a059]">{formatCurrency(unlockedCash)}</span>
+              </div>
+              <div className="flex justify-between items-end">
+                <span className="text-xs font-bold text-slate-900 uppercase">{isZh ? '有效策略預算' : 'Effective Strategy Budget'}</span>
+                <span className="text-lg font-serif text-slate-900 font-bold">{formatCurrency(budget)}</span>
               </div>
             </div>
-            <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-wider">
-              Strategy utilizes non-liquid property equity to construct a diversified portfolio of $2M fixed income and $1.3M high-value life insurance protection.
-            </p>
           </div>
-          <div className="col-span-7">
-            <div className="bg-white border border-slate-100 p-8 shadow-sm h-full flex flex-col justify-center">
-              <div className="text-center mb-8">
-                <div className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-2">Portfolio Composition</div>
-                <div className="text-3xl font-serif text-slate-900">{formatCurrency(budget)}</div>
-              </div>
-              <div className="flex justify-center gap-12">
-                {[
-                  { l: "Insurance", v: 1300000, color: "#c5a059" },
-                  { l: "Bond Fund", v: 2000000, color: "#020617" },
-                ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center mb-3" style={{ borderColor: item.color }}>
-                      <div className="text-xs font-bold font-mono">{((item.v / 3300000) * 100).toFixed(0)}%</div>
-                    </div>
-                    <div className="text-[10px] font-bold uppercase text-slate-600">{item.l}</div>
-                    <div className="text-xs font-serif text-slate-400">{formatCurrency(item.v)}</div>
+
+          <div className="bg-white p-6 rounded border border-slate-100 shadow-sm">
+            <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4">
+              {isZh ? '投資組合構成' : 'Portfolio Composition'}
+            </div>
+            <div className="flex justify-center gap-8 mt-6">
+              {[
+                { l: isZh ? '保險' : 'Insurance', v: totalPremium, color: '#c5a059' },
+                { l: isZh ? '債券基金' : 'Bond Fund', v: netBondPrincipal, color: '#020617' },
+                { l: isZh ? '現金儲備' : 'Cash Reserve', v: cashReserve, color: '#15803d' },
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full border-3 flex items-center justify-center mb-2" style={{ borderColor: item.color, borderWidth: '3px' }}>
+                    <div className="text-[9px] font-bold font-mono">{((item.v / budget) * 100).toFixed(0)}%</div>
                   </div>
-                ))}
-              </div>
+                  <div className="text-[9px] font-bold uppercase text-slate-600 text-center">{item.l}</div>
+                  <div className="text-[10px] font-serif text-slate-400">{formatCurrency(item.v)}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -3334,6 +3356,10 @@ const App = () => {
                         unlockedCash={unlockedCash}
                         hibor={hibor}
                         currentMtgRate={effectiveMortgageRate}
+                        cashReserve={cashReserve}
+                        netBondPrincipal={netBondPrincipal}
+                        pfEquity={pfEquity}
+                        fundSource={fundSource}
                       />
                     </div>
                   </div>
@@ -3369,6 +3395,10 @@ const App = () => {
           unlockedCash={unlockedCash}
           hibor={hibor}
           currentMtgRate={effectiveMortgageRate}
+          cashReserve={cashReserve}
+          netBondPrincipal={netBondPrincipal}
+          pfEquity={pfEquity}
+          fundSource={fundSource}
         />
       </div>
     </div >
