@@ -53,12 +53,452 @@ import {
   Link as LinkIcon,
   CheckCircle2,
   Clock,
-  Home
+  Home,
+  Play,
+  Check,
+  Loader2,
+  Printer
 } from 'lucide-react';
 
-// --- Constants & Data ---
+const PrintStyles = () => (
+  <style>{`
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }
+      body {
+        background: white !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      #root > aside,
+      #root > main > header,
+      #root > main > .p-4,
+      #root > main > .p-6,
+      #root > main > .p-8,
+      #root > main > .p-10,
+      .no-print {
+        display: none !important;
+      }
+      .pdf-only {
+        display: block !important;
+        position: relative !important;
+        visibility: visible !important;
+        z-index: 9999 !important;
+      }
+      .page-break {
+        page-break-after: always;
+        break-after: page;
+      }
+    }
+    .pdf-only {
+      display: none !important;
+      visibility: hidden;
+    }
+  `}</style>
+);
 
-// Base factors for "Standard" plan
+const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: any) => {
+  if (!dataY10 || !dataY15 || !dataY20 || !dataY30) return null;
+
+  const isZh = lang !== 'en';
+  const exchangeRate = 7.8;
+
+  const years = [dataY10, dataY15, dataY20, dataY30];
+
+  const rowStyle = "grid grid-cols-5 border-b border-slate-100 py-2 text-[10px]";
+  const headerStyle = "grid grid-cols-5 border-b border-slate-900 py-2 text-[10px] font-bold uppercase tracking-wider bg-slate-50";
+  const sectionHeaderStyle = "bg-slate-900 text-white px-3 py-1 text-[10px] font-bold uppercase tracking-widest mt-4";
+
+  const f = (val: number, currency: 'USD' | 'HKD') => {
+    const amount = currency === 'HKD' ? val * exchangeRate : val;
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const CalculationRow = ({ label, labelZh, dataKey, isNeg = false }: any) => (
+    <div className={rowStyle}>
+      <div className="pl-3 font-medium text-slate-700">{isZh ? labelZh : label}</div>
+      {years.map((y, i) => (
+        <div key={i} className={`text-right pr-4 font-mono ${isNeg ? 'text-red-600' : 'text-slate-900'}`}>
+          {isNeg ? `(${f(y[dataKey], 'USD')})` : f(y[dataKey], 'USD')}
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="w-full">
+      <div className={headerStyle}>
+        <div className="pl-3">{isZh ? '項目' : 'ITEM'}</div>
+        <div className="text-right pr-4">Year 10 (USD)</div>
+        <div className="text-right pr-4">Year 15 (USD)</div>
+        <div className="text-right pr-4">Year 20 (USD)</div>
+        <div className="text-right pr-4">Year 30 (USD)</div>
+      </div>
+
+      <div className={sectionHeaderStyle}>{isZh ? '傳承給下一代 / 取消計劃 (淨資産)' : 'NET EQUITY / INHERITANCE'}</div>
+      <CalculationRow label="Policy Surrender Value (AIA)" labelZh="退保價值：AIA友邦保單" dataKey="surrenderValue" />
+      <CalculationRow label="Bond Principal (Net)" labelZh="銀行資產" dataKey="bondPrincipal" />
+      <CalculationRow label="Reserve Cash" labelZh="備用現金" dataKey="cashValue" />
+      <CalculationRow label="(Less) Policy Loan" labelZh="減：保單貸款" dataKey="loan" isNeg />
+      <CalculationRow label="(Less) Mortgage Balance" labelZh="減：按揭餘額" dataKey="mortgageBalance" isNeg />
+
+      <div className={sectionHeaderStyle}>{isZh ? '經營方案現金流 (累計收益)' : 'CUMULATIVE CASH FLOW'}</div>
+      <CalculationRow label="Cumulative Bond Interest" labelZh="加：債券基金利息 (累計)" dataKey="cumulativeBondInterest" />
+      <CalculationRow label="(Less) Cumulative Mortgage Payments" labelZh="減：按揭供款 (累計)" dataKey="cumulativeMortgageCost" isNeg />
+      <CalculationRow label="(Less) Cumulative Loan Interests" labelZh="減：保單貸款利息 (累計)" dataKey="cumulativeInterest" isNeg />
+
+      <div className="grid grid-cols-5 bg-slate-100 py-3 mt-4 border-y border-slate-900 font-bold">
+        <div className="pl-3 text-xs">{isZh ? '預計淨資産 (USD)' : 'NET EQUITY (USD)'}</div>
+        {years.map((y, i) => (
+          <div key={i} className="text-right pr-4 text-xs font-mono">
+            {f(y ? y.netEquity : 0, 'USD')}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-5 bg-slate-100/50 py-3 border-b border-slate-900 font-bold">
+        <div className="pl-3 text-xs font-serif text-[#c5a059]">{isZh ? '預計淨資産 (HKD)' : 'NET EQUITY (HKD)'}</div>
+        {years.map((y, i) => (
+          <div key={i} className="text-right pr-4 text-xs font-mono text-[#c5a059]">
+            {f(y ? y.netEquity : 0, 'HKD')}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate }: any) => {
+  if (!projectionData || projectionData.length < 31) return null;
+  const isZh = lang !== 'en';
+
+  const PageContainer = ({ children, pageNum }: any) => (
+    <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-12 overflow-hidden flex flex-col font-serif">
+      <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+        <div className="flex items-center gap-2">
+          <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">PRIVATE Wealth</div>
+          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none">Financing<br />Strategy</div>
+        </div>
+        <div className="text-[10px] text-slate-400 uppercase tracking-widest">Page {pageNum} of 8</div>
+      </div>
+      <div className="flex-1">
+        {children}
+      </div>
+      <div className="mt-6 flex justify-between items-end border-t border-slate-100 pt-4 text-[9px] text-slate-300">
+        <div>STRICTLY CONFIDENTIAL • FOR PROFESSIONAL ADVISOR USE ONLY</div>
+        <div>{new Date().toLocaleDateString()} • REF: PF-2024-8921</div>
+      </div>
+    </div>
+  );
+
+  const SectionTitle = ({ title, subtitle }: any) => (
+    <div className="mb-8">
+      <h2 className="text-3xl font-serif text-slate-900 mb-2">{title}</h2>
+      <div className="w-16 h-1 bg-[#c5a059] mb-3"></div>
+      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em]">{subtitle}</p>
+    </div>
+  );
+
+  const dataY10 = projectionData[10];
+  const dataY15 = projectionData[15];
+  const dataY20 = projectionData[20];
+  const dataY30 = projectionData[projectionData.length - 1];
+
+  return (
+    <>
+      {/* Page 1: Cover */}
+      <div className="pdf-only page-break bg-slate-900 w-[297mm] h-[210mm] relative p-16 flex flex-col justify-center overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-[#c5a059] opacity-10 -skew-x-12 translate-x-20"></div>
+        <div className="relative border-l-4 border-[#c5a059] pl-10">
+          <div className="text-white text-lg font-serif tracking-[0.3em] uppercase mb-4 opacity-60">Wealth Management</div>
+          <h1 className="text-white text-7xl font-serif leading-tight mb-8">
+            Premium Financing<br />
+            <span className="text-[#c5a059]">Strategic Proposal</span>
+          </h1>
+          <div className="w-32 h-1 bg-[#c5a059] mb-12"></div>
+          <div className="space-y-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Prepared For</div>
+              <div className="text-2xl text-white font-serif opacity-90">Estate of Mr. H.N.W.</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Presented By</div>
+              <div className="text-xl text-white font-serif opacity-90 italic">Private Wealth Advisory Team</div>
+            </div>
+          </div>
+        </div>
+        <div className="absolute bottom-16 right-16 text-right">
+          <div className="text-4xl text-white font-serif opacity-20 mb-2 italic">Strictly Private</div>
+          <div className="text-xs text-white/40 font-mono tracking-widest uppercase">{new Date().getFullYear()} COLLECTION</div>
+        </div>
+      </div>
+
+      {/* Page 2: Executive Summary */}
+      <PageContainer pageNum={2}>
+        <SectionTitle title={isZh ? '執行摘要' : 'Executive Summary'} subtitle="Strategic Overview & Objectives" />
+        <div className="grid grid-cols-2 gap-12 mt-10">
+          <div className="space-y-8">
+            <div className="bg-slate-50 p-8 border border-slate-100 italic text-slate-600 leading-relaxed text-sm">
+              "This proposal outlines a tax-efficient wealth enhancement strategy utilizing high-quality fixed income assets and universal life insurance. By leveraging existing property equity, we aim to augment the total estate value while maintaining a neutral net-carry position."
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white border-l-2 border-slate-900 p-4 shadow-sm">
+                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">Target Net Equity (Y30)</div>
+                <div className="text-2xl font-serif text-slate-900 mb-1">{formatCurrency(netEquityAt30)}</div>
+                <div className="text-[9px] text-emerald-600 font-bold">PROJECTION SUCCESS</div>
+              </div>
+              <div className="bg-white border-l-2 border-[#c5a059] p-4 shadow-sm">
+                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">Projected ROI (Annual)</div>
+                <div className="text-2xl font-serif text-[#c5a059] mb-1">{roi.toFixed(1)}%</div>
+                <div className="text-[9px] text-[#c5a059] font-bold italic">OPTIMIZED STRUCTURE</div>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 flex items-center gap-2">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Key Objectives
+            </h4>
+            <div className="space-y-4">
+              {[
+                { t: "Asset Diversification", d: "Reallocating property equity into liquid financial instruments and insurance protection." },
+                { t: "Liquidity Enhancement", d: "Maintaining accessible cash reserves while keeping assets fully productive." },
+                { t: "Estate Maximization", d: "Structuring for efficient inter-generational wealth transfer (Inheritance)." }
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[8px] font-bold mt-1 shrink-0">{i + 1}</div>
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-900 uppercase tracking-wider">{item.t}</div>
+                    <div className="text-[10px] text-slate-500 leading-relaxed">{item.d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 3: Capital Allocation */}
+      <PageContainer pageNum={3}>
+        <SectionTitle title={isZh ? '資本分配' : 'Capital Allocation'} subtitle="Asset Structure & Funding Source" />
+        <div className="grid grid-cols-12 gap-10 mt-10">
+          <div className="col-span-5 space-y-8">
+            <div className="bg-slate-50 p-8 rounded border border-slate-100">
+              <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-6">Funding Source Analysis</div>
+              <div className="space-y-6">
+                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                  <span className="text-xs text-slate-600">Property Valuation</span>
+                  <span className="text-lg font-serif">{formatCurrency(propertyValue)}</span>
+                </div>
+                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                  <span className="text-xs text-slate-600">Mortgage Refinance (Unlocked)</span>
+                  <span className="text-lg font-serif text-[#c5a059]">{formatCurrency(unlockedCash)}</span>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-bold text-slate-900 uppercase">Effective Strategy Budget</span>
+                  <span className="text-xl font-serif text-slate-900 font-bold underline decoration-[#c5a059] underline-offset-4">{formatCurrency(budget)}</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-500 leading-relaxed uppercase tracking-wider">
+              Strategy utilizes non-liquid property equity to construct a diversified portfolio of $2M fixed income and $1.3M high-value life insurance protection.
+            </p>
+          </div>
+          <div className="col-span-7">
+            <div className="bg-white border border-slate-100 p-8 shadow-sm h-full flex flex-col justify-center">
+              <div className="text-center mb-8">
+                <div className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-2">Portfolio Composition</div>
+                <div className="text-3xl font-serif text-slate-900">{formatCurrency(budget)}</div>
+              </div>
+              <div className="flex justify-center gap-12">
+                {[
+                  { l: "Insurance", v: 1300000, color: "#c5a059" },
+                  { l: "Bond Fund", v: 2000000, color: "#020617" },
+                ].map((item, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className="w-24 h-24 rounded-full border-4 flex items-center justify-center mb-3" style={{ borderColor: item.color }}>
+                      <div className="text-xs font-bold font-mono">{((item.v / 3300000) * 100).toFixed(0)}%</div>
+                    </div>
+                    <div className="text-[10px] font-bold uppercase text-slate-600">{item.l}</div>
+                    <div className="text-xs font-serif text-slate-400">{formatCurrency(item.v)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 4: Performance Studio */}
+      <PageContainer pageNum={4}>
+        <SectionTitle title={isZh ? '表現分析' : 'Performance Studio'} subtitle="30-Year Financial Projection" />
+        <div className="mt-6 border border-slate-100 p-8 rounded bg-white">
+          <div className="h-96 w-full flex items-center justify-center border-2 border-dashed border-slate-100 text-slate-300 italic text-sm">
+            [30Y Wealth Accumulation Chart Placeholder - Integrated Recharts would render here]
+          </div>
+          <div className="grid grid-cols-4 gap-8 mt-10">
+            {[
+              { y: 10, v: dataY10.netEquity, g: dataY10.cumulativeNetGain },
+              { y: 20, v: dataY20.netEquity, g: dataY20.cumulativeNetGain },
+              { y: 30, v: dataY30.netEquity, g: dataY30.cumulativeNetGain },
+              { y: 30, v: dataY30.surrenderValue, g: 0, l: "Base Policy" },
+            ].map((m, i) => (
+              <div key={i} className="text-center">
+                <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">{m.l || `Year ${m.y} Projection`}</div>
+                <div className="text-xl font-serif text-slate-900 border-b border-slate-100 pb-2 mb-2">{formatCurrency(m.v)}</div>
+                {m.g !== 0 && <div className="text-[9px] font-bold text-emerald-600 font-mono">+{formatCurrency(m.g)} Gain</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 5: Holdings Analysis */}
+      <PageContainer pageNum={5}>
+        <SectionTitle title={isZh ? '持倉分析' : 'Holdings Analysis'} subtitle="Asset Details & Financing Terms" />
+        <div className="grid grid-cols-2 gap-10 mt-10">
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
+              <Shield className="w-3 h-3 text-[#c5a059]" /> Insurance (AIA Global)
+            </h4>
+            <div className="bg-slate-50 rounded p-6 space-y-4 border border-slate-100 shadow-inner">
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Total Premium</span>
+                <span className="font-serif font-bold text-slate-900">{formatCurrency(totalPremium)}</span>
+              </div>
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Premium Financing (Loan)</span>
+                <span className="font-serif font-bold text-slate-900">{formatCurrency(bankLoan)}</span>
+              </div>
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Interest Calculation Basis</span>
+                <span className="font-mono text-slate-900 font-bold">1M HIBOR + 1.25%</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Financing LTV</span>
+                <span className="font-serif font-bold text-slate-900">90% of Day-1 CV</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
+              <Server className="w-3 h-3 text-blue-900" /> Fixed Income (Bond Fund)
+            </h4>
+            <div className="bg-slate-50 rounded p-6 space-y-4 border border-slate-100 shadow-inner">
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Fund Principal (Market Value)</span>
+                <span className="font-serif font-bold text-slate-900">$2,000,000</span>
+              </div>
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Target Annual Yield</span>
+                <span className="font-serif font-bold text-slate-900">8.50%</span>
+              </div>
+              <div className="flex justify-between text-xs pb-2 border-b border-white">
+                <span className="text-slate-500">Pledge to Bank</span>
+                <span className="font-sans font-bold text-slate-900">100% Secure Collateral</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-slate-500">Investment Status</span>
+                <span className="text-emerald-600 font-bold uppercase italic">Active Management</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 6: Detailed Calculations */}
+      <PageContainer pageNum={6}>
+        <SectionTitle title={isZh ? '詳細計算' : 'Detailed Calculations'} subtitle="Milestone Year Breakdowns (USD/HKD)" />
+        <div className="mt-8 bg-white border border-slate-200 rounded-sm shadow-sm p-4">
+          <DetailedCalculationTable
+            dataY10={dataY10}
+            dataY15={dataY15}
+            dataY20={dataY20}
+            dataY30={dataY30}
+            lang={lang}
+          />
+        </div>
+        <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded text-[9px] text-orange-800 leading-relaxed italic">
+          Disclaimer: Calculations above assume constant interest rates and fund yields as specified in the system parameters. Fluctuations in HIBOR or Prime Rate will impact the net carry and cumulative gain.
+        </div>
+      </PageContainer>
+
+      {/* Page 7: Risk Analysis */}
+      <PageContainer pageNum={7}>
+        <SectionTitle title={isZh ? '風險分析' : 'Risk Analysis'} subtitle="Stress Testing & Sensitivities" />
+        <div className="mt-10 grid grid-cols-2 gap-12">
+          <div className="space-y-8">
+            <div className="bg-red-50 p-6 border-l-4 border-red-500 rounded">
+              <h5 className="text-[10px] font-bold uppercase text-red-900 mb-2">Interest Rate Sensitivity</h5>
+              <p className="text-[10px] text-red-700 leading-relaxed">
+                A 2% increase in HIBOR would reduce the annual net carry by approximately $40,000. Break-even HIBOR for this strategy is 7.25%.
+              </p>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4">Risk Mitigation Strategies</h4>
+              <ul className="space-y-3 text-[10px] text-slate-600">
+                <li className="flex gap-2">
+                  <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
+                  <span>Interest Cap: Mortgage capping mechanism protects against extreme rate spikes.</span>
+                </li>
+                <li className="flex gap-2">
+                  <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
+                  <span>Collateral Buffer: $2M Bond fund provides significant equity cushion for the loan.</span>
+                </li>
+                <li className="flex gap-2">
+                  <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
+                  <span>Liquidity Reserve: $138k initial cash reserve held for unforeseen margin calls.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="bg-slate-50 p-8 rounded flex flex-col items-center justify-center border border-slate-100">
+            <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">STRESS MAP</div>
+            <div className="w-full grid grid-cols-5 grid-rows-5 gap-1 shrink-0">
+              {[...Array(25)].map((_, i) => (
+                <div key={i} className={`h-8 rounded-sm ${i < 10 ? 'bg-emerald-200' : i < 18 ? 'bg-orange-200' : 'bg-red-200'} opacity-60`}></div>
+              ))}
+            </div>
+            <div className="mt-4 text-[9px] text-slate-400 uppercase tracking-widest font-bold">Market Risk Heatmap (Simulated)</div>
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 8: Disclaimers */}
+      <PageContainer pageNum={8}>
+        <SectionTitle title={isZh ? '免責聲明' : 'Important Disclaimers'} subtitle="Terms, Conditions & Regulatory Notices" />
+        <div className="mt-10 overflow-y-auto max-h-[130mm] pr-4 space-y-6 text-[9px] text-slate-500 leading-relaxed text-justify">
+          <p>
+            This proposal is for illustrative purposes only and does not constitute an offer, solicitation or recommendation to purchase any insurance product or financial instrument. The information contained herein is based on current market conditions and assumptions which are subject to change without notice.
+          </p>
+          <p>
+            Investment involved risks. The price of units and the income from them may go down as well as up and any past performance figures shown are not indicative of future performance. You should not invest unless the intermediary who sells it to you has explained to you that the product is suitable for you having regard to your financial situation, investment experience and investment objectives.
+          </p>
+          <p>
+            Premium financing involves borrowing money to pay for life insurance premiums. This strategy carries risks including interest rate risk (should the cost of borrowing exceed the policy returns), margin call risk (should the collateral value fall below the bank's requirements), and policy surrender risk. Guaranteed and non-guaranteed values of the insurance policy are as illustrated by AIA (Hong Kong) and are subject to the carrier's performance and credit risk.
+          </p>
+          <p>
+            In the event of a cross-border solicitation (specifically for Mainland China residents), please note that this proposal is for informational use only and any transaction must be completed in accordance with the regulatory requirements of Hong Kong and the PRC. No solicitation of insurance business is intended within the mainland territory.
+          </p>
+          <div className="pt-10 border-t border-slate-100 mt-10">
+            <div className="flex justify-between">
+              <div className="w-48 border-b border-slate-400 h-10"></div>
+              <div className="w-48 border-b border-slate-400 h-10"></div>
+            </div>
+            <div className="flex justify-between mt-2 font-bold uppercase tracking-widest text-[8px] text-slate-400">
+              <span>Client Signature</span>
+              <span>Advisor Signature</span>
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+    </>
+  );
+};
+
 const BASE_FACTORS: { [key: number]: number } = {
   0: 0.8000, 1: 0.8000, 2: 0.8211, 3: 0.8442, 4: 0.8734, 5: 1.0066,
   6: 1.0838, 7: 1.1862, 8: 1.2407, 9: 1.2992, 10: 1.3879,
@@ -227,7 +667,22 @@ const TRANSLATIONS = {
     hSpread: "H + Spread (%)",
     pCap: "Cap (P - %)",
     effectiveMtgRate: "Effective Rate",
-    mtgRepaid: "Mtg Repaid (Principal)"
+    mtgRepaid: "Mtg Repaid (Principal)",
+    // Return Studio Specific
+    cumulativePerfPattern: "Cumulative Performance to Year {year}",
+    yieldLabel: "Yield",
+    organicGrowth: "Organic Growth",
+    pfInterest: "Premium Financing Interest",
+    netEquityDesc: "Total Assets - Liabilities",
+    chartStart: "Start",
+    chartBond: "Bond",
+    chartPolicy: "Policy",
+    chartInterest: "Interest",
+    chartEnd: "End",
+    equityWalkFooter: "*Equity Walk: Start Equity + Income + Growth - Interest + Debt Repaid = End Equity",
+    projectedMinimum: "Projected Minimum",
+    netCarryNeutral: "Net Carry Neutral",
+    netEquityAtYear: "Net Equity @ Year {year}"
   },
   zh_hk: {
     // ... existing translations ...
@@ -252,7 +707,7 @@ const TRANSLATIONS = {
     cashReserve: "現金儲備",
     bondFund: "債券基金",
     bondYield: "債券收益率 (%)",
-    policyEquity: "保單權益",
+    policyEquity: "保單首期",
     bankParams: "銀行參數",
     lendingTerms: "貸款條款",
     spread: "利差 (%)",
@@ -261,17 +716,17 @@ const TRANSLATIONS = {
     handlingFee: "基金手續費 (%)",
     oneOffDeduction: "一次性扣除",
     totalPolicyValue: "保單總值",
-    day1Exposure: "首日總敞口",
+    day1Exposure: "首日價值",
     lendingFacility: "貸款額度",
     effectiveRate: "實際利率",
     netEquityY30: "淨權益 (第30年)",
     roi: "投資回報率",
-    monthlyCashflow: "月度現金流",
-    incomeVsCost: "收入與成本分析 (第一年)",
+    monthlyCashflow: "現金流分析",
+    incomeVsCost: "",
     bondIncome: "債券收入",
     loanInterest: "貸款利息",
     netMonthlyCashflow: "淨月度現金流",
-    structureVis: "結構可視化",
+    structureVis: "方案概念圖",
     fundFlow: "資金流向",
     capital: "資本",
     liquidity: "流動資金",
@@ -306,7 +761,7 @@ const TRANSLATIONS = {
     closingEquity: "期末權益",
     netGain: "淨收益",
     annualRoC: "年度資本回報率",
-    attributionAnalysis: "回報歸因分析",
+
     policyGrowth: "保單增長",
     totalInflow: "總流入",
     costOfFunding: "融資成本",
@@ -362,7 +817,23 @@ const TRANSLATIONS = {
     hSpread: "H + 利差 (%)",
     pCap: "封頂息率 (P - %)",
     effectiveMtgRate: "實際按揭利率",
-    mtgRepaid: "已還本金"
+    mtgRepaid: "已償還貸款",
+    // Return Studio Specific
+    cumulativePerfPattern: "第 {year} 年的累計回報",
+    yieldLabel: "收益率",
+    organicGrowth: "有機成長",
+    pfInterest: "保單融資利息成本",
+    attributionAnalysis: "息差概念",
+    netEquityDesc: "總資產 － 總貸款",
+    chartStart: "起始資金",
+    chartBond: "債券收入",
+    chartPolicy: "保單增長",
+    chartInterest: "保融利息成本",
+    chartEnd: "回報",
+    equityWalkFooter: "圖表導覽：起始資金＋債券收入＋保單增長－保融利息成本＋已償還貸款＝回報",
+    projectedMinimum: "預計最差情況",
+    netCarryNeutral: "息差平衡",
+    netEquityAtYear: "第 {year} 年淨資產"
   },
   zh_cn: {
     // ... existing translations ...
@@ -387,7 +858,7 @@ const TRANSLATIONS = {
     cashReserve: "现金储备",
     bondFund: "债券基金",
     bondYield: "债券收益率 (%)",
-    policyEquity: "保单权益",
+    policyEquity: "保单首期",
     bankParams: "银行参数",
     lendingTerms: "贷款条款",
     spread: "利差 (%)",
@@ -396,17 +867,17 @@ const TRANSLATIONS = {
     handlingFee: "基金手续费 (%)",
     oneOffDeduction: "一次性扣除",
     totalPolicyValue: "保单总值",
-    day1Exposure: "首日总敞口",
+    day1Exposure: "首日价值",
     lendingFacility: "贷款额度",
     effectiveRate: "实际利率",
     netEquityY30: "净权益 (第30年)",
     roi: "投资回报率",
-    monthlyCashflow: "月度现金流",
-    incomeVsCost: "收入与成本分析 (第一年)",
+    monthlyCashflow: "现金流分析",
+    incomeVsCost: "",
     bondIncome: "债券收入",
     loanInterest: "贷款利息",
     netMonthlyCashflow: "净月度现金流",
-    structureVis: "结构可视化",
+    structureVis: "方案概念图",
     fundFlow: "资金流向",
     capital: "资本",
     liquidity: "流动资金",
@@ -441,7 +912,7 @@ const TRANSLATIONS = {
     closingEquity: "期末权益",
     netGain: "净收益",
     annualRoC: "年度资本回报率",
-    attributionAnalysis: "回报归因分析",
+
     policyGrowth: "保单增长",
     totalInflow: "总流入",
     costOfFunding: "融资成本",
@@ -497,8 +968,24 @@ const TRANSLATIONS = {
     hSpread: "H + 利差 (%)",
     pCap: "封顶息率 (P - %)",
     effectiveMtgRate: "实际按揭利率",
-    mtgRepaid: "已还本金"
-  }
+    mtgRepaid: "已偿还贷款",
+    // Return Studio Specific
+    cumulativePerfPattern: "第 {year} 年的累计回报",
+    yieldLabel: "收益率",
+    organicGrowth: "有机增长",
+    pfInterest: "保单融资利息成本",
+    attributionAnalysis: "息差概念",
+    netEquityDesc: "总资产 － 总贷款",
+    chartStart: "起始资金",
+    chartBond: "债券收入",
+    chartPolicy: "保单增长",
+    chartInterest: "保融利息成本",
+    chartEnd: "回报",
+    equityWalkFooter: "图表导览：起始资金＋债券收入＋保单增长－保融利息成本＋已偿还贷款＝回报",
+    projectedMinimum: "预计最差情况",
+    netCarryNeutral: "息差平衡",
+    netEquityAtYear: "第 {year} 年净资产"
+  },
 };
 
 type Language = 'en' | 'zh_hk' | 'zh_cn';
@@ -837,12 +1324,16 @@ const ReturnStudio = ({
   data,
   labels,
   bondYield,
-  loanRate
+  loanRate,
+  budget,
+  totalPremium
 }: {
   data: any[],
   labels: any,
   bondYield: number,
-  loanRate: number
+  loanRate: number,
+  budget: number,
+  totalPremium: number
 }) => {
   const [selectedYear, setSelectedYear] = useState(1);
 
@@ -860,13 +1351,19 @@ const ReturnStudio = ({
     const currentMtg = currData.mortgageBalance || 0;
     const mortgagePrincipalRepaid = Math.max(0, initialMtg - currentMtg);
 
+    // Calculate Policy P&L (Current Value - Cost Basis)
+    // Cost Basis = Total Premium Paid.
+    // Note: This differs from "Growth" which is usually Year over Year or from Day 0 Net Equity.
+    // Use this P&L to bridge the gap between "Budget" (Start) and "Net Equity" (End)
+    const policyPnL = currData.surrenderValue - totalPremium;
+
     return {
       year,
-      // Opening Equity is now Year 0 Equity (Initial Investment)
-      openingEquity: initialData.netEquity,
+      // Opening Equity is now the Initial Budget (User's Capital Input)
+      openingEquity: budget,
       // Cumulative Ledger Values
       bondIncome: currData.cumulativeBondInterest,
-      policyGrowth: currData.cumulativePolicyGrowth,
+      policyGrowth: policyPnL, // Renamed logic, keeps variable name for compatibility but represents P&L
       loanInterest: currData.cumulativeInterest,
       netGain: currData.cumulativeNetGain,
       closingEquity: currData.netEquity,
@@ -935,7 +1432,7 @@ const ReturnStudio = ({
       </div>
 
       {/* Waterfall / Breakdown Logic Visual */}
-      <Card title={labels.attributionAnalysis} subtitle={`Cumulative Performance to ${labels.year} ${selectedYear}`}>
+      <Card title={labels.attributionAnalysis} subtitle={labels.cumulativePerfPattern ? labels.cumulativePerfPattern.replace('{year}', selectedYear) : `Cumulative Performance to Year ${selectedYear}`}>
         <div className="flex flex-col lg:flex-row gap-12 mt-4">
 
           {/* Visual Equation */}
@@ -955,7 +1452,7 @@ const ReturnStudio = ({
                     </div>
                     <div>
                       <div className="text-sm font-bold text-slate-700">{labels.bondIncome}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">Yield: {bondYield.toFixed(2)}%</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{labels.yieldLabel}: {bondYield.toFixed(2)}%</div>
                     </div>
                   </div>
                   <div className="font-serif text-emerald-700 font-medium">{formatCurrency(stats.bondIncome)}</div>
@@ -968,7 +1465,7 @@ const ReturnStudio = ({
                     </div>
                     <div>
                       <div className="text-sm font-bold text-slate-700">{labels.policyGrowth}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">Organic Growth</div>
+                      <div className="text-[10px] text-slate-400 font-mono">{labels.organicGrowth}</div>
                     </div>
                   </div>
                   <div className={`font-serif font-medium ${stats.policyGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
@@ -1009,7 +1506,7 @@ const ReturnStudio = ({
                       <Landmark className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-700">{labels.pfInterest || "Premium Financing Interest"}</div>
+                      <div className="text-sm font-bold text-slate-700">{labels.pfInterest}</div>
                       <div className="text-[10px] text-slate-400 font-mono">Rate: {loanRate.toFixed(2)}%</div>
                     </div>
                   </div>
@@ -1042,8 +1539,8 @@ const ReturnStudio = ({
 
               <div className="flex items-center justify-between p-6 bg-[#020617] text-white rounded-lg shadow-lg">
                 <div>
-                  <div className="text-sm font-bold text-[#c5a059] uppercase tracking-wider mb-1">Net Equity</div>
-                  <div className="text-[10px] text-slate-400">Total Assets - Liabilities</div>
+                  <div className="text-sm font-bold text-[#c5a059] uppercase tracking-wider mb-1">{labels.netEquity}</div>
+                  <div className="text-[10px] text-slate-400">{labels.netEquityDesc}</div>
                 </div>
                 <div className="text-2xl font-serif">
                   {formatCurrency(stats.closingEquity)}
@@ -1057,17 +1554,26 @@ const ReturnStudio = ({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
-                  { name: 'Start', value: stats.openingEquity, fill: '#94a3b8' },
-                  { name: 'Bond', value: stats.bondIncome, fill: '#059669' },
-                  { name: 'Policy', value: stats.policyGrowth, fill: stats.policyGrowth >= 0 ? '#10b981' : '#ef4444' },
-                  { name: 'Interest', value: -stats.loanInterest, fill: '#dc2626' },
-                  ...(stats.mortgagePrincipalRepaid > 0 ? [{ name: 'Repaid', value: stats.mortgagePrincipalRepaid, fill: '#c5a059' }] : []),
-                  { name: 'End', value: stats.closingEquity, fill: '#0f172a' },
+                  { name: labels.chartStart, value: stats.openingEquity, fill: '#94a3b8' },
+                  { name: labels.chartBond, value: stats.bondIncome, fill: '#059669' },
+                  { name: labels.chartPolicy, value: stats.policyGrowth, fill: stats.policyGrowth >= 0 ? '#10b981' : '#ef4444' },
+                  { name: labels.chartInterest, value: -stats.loanInterest, fill: '#dc2626' },
+                  ...(stats.mortgagePrincipalRepaid > 0 ? [{ name: labels.mtgRepaid, value: stats.mortgagePrincipalRepaid, fill: '#c5a059' }] : []),
+                  { name: labels.chartEnd, value: stats.closingEquity, fill: '#0f172a' },
                 ]}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
                 <YAxis hide />
                 <Tooltip
                   formatter={(val: number) => formatCurrency(val)}
@@ -1085,9 +1591,10 @@ const ReturnStudio = ({
               </BarChart>
             </ResponsiveContainer>
             <div className="text-center text-[10px] text-slate-400 mt-2 italic">
-              *Equity Walk: Start Equity + Income + Growth - Interest + Debt Repaid = End Equity
+              {labels.equityWalkFooter}
             </div>
           </div>
+
 
         </div>
       </Card>
@@ -1097,7 +1604,7 @@ const ReturnStudio = ({
 };
 
 // --- Sidebar Component ---
-const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
+const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang }: any) => {
   const menuItems = [
     { id: 'allocation', label: labels.allocationStructure, icon: PieChart },
     { id: 'returnStudio', label: labels.returnStudio, icon: TrendingUp },
@@ -1158,7 +1665,14 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
           })}
         </nav>
 
-        <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50">
+        <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50 space-y-4">
+          <button
+            onClick={() => window.print()}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-white/10"
+          >
+            <Printer className="w-4 h-4" />
+            {lang === 'en' ? 'Download PDF' : '導出 PDF 報告'}
+          </button>
           <div className="flex items-center justify-end text-[10px] text-slate-600">
             <span className="font-mono">v2.4.0</span>
           </div>
@@ -1224,6 +1738,50 @@ const App = () => {
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(1);
+
+  // Chart Filters State
+  const [chartFilters, setChartFilters] = useState({
+    bondPrincipal: true,
+    cashValue: true,
+    bondInterest: true,
+    policyValue: true,
+    loan: true
+  });
+
+  // Batch Process State
+  const [batchStatus, setBatchStatus] = useState<'idle' | 'running' | 'success'>('idle');
+  const [batchLogs, setBatchLogs] = useState<string[]>([]);
+  const [batchProgress, setBatchProgress] = useState(0);
+
+  const runBatch = () => {
+    if (batchStatus === 'running') return;
+    setBatchStatus('running');
+    setBatchLogs(['Starting nightly batch process...', 'Initializing secure connection...']);
+    setBatchProgress(10);
+
+    setTimeout(() => {
+      setBatchLogs(prev => [...prev, '✔ Archiving scenarios to encrypted storage...']);
+      setBatchProgress(40);
+    }, 1500);
+
+    setTimeout(() => {
+      setBatchLogs(prev => [...prev, '✔ Generating client portfolio reports (PDF)...']);
+      setBatchProgress(70);
+    }, 3000);
+
+    setTimeout(() => {
+      setBatchLogs(prev => [...prev, '✔ Syncing market rates with HKMA...']);
+      setBatchProgress(90);
+    }, 4500);
+
+    setTimeout(() => {
+      setBatchLogs(prev => [...prev, '✨ Batch process completed successfully. System ready for new day.']);
+      setBatchProgress(100);
+      setBatchStatus('success');
+    }, 6000);
+  };
+
+
   // --- HIBOR Persistence & Fetching ---
   useEffect(() => {
     const CACHE_KEY = 'hibor_cache';
@@ -1574,7 +2132,7 @@ const App = () => {
     data.push({
       year: 0,
       netEquity: yr0NetEquity,
-      baselineNetEquity: baselineData[0].netEquity,
+      baselineNetEquity: baselineData?.[0]?.netEquity || 0,
       ltv: (yr0Liabilities / (yr0Surrender + stressedBondPrincipal)) * 100
     });
 
@@ -1754,6 +2312,20 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex font-sans">
+      <PrintStyles />
+      <PDFProposal
+        projectionData={projectionData}
+        lang={lang}
+        budget={budget}
+        totalPremium={totalPremium}
+        bankLoan={bankLoan}
+        roi={roi}
+        netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+        propertyValue={propertyValue}
+        unlockedCash={unlockedCash}
+        hibor={hibor}
+        currentMtgRate={effectiveMortgageRate}
+      />
 
       {/* Sidebar */}
       <Sidebar
@@ -1762,6 +2334,7 @@ const App = () => {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         labels={t}
+        lang={lang}
       />
 
       {/* Main Content */}
@@ -2157,6 +2730,8 @@ const App = () => {
                   labels={t}
                   bondYield={bondYield}
                   loanRate={effectiveRate}
+                  budget={budget}
+                  totalPremium={totalPremium}
                 />
               )}
 
@@ -2164,7 +2739,32 @@ const App = () => {
                 <>
                   {/* Chart */}
                   <Card title={t.projectedPerf} subtitle={t.horizon30y}>
-                    <div className="h-[400px] w-full mt-4">
+                    {/* Chart Controls */}
+                    <div className="flex flex-wrap gap-2 mb-4 mt-4 px-4 overflow-x-auto">
+                      {[
+                        { key: 'bondPrincipal', label: t.bond, color: THEME.gold },
+                        { key: 'cashValue', label: t.cash, color: THEME.success },
+                        { key: 'bondInterest', label: t.bondInt, color: THEME.goldHighlight },
+                        { key: 'policyValue', label: t.policy, color: THEME.navy },
+                        { key: 'loan', label: t.loan, color: THEME.danger },
+                      ].map((filter) => (
+                        <button
+                          key={filter.key}
+                          onClick={() => setChartFilters((prev: any) => ({ ...prev, [filter.key]: !prev[filter.key] }))}
+                          className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all ${chartFilters[filter.key as keyof typeof chartFilters]
+                            ? 'text-white shadow-sm'
+                            : 'bg-white text-slate-300 border-slate-100'
+                            }`}
+                          style={{
+                            backgroundColor: chartFilters[filter.key as keyof typeof chartFilters] ? filter.color : undefined,
+                            borderColor: chartFilters[filter.key as keyof typeof chartFilters] ? filter.color : undefined,
+                          }}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-[400px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={projectionData} margin={{ top: 10, right: 100, left: 0, bottom: 0 }}>
                           <defs>
@@ -2215,52 +2815,62 @@ const App = () => {
                             itemStyle={{ color: '#fff' }}
                             labelStyle={{ fontWeight: 'bold', color: '#c5a059', marginBottom: '5px' }}
                           />
-                          <Area
-                            type="monotone"
-                            dataKey="cumulativeBondInterest"
-                            stackId="1"
-                            stroke={THEME.goldHighlight}
-                            fill="url(#colorBondInt)"
-                            name={t.bondInt}
-                            label={(props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} />}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="cashValue"
-                            stackId="1"
-                            stroke={THEME.success}
-                            fill="url(#colorCash)"
-                            name={t.cash}
-                            label={(props) => <CustomLabel {...props} name={t.cash} color={THEME.success} />}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="bondPrincipal"
-                            stackId="1"
-                            stroke={THEME.gold}
-                            fill="url(#colorBond)"
-                            name={t.bond}
-                            label={(props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} />}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="surrenderValue"
-                            stackId="1"
-                            stroke={THEME.navy}
-                            fill="url(#colorPolicy)"
-                            name={t.policy}
-                            label={(props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} />}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="loan"
-                            stroke={THEME.danger}
-                            strokeWidth={2}
-                            strokeDasharray="4 4"
-                            dot={false}
-                            name={t.loan}
-                            label={(props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} />}
-                          />
+                          {chartFilters.bondPrincipal && (
+                            <Area
+                              type="monotone"
+                              dataKey="bondPrincipal"
+                              stackId="1"
+                              stroke={THEME.gold}
+                              fill="url(#colorBond)"
+                              name={t.bond}
+                              label={(props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} />}
+                            />
+                          )}
+                          {chartFilters.cashValue && (
+                            <Area
+                              type="monotone"
+                              dataKey="cashValue"
+                              stackId="1"
+                              stroke={THEME.success}
+                              fill="url(#colorCash)"
+                              name={t.cash}
+                              label={(props) => <CustomLabel {...props} name={t.cash} color={THEME.success} />}
+                            />
+                          )}
+                          {chartFilters.bondInterest && (
+                            <Area
+                              type="monotone"
+                              dataKey="cumulativeBondInterest"
+                              stackId="1"
+                              stroke={THEME.goldHighlight}
+                              fill="url(#colorBondInt)"
+                              name={t.bondInt}
+                              label={(props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} />}
+                            />
+                          )}
+                          {chartFilters.policyValue && (
+                            <Area
+                              type="monotone"
+                              dataKey="surrenderValue"
+                              stackId="1"
+                              stroke={THEME.navy}
+                              fill="url(#colorPolicy)"
+                              name={t.policy}
+                              label={(props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} />}
+                            />
+                          )}
+                          {chartFilters.loan && (
+                            <Line
+                              type="monotone"
+                              dataKey="loan"
+                              stroke={THEME.danger}
+                              strokeWidth={2}
+                              strokeDasharray="4 4"
+                              dot={false}
+                              name={t.loan}
+                              label={(props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} />}
+                            />
+                          )}
                           {fundSource === 'mortgage' && (
                             <Line
                               type="monotone"
@@ -2344,24 +2954,19 @@ const App = () => {
               {activeView === 'marketRisk' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
                   {/* KPI Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <KPICard
                       label={t.lowestNetEquity}
                       value={formatCurrency(stressStats.lowestEquity)}
-                      subtext="Projected Minimum"
+                      subtext={t.projectedMinimum}
                       alert={stressStats.lowestEquity < 0}
                     />
                     <KPICard
                       label={t.breakEvenHibor}
                       value={formatPercent(stressStats.breakEvenHibor)}
-                      subtext="Net Carry Neutral"
+                      subtext={t.netCarryNeutral}
                     />
-                    <KPICard
-                      label="Max LTV"
-                      value={formatPercent(Math.max(...stressedProjection.map(d => d.ltv)))}
-                      subtext={t.marginCallThreshold}
-                      alert={Math.max(...stressedProjection.map(d => d.ltv)) > 90}
-                    />
+
                   </div>
 
                   {/* Net Worth Comparison Chart */}
@@ -2394,7 +2999,7 @@ const App = () => {
                   {/* Heatmap */}
                   <Card
                     title={t.sensitivityAnalysis}
-                    subtitle={`Net Equity @ Year ${sensitivityYear} (${t.stressed})`}
+                    subtitle={`${t.netEquityAtYear.replace('{year}', String(sensitivityYear))} (${t.stressed})`}
                     action={
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{t.analysisYear}:</span>
@@ -2433,24 +3038,7 @@ const App = () => {
               {activeView === 'systemConfig' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
 
-                  {/* Compliance & Risk Controls */}
-                  <Card title="Compliance Controls" subtitle="Cross-Border & Regulatory" goldAccent>
-                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                      <div className="flex items-center gap-4">
-                        <Shield className="w-8 h-8 text-slate-400" />
-                        <div>
-                          <div className="text-sm font-bold text-slate-800">Prevent Cross-Border Sales (China)</div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            Enables mandatory regulatory disclaimers on all generated proposals. Does not restrict access based on location.
-                          </div>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" checked={preventCrossBorder} onChange={(e) => setPreventCrossBorder(e.target.checked)} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#c5a059] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c5a059]"></div>
-                      </label>
-                    </div>
-                  </Card>
+
 
                   {/* Data Feeds Config */}
                   <Card title={t.dataFeeds} subtitle="Market Data Integration">
@@ -2517,25 +3105,59 @@ const App = () => {
                               <Server className="w-5 h-5 text-slate-600" />
                               <h4 className="text-sm font-bold text-slate-800">Nightly Batch</h4>
                             </div>
-                            <span className="text-[10px] px-2 py-1 bg-slate-200 text-slate-600 rounded font-bold uppercase">Idle</span>
+                            <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${batchStatus === 'running' ? 'bg-blue-100 text-blue-700' : batchStatus === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                              {batchStatus === 'idle' ? 'Idle' : batchStatus === 'running' ? 'Running' : 'Completed'}
+                            </span>
                           </div>
-                          <p className="text-xs text-slate-500 mb-2 leading-relaxed">
-                            Automated overnight processing tasks.
+
+                          <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                            Automated overnight processing tasks. Execute manually if needed for off-cycle updates.
                           </p>
-                          <ul className="space-y-2">
-                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
-                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
-                              <span><b>Scenario Archiving:</b> Save all active projections to database for audit.</span>
-                            </li>
-                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
-                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
-                              <span><b>Report Generation:</b> Generate PDF statements for client portfolio reviews.</span>
-                            </li>
-                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
-                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
-                              <span><b>Rate Sync:</b> Re-run stress tests with T-1 closing rates.</span>
-                            </li>
-                          </ul>
+
+                          {/* Progress output */}
+                          {batchStatus !== 'idle' && (
+                            <div className="mb-4 bg-slate-900 rounded p-3 font-mono text-[10px] text-emerald-400 h-32 overflow-y-auto border border-slate-800">
+                              {batchLogs.map((log, i) => (
+                                <div key={i} className="mb-1 opacity-90">{log}</div>
+                              ))}
+                              {batchStatus === 'running' && (
+                                <div className="animate-pulse">_</div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Progress Bar */}
+                          {batchStatus === 'running' && (
+                            <div className="w-full bg-slate-200 rounded-full h-1.5 mb-4 overflow-hidden">
+                              <div className="bg-[#c5a059] h-1.5 rounded-full transition-all duration-500" style={{ width: `${batchProgress}%` }}></div>
+                            </div>
+                          )}
+
+                          <button
+                            onClick={runBatch}
+                            disabled={batchStatus === 'running'}
+                            className={`w-full py-2 px-4 rounded text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${batchStatus === 'running'
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-[#c5a059] hover:text-[#c5a059]'
+                              }`}
+                          >
+                            {batchStatus === 'running' ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Processing...
+                              </>
+                            ) : batchStatus === 'success' ? (
+                              <>
+                                <RefreshCw className="w-3 h-3" />
+                                Re-Run Batch
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3 h-3" />
+                                Run Manually
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -2577,7 +3199,7 @@ const App = () => {
                         label={t.regulatoryMode}
                         value={regulatoryMode}
                         onChange={setRegulatoryMode}
-                        options={[{ value: 'hkma', label: 'HKMA (Hong Kong)' }, { value: 'mas', label: 'MAS (Singapore)' }]}
+                        options={[{ value: 'hkma', label: 'HKMA (Hong Kong)' }, { value: 'mas', label: 'MAS (Singapore)' }, { value: 'cbirc', label: 'CBIRC (China)' }]}
                       />
                       <ToggleField
                         label={t.autoHedging}
