@@ -109,6 +109,13 @@ const PrintStyles = () => (
       display: none !important;
       visibility: hidden;
     }
+    .force-preview .pdf-only {
+      display: block !important;
+      visibility: visible !important;
+      margin-bottom: 3rem !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+      position: relative !important;
+    }
   `}</style>
 );
 
@@ -695,7 +702,8 @@ const TRANSLATIONS = {
     equityWalkFooter: "*Equity Walk: Start Equity + Income + Growth - Interest + Debt Repaid = End Equity",
     projectedMinimum: "Projected Minimum",
     netCarryNeutral: "Net Carry Neutral",
-    netEquityAtYear: "Net Equity @ Year {year}"
+    netEquityAtYear: "Net Equity @ Year {year}",
+    pdfPreview: "Report Preview"
   },
   zh_hk: {
     // ... existing translations ...
@@ -846,7 +854,8 @@ const TRANSLATIONS = {
     equityWalkFooter: "圖表導覽：起始資金＋債券收入＋保單增長－保融利息成本＋已償還貸款＝回報",
     projectedMinimum: "預計最差情況",
     netCarryNeutral: "息差平衡",
-    netEquityAtYear: "第 {year} 年淨資產"
+    netEquityAtYear: "第 {year} 年淨資產",
+    pdfPreview: "報告預覽"
   },
   zh_cn: {
     // ... existing translations ...
@@ -997,7 +1006,8 @@ const TRANSLATIONS = {
     equityWalkFooter: "图表导览：起始资金＋债券收入＋保单增长－保融利息成本＋已偿还贷款＝回报",
     projectedMinimum: "预计最差情况",
     netCarryNeutral: "息差平衡",
-    netEquityAtYear: "第 {year} 年净资产"
+    netEquityAtYear: "第 {year} 年净资产",
+    pdfPreview: "报告预览"
   },
 };
 
@@ -1623,6 +1633,7 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang, onDown
     { id: 'returnStudio', label: labels.returnStudio, icon: TrendingUp },
     { id: 'holdings', label: labels.holdingsAnalysis, icon: Briefcase },
     { id: 'marketRisk', label: labels.marketRisk, icon: AlertTriangle },
+    { id: 'pdfPreview', label: labels.pdfPreview, icon: FileText },
     { id: 'systemConfig', label: labels.systemConfig, icon: Settings },
   ];
 
@@ -2480,10 +2491,10 @@ const App = () => {
         <div className="p-4 md:p-10 max-w-[1600px] mx-auto space-y-8">
 
           {/* Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className={`grid grid-cols-1 ${activeView === 'pdfPreview' ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-8`}>
 
             {/* Left Column: Inputs & Controls (Always Visible) */}
-            <div className="lg:col-span-4 space-y-8">
+            <div className={`${activeView === 'pdfPreview' ? 'hidden' : 'lg:col-span-4'} space-y-8`}>
 
               {activeView === 'marketRisk' ? (
                 // --- Stress Test Controls ---
@@ -2669,7 +2680,7 @@ const App = () => {
             </div>
 
             {/* Right Column: Visuals & Metrics (Switched based on View) */}
-            <div className="lg:col-span-8 space-y-8">
+            <div className={`${activeView === 'pdfPreview' ? 'lg:col-span-12' : 'lg:col-span-8'} space-y-8`}>
 
               {activeView === 'allocation' && (
                 <>
@@ -3276,6 +3287,56 @@ const App = () => {
                       </div>
                     </div>
                   </Card>
+                </div>
+              )}
+
+              {activeView === 'pdfPreview' && (
+                <div className="space-y-8 animate-in fade-in duration-700">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-lg border border-slate-200 shadow-sm sticky top-24 z-20 gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded bg-[#f8fafc] flex items-center justify-center border border-slate-200">
+                        <FileText className="w-5 h-5 text-slate-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-lg text-slate-900">{t.pdfPreview}</h3>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">A4 Landscape • 8-Page Professional Suite</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <button
+                        onClick={() => setActiveView('allocation')}
+                        className="flex-1 md:flex-none py-2.5 px-6 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+                      >
+                        {lang === 'en' ? 'Back' : '返回'}
+                      </button>
+                      <button
+                        onClick={handleDownloadPDF}
+                        disabled={isGeneratingPDF}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 py-2.5 px-8 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50"
+                      >
+                        {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {lang === 'en' ? 'Generate PDF' : '生成報告'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="w-full flex flex-col items-center force-preview overflow-x-hidden pt-4 pb-20">
+                    <div className="transform scale-[0.4] sm:scale-[0.55] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top flex flex-col items-center">
+                      <PDFProposal
+                        projectionData={projectionData}
+                        lang={lang}
+                        budget={budget}
+                        totalPremium={totalPremium}
+                        bankLoan={bankLoan}
+                        roi={roi}
+                        netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+                        propertyValue={propertyValue}
+                        unlockedCash={unlockedCash}
+                        hibor={hibor}
+                        currentMtgRate={effectiveMortgageRate}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
