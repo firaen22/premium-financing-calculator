@@ -48,6 +48,7 @@ import {
   Activity,
   Database,
   Server,
+  Loader2,
   FileCheck,
   RefreshCw,
   Link as LinkIcon,
@@ -56,7 +57,6 @@ import {
   Home,
   Play,
   Check,
-  Loader2,
   Printer
 } from 'lucide-react';
 
@@ -1617,7 +1617,7 @@ const ReturnStudio = ({
 };
 
 // --- Sidebar Component ---
-const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang }: any) => {
+const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang, onDownloadPDF, isGeneratingPDF }: any) => {
   const menuItems = [
     { id: 'allocation', label: labels.allocationStructure, icon: PieChart },
     { id: 'returnStudio', label: labels.returnStudio, icon: TrendingUp },
@@ -1680,14 +1680,27 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang }: any)
 
         <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50 space-y-4">
           <button
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all border border-white/10"
+            onClick={onDownloadPDF}
+            disabled={isGeneratingPDF}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Printer className="w-4 h-4" />
+            {isGeneratingPDF ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
             {lang === 'en' ? 'Download PDF' : '導出 PDF 報告'}
           </button>
-          <div className="flex items-center justify-end text-[10px] text-slate-600">
-            <span className="font-mono">v2.4.0</span>
+          <button
+            onClick={() => window.print()}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border border-white/5"
+          >
+            <Printer className="w-3 h-3" />
+            {lang === 'en' ? 'Quick Print (Browser)' : '快速打印 (瀏覽器)'}
+          </button>
+          <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono">
+            <span>v2.5.0 (Server-Side)</span>
+            {isGeneratingPDF && <span className="text-[#c5a059] animate-pulse">Processing...</span>}
           </div>
         </div>
       </aside>
@@ -1698,10 +1711,14 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang }: any)
 // --- Main App Component ---
 
 const App = () => {
+  // --- Refs ---
+  const pdfRef = useRef<HTMLDivElement>(null);
+
   // --- State ---
   const [activeView, setActiveView] = useState('allocation');
   const [preventCrossBorder, setPreventCrossBorder] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const t = TRANSLATIONS[lang];
 
@@ -2321,6 +2338,46 @@ const App = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleDownloadPDF = async () => {
+    if (!pdfRef.current) return;
+    setIsGeneratingPDF(true);
+
+    try {
+      // Capture the HTML content of the PDF container
+      const htmlContent = pdfRef.current.innerHTML;
+
+      // Get styles (optional, keeping it simple as cdn tailwind is in API)
+      const cssStyles = `
+        @page { size: A4 landscape; margin: 0; }
+        .pdf-only { display: block !important; width: 297mm !important; height: 210mm !important; }
+        .page-break { page-break-after: always !important; break-after: page !important; }
+      `;
+
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: htmlContent, css: cssStyles }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate PDF');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Premium-Financing-Proposal-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      alert('Error generating PDF. Please try "Quick Print" instead.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   // --- Render ---
 
   return (
@@ -2335,6 +2392,8 @@ const App = () => {
         onClose={() => setIsMobileMenuOpen(false)}
         labels={t}
         lang={lang}
+        onDownloadPDF={handleDownloadPDF}
+        isGeneratingPDF={isGeneratingPDF}
       />
 
       {/* Main Content */}
@@ -3236,7 +3295,7 @@ const App = () => {
 
       </main >
 
-      <div className="pdf-container">
+      <div className="pdf-container" ref={pdfRef}>
         <PDFProposal
           projectionData={projectionData}
           lang={lang}
