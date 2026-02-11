@@ -10,12 +10,20 @@ const R2_SECRET_ACCESS_KEY = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
 const R2_BUCKET_NAME = (process.env.R2_BUCKET_NAME || '').trim();
 
 if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
-  console.error('Missing R2 environment variables');
+  const missing = [];
+  if (!R2_ACCOUNT_ID) missing.push('R2_ACCOUNT_ID');
+  if (!R2_ACCESS_KEY_ID) missing.push('R2_ACCESS_KEY_ID');
+  if (!R2_SECRET_ACCESS_KEY) missing.push('R2_SECRET_ACCESS_KEY');
+  if (!R2_BUCKET_NAME) missing.push('R2_BUCKET_NAME');
+
+  console.error('Missing R2 environment variables:', missing.join(', '));
+  // We can't return response here easily because it's outside the handler. 
+  // But we can throw an error inside the handler check.
 }
 
 const s3 = new S3Client({
   region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${R2_ACCOUNT_ID || 'undefined'}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
@@ -24,6 +32,16 @@ const s3 = new S3Client({
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Check for env vars inside the handler to return proper error
+  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
+    const missing = [];
+    if (!R2_ACCOUNT_ID) missing.push('R2_ACCOUNT_ID');
+    if (!R2_ACCESS_KEY_ID) missing.push('R2_ACCESS_KEY_ID');
+    if (!R2_SECRET_ACCESS_KEY) missing.push('R2_SECRET_ACCESS_KEY');
+    if (!R2_BUCKET_NAME) missing.push('R2_BUCKET_NAME');
+    return res.status(500).json({ error: `Server Configuration Error: Missing environment variables: ${missing.join(', ')}` });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
