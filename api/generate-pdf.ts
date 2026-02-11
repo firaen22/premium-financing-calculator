@@ -92,9 +92,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await page.emulateMediaType('print');
 
     const pdf = await page.pdf({
-      format: 'A4',
-      landscape: true,
       printBackground: true,
+      preferCSSPageSize: true, // Respect @page size (A4 landscape)
+      scale: 1, // Prevent shrinking
       margin: {
         top: '0px',
         right: '0px',
