@@ -210,7 +210,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
       <div className="flex-1">
         {children}
       </div>
-      <div className="mt-6 flex justify-between items-end border-t border-slate-100 pt-4 text-[9px] text-slate-300">
+      <div className="mt-2 flex justify-between items-end border-t border-slate-100 pt-2 text-[9px] text-slate-300">
         <div>STRICTLY CONFIDENTIAL • FOR PROFESSIONAL ADVISOR USE ONLY</div>
         <div>{new Date().toLocaleDateString()} • REF: PF-2024-8921</div>
       </div>
@@ -312,7 +312,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
             {t.strategyConcept}
           </div>
-          <div className="min-h-[460px] flex items-center justify-center overflow-visible">
+          <div className="min-h-[440px] flex items-center justify-center overflow-visible">
             <FlowDiagram
               budget={budget}
               cash={cashReserve}
@@ -1325,7 +1325,7 @@ const FlowDiagram = ({
   budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: any, sourceType: 'cash' | 'mortgage'
 }) => {
   return (
-    <div className="w-full flex justify-center py-4">
+    <div className="w-full flex justify-center py-0">
       {/* Increased viewBox width to 500 for more breathing room for larger blocks, height to 600 */}
       <svg viewBox="0 0 550 500" className="w-full h-full max-w-[500px]">
         <defs>
