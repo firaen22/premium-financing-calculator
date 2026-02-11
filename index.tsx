@@ -62,6 +62,20 @@ import {
 
 const PrintStyles = () => (
   <style>{`
+    /* 1. Hide on screen but keep layout for calculations */
+    @media screen {
+      .pdf-only:not(.force-preview .pdf-only) {
+        position: absolute !important;
+        left: -9999px !important;
+        top: 0 !important;
+        visibility: hidden !important;
+        width: 1050px !important;
+        height: 742px !important; /* Must provide initial height for charts */
+        pointer-events: none !important;
+      }
+    }
+
+    /* 2. Show in print */
     @media print {
       @page {
         size: A4 landscape;
@@ -70,59 +84,19 @@ const PrintStyles = () => (
       body {
         background: white !important;
         -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        display: block !important;
-      }
-      #root {
-        display: block !important;
-        width: 100% !important;
-        height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      #root > aside,
-      #root > main > header,
-      #root > main > .p-4,
-      #root > main > .p-6,
-      #root > main > .p-8,
-      #root > main > .p-10,
-      .no-print {
-        display: none !important;
       }
       .pdf-only {
         display: block !important;
+        visibility: visible !important;
+        position: relative !important;
+        left: 0 !important;
         width: 297mm !important;
         height: 210mm !important;
         margin: 0 !important;
         padding: 0 !important;
-        position: relative !important;
-        visibility: visible !important;
         z-index: 9999 !important;
-        box-sizing: border-box !important;
       }
-      .page-break {
-        page-break-after: always !important;
-        break-after: page !important;
-      }
-    }
-    .pdf-only {
-      position: absolute !important;
-      left: -9999px !important;
-      top: 0 !important;
-      visibility: hidden !important;
-      width: 1050px !important;
-      pointer-events: none !important;
-    }
-    .force-preview .pdf-only {
-      display: block !important;
-      visibility: visible !important;
-      position: relative !important;
-      left: 0 !important;
-      top: 0 !important;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      margin-bottom: 3rem !important;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+      .no-print { display: none !important; }
     }
   `}</style>
 );
@@ -2045,7 +2019,7 @@ const ReturnStudio = ({
                   cursor={{ fill: 'transparent' }}
                 />
                 <ReferenceLine y={0} stroke="#000" />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                   <Cell fill="#cbd5e1" /> {/* Start */}
                   <Cell fill="#059669" /> {/* Bond */}
                   <Cell fill={stats.policyGrowth >= 0 ? "#10b981" : "#ef4444"} /> {/* Policy */}
@@ -3242,7 +3216,7 @@ const App = () => {
                               formatter={(value: number) => formatCurrency(value)}
                               contentStyle={{ borderRadius: '4px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             />
-                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                            <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                               {
                                 [THEME.success, THEME.danger, THEME.orange].map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry} />
@@ -3379,7 +3353,7 @@ const App = () => {
                             labelStyle={{ fontWeight: 'bold', color: '#c5a059', marginBottom: '5px' }}
                           />
                           {chartFilters.bondPrincipal && (
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="bondPrincipal"
                               stackId="1"
@@ -3390,7 +3364,7 @@ const App = () => {
                             />
                           )}
                           {chartFilters.cashValue && (
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="cashValue"
                               stackId="1"
@@ -3401,7 +3375,7 @@ const App = () => {
                             />
                           )}
                           {chartFilters.bondInterest && (
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="cumulativeBondInterest"
                               stackId="1"
@@ -3412,7 +3386,7 @@ const App = () => {
                             />
                           )}
                           {chartFilters.policyValue && (
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="surrenderValue"
                               stackId="1"
@@ -3423,7 +3397,7 @@ const App = () => {
                             />
                           )}
                           {chartFilters.loan && (
-                            <Line
+                            <Line isAnimationActive={false}
                               type="monotone"
                               dataKey="loan"
                               stroke={THEME.danger}
@@ -3435,7 +3409,7 @@ const App = () => {
                             />
                           )}
                           {fundSource === 'mortgage' && (
-                            <Line
+                            <Line isAnimationActive={false}
                               type="monotone"
                               dataKey="mortgageBalance"
                               stroke={THEME.orange}
@@ -3445,7 +3419,7 @@ const App = () => {
                               name={t.mortgageBalance}
                             />
                           )}
-                          <Line
+                          <Line isAnimationActive={false}
                             type="monotone"
                             dataKey="netEquity"
                             stroke="#000"
@@ -3552,8 +3526,8 @@ const App = () => {
                           <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `$${val / 1000000}M`} tickLine={false} axisLine={false} />
                           <Tooltip formatter={(val: number) => formatCurrency(val)} />
                           <Legend />
-                          <Area type="monotone" dataKey="baselineNetEquity" name={t.baseline} stroke={THEME.navy} fill="url(#colorBaseline)" strokeWidth={2} />
-                          <Area type="monotone" dataKey="netEquity" name={t.stressed} stroke={THEME.danger} fill="url(#colorStressed)" strokeWidth={2} />
+                          <Area type="monotone" dataKey="baselineNetEquity" name={t.baseline} stroke={THEME.navy} fill="url(#colorBaseline)" strokeWidth={2} isAnimationActive={false} />
+                          <Area type="monotone" dataKey="netEquity" name={t.stressed} stroke={THEME.danger} fill="url(#colorStressed)" strokeWidth={2} isAnimationActive={false} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
