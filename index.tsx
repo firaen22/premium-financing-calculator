@@ -62,37 +62,39 @@ import {
 
 const PrintStyles = () => (
   <style>{`
-    /* 1. Logic for Screen / Preview */
-    @media screen {
-      .pdf-only:not(.force-preview .pdf-only) {
-        position: absolute !important;
-        left: -9999px !important;
-        visibility: hidden !important;
-      }
-      /* Width in Preview Mode */
-      .force-preview .pdf-only {
-        width: 1123px !important; /* Corresponds to 297mm in pixels */
-        margin: 0 auto !important;
-      }
+    /* 1. Base Logic: Hide PDF container by default */
+    .pdf-only {
+      display: none !important;
     }
 
-    /* 2. Logic for PDF Print */
-    @media print {
-      @page {
-        size: A4 landscape;
-        margin: 0;
-      }
-      .no-print { display: none !important; }
+    /* 2. Preview & Print Mode: Force show and fix width */
+    @media print, .force-preview {
       .pdf-only {
         display: block !important;
         visibility: visible !important;
         position: relative !important;
         left: 0 !important;
-        width: 297mm !important; /* Force A4 width */
+        width: 297mm !important; /* Fixed A4 Landscape width */
         height: 210mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        margin: 0 auto !important;
+        background: white !important;
+        box-sizing: border-box !important;
+        -webkit-print-color-adjust: exact;
       }
+    }
+
+    /* 3. Capture State Logic: For pdfRef capture */
+    .pdf-container .pdf-only {
+      display: block !important;
+      position: absolute !important;
+      left: -9999px !important; /* Move off-screen but keep rendered for chart calculation */
+      width: 297mm !important;
+      height: 210mm !important;
+    }
+
+    @media print {
+      @page { size: A4 landscape; margin: 0; }
+      .no-print { display: none !important; }
     }
   `}</style>
 );
@@ -3808,7 +3810,7 @@ const App = () => {
                           type="text"
                           value={clientName}
                           onChange={(e) => setClientName(e.target.value)}
-                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#c5a059]"
+                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-3 focus:outline-none focus:border-[#c5a059]"
                           placeholder={lang === 'en' ? 'Enter Client Name' : '輸入客戶姓名'}
                         />
                       </div>
@@ -3820,7 +3822,7 @@ const App = () => {
                           type="text"
                           value={representativeName}
                           onChange={(e) => setRepresentativeName(e.target.value)}
-                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#c5a059]"
+                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-3 focus:outline-none focus:border-[#c5a059]"
                           placeholder={lang === 'en' ? 'Enter Rep Name' : '輸入代表姓名'}
                         />
                       </div>
@@ -3864,79 +3866,82 @@ const App = () => {
                     </div>
                   </div>
 
-                  <div className="w-full flex flex-col items-center force-preview overflow-x-hidden pt-4 pb-20">
-                    <div className="transform scale-[0.4] sm:scale-[0.55] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top flex flex-col items-center">
-                      <PDFProposal
-                        projectionData={projectionData}
-                        lang={lang}
-                        budget={budget}
-                        totalPremium={totalPremium}
-                        bankLoan={bankLoan}
-                        roi={roi}
-                        netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
-                        propertyValue={propertyValue}
-                        unlockedCash={unlockedCash}
-                        hibor={hibor}
-                        currentMtgRate={effectiveMortgageRate}
-                        cashReserve={cashReserve}
-                        netBondPrincipal={netBondPrincipal}
-                        pfEquity={pfEquity}
-                        fundSource={fundSource}
-                        sensitivityData={sensitivityData}
-                        clientName={clientName}
-                        representativeName={representativeName}
-                        spread={spread}
-                        leverageLTV={leverageLTV}
-                        bondYield={bondYield}
-                      />
+                  <div className="w-full flex flex-col items-center force-preview overflow-x-auto pt-4 pb-20">
+                    <div className="min-w-[1123px]">
+                      <div className="transform origin-top flex flex-col items-center">
+                        <PDFProposal
+                          projectionData={projectionData}
+                          lang={lang}
+                          budget={budget}
+                          totalPremium={totalPremium}
+                          bankLoan={bankLoan}
+                          roi={roi}
+                          netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+                          propertyValue={propertyValue}
+                          unlockedCash={unlockedCash}
+                          hibor={hibor}
+                          currentMtgRate={effectiveMortgageRate}
+                          cashReserve={cashReserve}
+                          netBondPrincipal={netBondPrincipal}
+                          pfEquity={pfEquity}
+                          fundSource={fundSource}
+                          sensitivityData={sensitivityData}
+                          clientName={clientName}
+                          representativeName={representativeName}
+                          spread={spread}
+                          leverageLTV={leverageLTV}
+                          bondYield={bondYield}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
+                </div>
               )}
 
-            </div>
-          </div >
-        </div >
-
-        {/* Footer with Disclaimer */}
-        < footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50" >
-          <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
-            {t.globalDisclaimer}
-          </p>
-          <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
-            © 2024 Private Wealth Management. Confidential & Proprietary.
-          </p>
-        </footer >
-
-      </main>
-
-      {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */}
-      <div className="pdf-container" ref={pdfRef}>
-        <PDFProposal
-          projectionData={projectionData}
-          lang={lang}
-          budget={budget}
-          totalPremium={totalPremium}
-          bankLoan={bankLoan}
-          roi={roi}
-          netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
-          propertyValue={propertyValue}
-          unlockedCash={unlockedCash}
-          hibor={hibor}
-          currentMtgRate={effectiveMortgageRate}
-          cashReserve={cashReserve}
-          netBondPrincipal={netBondPrincipal}
-          pfEquity={pfEquity}
-          fundSource={fundSource}
-          sensitivityData={sensitivityData}
-          clientName={clientName}
-          representativeName={representativeName}
-          spread={spread}
-          leverageLTV={leverageLTV}
-          bondYield={bondYield}
-        />
-      </div>
+          </div>
+        </div>
     </div>
+
+          {/* Footer with Disclaimer */ }
+  < footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50" >
+    <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
+      {t.globalDisclaimer}
+    </p>
+    <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
+      © 2024 Private Wealth Management. Confidential & Proprietary.
+    </p>
+  </footer >
+
+      </main >
+
+  {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */ }
+  < div className = "pdf-container" ref = { pdfRef } >
+    <PDFProposal
+      projectionData={projectionData}
+      lang={lang}
+      budget={budget}
+      totalPremium={totalPremium}
+      bankLoan={bankLoan}
+      roi={roi}
+      netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+      propertyValue={propertyValue}
+      unlockedCash={unlockedCash}
+      hibor={hibor}
+      currentMtgRate={effectiveMortgageRate}
+      cashReserve={cashReserve}
+      netBondPrincipal={netBondPrincipal}
+      pfEquity={pfEquity}
+      fundSource={fundSource}
+      sensitivityData={sensitivityData}
+      clientName={clientName}
+      representativeName={representativeName}
+      spread={spread}
+      leverageLTV={leverageLTV}
+      bondYield={bondYield}
+    />
+      </div >
+    </div >
   );
 };
 

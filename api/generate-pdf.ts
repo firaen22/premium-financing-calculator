@@ -64,9 +64,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const page = await browser.newPage();
     await page.setViewport({
-      width: 1123,
-      height: 794,
-      deviceScaleFactor: 2
+      width: 1123, // 297mm in pixels
+      height: 794, // 210mm in pixels
+      deviceScaleFactor: 2 // Improve resolution
     });
 
     // Set content and include CSS
@@ -93,13 +93,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 60000 });
+
+    // Important: Give Tailwind CDN time to generate styles
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     await page.emulateMediaType('print');
 
     const pdf = await page.pdf({
-      format: 'A4',
-      landscape: true,
       printBackground: true,
-      preferCSSPageSize: true, // Force use of CSS @page size
+      preferCSSPageSize: true, // Respect @page size
       margin: {
         top: '0px',
         right: '0px',
