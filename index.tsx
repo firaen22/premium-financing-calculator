@@ -2068,13 +2068,7 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang, onDown
             )}
             {lang === 'en' ? 'Download PDF' : '導出 PDF 報告'}
           </button>
-          <button
-            onClick={() => window.print()}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border border-white/5"
-          >
-            <Printer className="w-3 h-3" />
-            {lang === 'en' ? 'Quick Print (Browser)' : '快速打印 (瀏覽器)'}
-          </button>
+
           <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono">
             <span>v2.5.0 (Server-Side)</span>
             {isGeneratingPDF && <span className="text-[#c5a059] animate-pulse">Processing...</span>}
@@ -2756,7 +2750,7 @@ const App = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('PDF Generation Error:', error);
-      alert('Error generating PDF. Please try "Quick Print" instead.');
+      alert('Error generating PDF. Please try printing from your browser.');
     } finally {
       setIsGeneratingPDF(false);
     }
