@@ -433,7 +433,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 7: Ledger Statement */}
       <PageContainer pageNum={7}>
-        <SectionTitle title={t.ledgerStatement} />
+        <SectionTitle title={t.ledgerStatement} subtitle="30-Year Cash Flow & Equity Projection" />
         <div className="mt-2">
           <table className="w-full text-[6px] border-collapse leading-tight">
             <thead>
