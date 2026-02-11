@@ -76,7 +76,6 @@ const PrintStyles = () => (
       width: 297mm !important; /* Fixed A4 Landscape width */
       height: 210mm !important;
       margin: 0 auto !important;
-      background: white !important;
       box-sizing: border-box !important;
       -webkit-print-color-adjust: exact;
     }
@@ -103,7 +102,6 @@ const PrintStyles = () => (
         width: 297mm !important; /* Fixed A4 Landscape width */
         height: 210mm !important;
         margin: 0 auto !important;
-        background: white !important;
         box-sizing: border-box !important;
         -webkit-print-color-adjust: exact;
       }
