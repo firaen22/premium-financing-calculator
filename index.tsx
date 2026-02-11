@@ -196,6 +196,8 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
 
+  const t = TRANSLATIONS[lang];
+
   const PageContainer = ({ children, pageNum }: any) => (
     <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-12 overflow-hidden flex flex-col font-serif">
       <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
@@ -259,7 +261,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 2: Executive Summary */}
       <PageContainer pageNum={2}>
-        <SectionTitle title={isZh ? '執行摘要' : 'Executive Summary'} subtitle="Strategic Overview & Objectives" />
+        <SectionTitle title={t.executiveSummary} subtitle="Strategic Overview & Objectives" />
         <div className="grid grid-cols-2 gap-12 mt-10">
           <div className="space-y-8">
             <div className="bg-slate-50 p-8 border border-slate-100 italic text-slate-600 leading-relaxed text-sm">
@@ -303,12 +305,12 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 3: Capital Allocation */}
       <PageContainer pageNum={3}>
-        <SectionTitle title={isZh ? '資本分配' : 'Capital Allocation'} subtitle="Asset Structure & Funding Source" />
+        <SectionTitle title={t.capitalAllocation} subtitle="Asset Structure & Funding Source" />
 
         {/* Concept Diagram Section */}
         <div className="mt-6 bg-slate-50 border border-slate-100 rounded p-6">
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
-            {isZh ? '方案概念圖' : 'STRATEGY CONCEPT DIAGRAM'}
+            {t.strategyConcept}
           </div>
           <div className="min-h-[400px] flex items-center justify-center">
             <FlowDiagram
@@ -319,12 +321,12 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
               loan={bankLoan}
               premium={totalPremium}
               labels={{
-                capital: isZh ? '資本' : 'CAPITAL',
-                liquidity: isZh ? '流動現金' : 'LIQUID CASH',
-                yieldFundNet: isZh ? '收益基金 (淨)' : 'YIELD FUND (NET)',
-                policyEquityCaps: isZh ? '初始保費' : 'INITIAL PREMIUM',
-                leverage: isZh ? '銀行貸款' : 'BANK LOAN',
-                totalExposure: isZh ? 'AIA 資本保全保單' : 'AIA CAPITAL PRESERVED POLICY'
+                capital: t.capital,
+                liquidity: t.liquidity,
+                yieldFundNet: t.yieldFundNet,
+                policyEquityCaps: t.policyEquityCaps,
+                leverage: t.leverage,
+                totalExposure: t.totalExposure
               }}
               sourceType={fundSource}
             />
@@ -337,7 +339,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 4: Performance Studio */}
       <PageContainer pageNum={4}>
-        <SectionTitle title={isZh ? '表現分析' : 'Performance Studio'} subtitle="30-Year Financial Projection" />
+        <SectionTitle title={t.performanceStudio} subtitle="30-Year Financial Projection" />
         <div className="mt-6 border border-slate-100 p-8 rounded bg-white">
           <div className="h-96 w-full flex items-center justify-center border-2 border-dashed border-slate-100 text-slate-300 italic text-sm">
             [30Y Wealth Accumulation Chart Placeholder - Integrated Recharts would render here]
@@ -361,7 +363,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 5: Holdings Analysis */}
       <PageContainer pageNum={5}>
-        <SectionTitle title={isZh ? '持倉分析' : 'Holdings Analysis'} subtitle="Asset Details & Financing Terms" />
+        <SectionTitle title={t.holdingsAnalysis} subtitle="Asset Details & Financing Terms" />
         <div className="grid grid-cols-2 gap-10 mt-10">
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
@@ -414,7 +416,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 6: Detailed Calculations */}
       <PageContainer pageNum={6}>
-        <SectionTitle title={isZh ? '詳細計算' : 'Detailed Calculations'} subtitle="Milestone Year Breakdowns (USD/HKD)" />
+        <SectionTitle title={t.detailedCalculations} subtitle="Milestone Year Breakdowns (USD/HKD)" />
         <div className="mt-8 bg-white border border-slate-200 rounded-sm shadow-sm p-4">
           <DetailedCalculationTable
             dataY10={dataY10}
@@ -431,7 +433,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 7: Risk Analysis */}
       <PageContainer pageNum={7}>
-        <SectionTitle title={isZh ? '風險分析' : 'Risk Analysis'} subtitle="Stress Testing & Sensitivities" />
+        <SectionTitle title={t.riskAnalysis} subtitle="Stress Testing & Sensitivities" />
         <div className="mt-10 grid grid-cols-2 gap-12">
           <div className="space-y-8">
             <div className="bg-red-50 p-6 border-l-4 border-red-500 rounded">
@@ -472,7 +474,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 8: Disclaimers */}
       <PageContainer pageNum={8}>
-        <SectionTitle title={isZh ? '免責聲明' : 'Important Disclaimers'} subtitle="Terms, Conditions & Regulatory Notices" />
+        <SectionTitle title={t.disclaimers} subtitle="Terms, Conditions & Regulatory Notices" />
         <div className="mt-10 overflow-y-auto max-h-[130mm] pr-4 space-y-6 text-[9px] text-slate-500 leading-relaxed text-justify">
           <p>
             This proposal is for illustrative purposes only and does not constitute an offer, solicitation or recommendation to purchase any insurance product or financial instrument. The information contained herein is based on current market conditions and assumptions which are subject to change without notice.
@@ -686,7 +688,13 @@ const TRANSLATIONS = {
     projectedMinimum: "Projected Minimum",
     netCarryNeutral: "Net Carry Neutral",
     netEquityAtYear: "Net Equity @ Year {year}",
-    pdfPreview: "Report Preview"
+    pdfPreview: "Report Preview",
+    strategyConcept: "Strategy Concept Diagram",
+    executiveSummary: "Executive Summary",
+    performanceStudio: "Performance Studio",
+    detailedCalculations: "Detailed Calculations",
+    riskAnalysis: "Risk Analysis",
+    disclaimers: "Important Disclaimers"
   },
   zh_hk: {
     // ... existing translations ...
@@ -838,7 +846,13 @@ const TRANSLATIONS = {
     projectedMinimum: "預計最差情況",
     netCarryNeutral: "息差平衡",
     netEquityAtYear: "第 {year} 年淨資產",
-    pdfPreview: "報告預覽"
+    pdfPreview: "報告預覽",
+    strategyConcept: "方案概念圖",
+    executiveSummary: "執行摘要",
+    performanceStudio: "表現分析",
+    detailedCalculations: "詳細計算",
+    riskAnalysis: "風險分析",
+    disclaimers: "免責聲明"
   },
   zh_cn: {
     // ... existing translations ...
@@ -990,7 +1004,13 @@ const TRANSLATIONS = {
     projectedMinimum: "预计最差情况",
     netCarryNeutral: "息差平衡",
     netEquityAtYear: "第 {year} 年净资产",
-    pdfPreview: "报告预览"
+    pdfPreview: "报告预览",
+    strategyConcept: "方案概念图",
+    executiveSummary: "执行摘要",
+    performanceStudio: "表现分析",
+    detailedCalculations: "详细计算",
+    riskAnalysis: "风险分析",
+    disclaimers: "免责声明"
   },
 };
 
