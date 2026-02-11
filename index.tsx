@@ -1730,6 +1730,8 @@ const App = () => {
   const [bondPriceDrop, setBondPriceDrop] = useState(10); // % drop
   const [showGuaranteed, setShowGuaranteed] = useState(false);
   const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
+  const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>('hibor');
+  const [cofRate, setCofRate] = useState(5.0); // Cost of Funds rate for manual override
   const [clientName, setClientName] = useState('Estate of Mr. H.N.W.');
   const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
@@ -1941,7 +1943,10 @@ const App = () => {
     }
 
     const loan = Math.max(0, tPremium - equity);
-    const effRate = Math.min(hibor + spread, capRate);
+
+    // Effective Rate Logic
+    const baseRate = interestBasis === 'hibor' ? hibor : cofRate;
+    const effRate = Math.min(baseRate + spread, capRate);
 
     // Bond Logic: Fee is one-off, deducted from capital. Yield applies to Net Capital.
     const oneOffFee = bondAlloc * (handlingFee / 100);
@@ -2125,7 +2130,7 @@ const App = () => {
       monthlyMortgagePmt: mMortgageCost
     };
 
-  }, [budget, cashReserve, bondAlloc, bondYield, hibor, spread, leverageLTV, capRate, handlingFee, fundSource, propertyValue, existingMortgage, mortgageLtv, effectiveMortgageRate, mortgageTenor]);
+  }, [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, propertyValue, existingMortgage, mortgageLtv, effectiveMortgageRate, mortgageTenor]);
 
 
   // --- Stressed Projections (For Market Risk) ---
@@ -2632,14 +2637,42 @@ const App = () => {
 
                   <Card title={t.bankParams} subtitle={t.lendingTerms} collapsible>
                     <div className="grid grid-cols-2 gap-6">
-                      <InputField
-                        label={t.hiborRate}
-                        value={hibor}
-                        onChange={setHibor}
-                        prefix=""
-                        step={0.01}
-                        disabled={dataSource === 'live' || dataSource === 'cached'}
-                      />
+                      <div className="col-span-2 flex items-center gap-4 mb-2">
+                        <div className="flex bg-slate-100 p-1 rounded-lg">
+                          <button
+                            onClick={() => setInterestBasis('hibor')}
+                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${interestBasis === 'hibor' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            HIBOR + Spread
+                          </button>
+                          <button
+                            onClick={() => setInterestBasis('cof')}
+                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${interestBasis === 'cof' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                          >
+                            COF (Manual)
+                          </button>
+                        </div>
+                      </div>
+
+                      {interestBasis === 'hibor' ? (
+                        <InputField
+                          label={t.hiborRate}
+                          value={hibor}
+                          onChange={setHibor}
+                          prefix=""
+                          step={0.01}
+                          disabled={dataSource === 'live' || dataSource === 'cached'}
+                        />
+                      ) : (
+                        <InputField
+                          label="COF Rate" // TODO: Add translation key if creating proper i18n
+                          value={cofRate}
+                          onChange={setCofRate}
+                          prefix=""
+                          step={0.01}
+                          suffix="%"
+                        />
+                      )}
                       <InputField label={t.spread} value={spread} onChange={setSpread} prefix="" step={0.05} />
                     </div>
                     <div className="grid grid-cols-2 gap-6 mt-2">
