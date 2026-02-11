@@ -431,8 +431,52 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
         </div>
       </PageContainer>
 
-      {/* Page 7: Risk Analysis */}
+      {/* Page 7: Ledger Statement */}
       <PageContainer pageNum={7}>
+        <SectionTitle title={t.ledgerStatement} subtitle="30-Year Cash Flow & Equity Projection" />
+        <div className="mt-6">
+          <table className="w-full text-[8px] border-collapse">
+            <thead>
+              <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
+                <th className="py-2 px-1 text-left font-bold uppercase tracking-wider">{t.year}</th>
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cumBondInt}</th>
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cashReserve}</th>
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.bondCapitalNet}</th>
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.policyValue}</th>
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.totalLoan}</th>
+                {fundSource === 'mortgage' && <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-orange-800">{t.mortgageBalance}</th>}
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.cumLoanInt}</th>
+                {fundSource === 'mortgage' && <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-orange-600">{t.mtgCost}</th>}
+                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider bg-slate-200 text-slate-900">{t.netEquity}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projectionData.map((row: any, i: number) => (
+                <tr key={row.year} className={`border-b border-slate-50 font-mono ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                  <td className="py-1.5 px-1 text-left font-bold text-slate-900">{row.year}</td>
+                  <td className="py-1.5 px-1 text-right text-emerald-600">+{formatCurrency(row.cumulativeBondInterest)}</td>
+                  <td className="py-1.5 px-1 text-right text-emerald-600">{formatCurrency(row.cashValue)}</td>
+                  <td className="py-1.5 px-1 text-right text-slate-600">{formatCurrency(row.bondPrincipal)}</td>
+                  <td className="py-1.5 px-1 text-right text-slate-600">{formatCurrency(row.surrenderValue)}</td>
+                  <td className="py-1.5 px-1 text-right text-red-700">{formatCurrency(row.loan)}</td>
+                  {fundSource === 'mortgage' && <td className="py-1.5 px-1 text-right text-orange-800">{formatCurrency(row.mortgageBalance)}</td>}
+                  <td className="py-1.5 px-1 text-right text-red-400">({formatCurrency(row.cumulativeInterest)})</td>
+                  {fundSource === 'mortgage' && <td className="py-1.5 px-1 text-right text-orange-600">({formatCurrency(row.annualMortgagePayment)})</td>}
+                  <td className={`py-1.5 px-1 text-right font-bold ${row.netEquity >= 0 ? 'text-slate-900' : 'text-red-600'} bg-slate-50`}>
+                    {row.formattedNetEquity}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-4 text-[8px] text-slate-400 italic text-right">
+            * Values in USD unless otherwise specified. Projections assume constant rates.
+          </div>
+        </div>
+      </PageContainer>
+
+      {/* Page 8: Risk Analysis */}
+      <PageContainer pageNum={8}>
         <SectionTitle title={t.riskAnalysis} subtitle="Stress Testing & Sensitivities" />
         <div className="mt-10 grid grid-cols-2 gap-12">
           <div className="space-y-8">
@@ -472,8 +516,8 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
         </div>
       </PageContainer>
 
-      {/* Page 8: Disclaimers */}
-      <PageContainer pageNum={8}>
+      {/* Page 9: Disclaimers */}
+      <PageContainer pageNum={9}>
         <SectionTitle title={t.disclaimers} subtitle="Terms, Conditions & Regulatory Notices" />
         <div className="mt-10 overflow-y-auto max-h-[130mm] pr-4 space-y-6 text-[9px] text-slate-500 leading-relaxed text-justify">
           <p>
@@ -500,6 +544,8 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           </div>
         </div>
       </PageContainer>
+
+
     </>
   );
 };
