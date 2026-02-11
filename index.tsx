@@ -2815,24 +2815,21 @@ const App = () => {
         throw new Error(`Server Error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/pdf')) {
-        const errorText = await response.text();
-        throw new Error(`Invalid content type: ${contentType}. Response: ${errorText}`);
+      // Handle R2 Signed URL response
+      const data = await response.json();
+
+      if (data.url) {
+        // Direct download from R2
+        const a = document.createElement('a');
+        a.href = data.url;
+        a.download = `premium-financing-proposal-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        throw new Error('No download URL returned from server');
       }
 
-      const blob = await response.blob();
-      if (blob.size === 0) {
-        throw new Error('PDF is empty');
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `premium-financing-proposal-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
     } catch (error: any) {
       console.error('PDF Generation Error:', error);
       alert(`Error generating PDF: ${error.message}`);

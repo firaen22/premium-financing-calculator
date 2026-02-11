@@ -1,6 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
+
+const s3 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID || '',
+    secretAccessKey: R2_SECRET_ACCESS_KEY || '',
+  },
+});
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -64,9 +80,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     });
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=proposal.pdf');
-    res.end(pdf);
+    const fileName = `proposal-${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+
+    // Upload to R2
+    const uploadCommand = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: fileName,
+      Body: pdf,
+      ContentType: 'application/pdf',
+    });
+
+    await s3.send(uploadCommand);
+
+    // Generate signed URL (valid for 1 hour)
+    const signedUrl = await getSignedUrl(s3, new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: fileName,
+    }), { expiresIn: 3600 });
+
+    res.status(200).json({ url: signedUrl });
 
   } catch (error: any) {
     console.error('PDF Generation Error:', error);
