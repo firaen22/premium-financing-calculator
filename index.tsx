@@ -106,12 +106,12 @@ const PrintStyles = () => (
       }
     }
     .pdf-only {
-      position: absolute;
-      left: -9999px;
-      top: 0;
-      width: 1050px;
-      visibility: hidden;
-      pointer-events: none;
+      position: absolute !important;
+      left: -9999px !important;
+      top: 0 !important;
+      visibility: hidden !important;
+      width: 1050px !important;
+      pointer-events: none !important;
     }
     .force-preview .pdf-only {
       display: block !important;
@@ -380,6 +380,7 @@ const PDFProposal = ({
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
 
                 <Area
+                  isAnimationActive={false}
                   type="monotone"
                   dataKey="netEquity"
                   name={t.netEquity}
@@ -389,6 +390,7 @@ const PDFProposal = ({
                   strokeWidth={2}
                 />
                 <Line
+                  isAnimationActive={false}
                   type="monotone"
                   dataKey="surrenderValue"
                   name={t.policyValue}
@@ -397,6 +399,7 @@ const PDFProposal = ({
                   dot={false}
                 />
                 <Line
+                  isAnimationActive={false}
                   type="monotone"
                   dataKey="loan"
                   name={t.totalLoan}

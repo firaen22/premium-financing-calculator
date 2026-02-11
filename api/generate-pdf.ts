@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const page = await browser.newPage();
+    await page.setViewport({ width: 1123, height: 794 });
 
     // Set content and include CSS
     const fullHtml = `
