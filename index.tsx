@@ -341,8 +341,59 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
       <PageContainer pageNum={4}>
         <SectionTitle title={t.performanceStudio} subtitle="30-Year Financial Projection" />
         <div className="mt-6 border border-slate-100 p-8 rounded bg-white">
-          <div className="h-96 w-full flex items-center justify-center border-2 border-dashed border-slate-100 text-slate-300 italic text-sm">
-            [30Y Wealth Accumulation Chart Placeholder - Integrated Recharts would render here]
+          <div className="h-96 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={projectionData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="colorEquityPdf" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis
+                  dataKey="year"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  label={{ value: t.year, position: 'insideBottom', offset: -10, fontSize: 10, fill: '#64748b' }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  tickFormatter={(val) => `$${val / 1000000}M`}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+
+                <Area
+                  type="monotone"
+                  dataKey="netEquity"
+                  name={t.netEquity}
+                  stroke="#10b981"
+                  fillOpacity={1}
+                  fill="url(#colorEquityPdf)"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="surrenderValue"
+                  name={t.policyValue}
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="loan"
+                  name={t.totalLoan}
+                  stroke="#f87171"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-4 gap-8 mt-10">
             {[
