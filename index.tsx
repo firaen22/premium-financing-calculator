@@ -1175,52 +1175,46 @@ const App = () => {
   const [activeView, setActiveView] = useState('allocation');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lang, setLang] = useState<Language>('en');
+  const t = TRANSLATIONS[lang];
 
-  // Source Fund State
-  const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
+  // Financial State
   const [budget, setBudget] = useState(1000000);
-
-  // Mortgage State
-  const [propertyValue, setPropertyValue] = useState(10000000);
-  const [existingMortgage, setExistingMortgage] = useState(2000000);
-  const [mortgageLtv, setMortgageLtv] = useState(50);
-  // Removed fixed mortgageRate state, replaced with components:
-  const [primeRate, setPrimeRate] = useState(5.875);
-  const [mortgageHSpread, setMortgageHSpread] = useState(1.3);
-  const [mortgagePModifier, setMortgagePModifier] = useState(2.50); // Cap at P - 2.5%
-
-  const [mortgageTenor, setMortgageTenor] = useState(20);
-
-  // Allocation State
   const [cashReserve, setCashReserve] = useState(200000);
-  const [bondAlloc, setBondAlloc] = useState(300000);
-  const [bondYield, setBondYield] = useState(4.5);
-
-  // Bank Settings
-  const [hibor, setHibor] = useState(4.15);
-  const [spread, setSpread] = useState(1.30);
-  const [leverageLTV, setLeverageLTV] = useState(90); // 90 or 95
-  const [capRate, setCapRate] = useState(9.00);
-  const [handlingFee, setHandlingFee] = useState(1.0); // Fund Handling Fee %
-
-  // Market Risk Settings
-  const [simulatedHibor, setSimulatedHibor] = useState(hibor);
-  const [bondPriceDrop, setBondPriceDrop] = useState(0); // 0 to 50%
+  const [bondAlloc, setBondAlloc] = useState(3000000); // Default 3M bond
+  const [bondYield, setBondYield] = useState(5.5);
+  const [hibor, setHibor] = useState(4.15); // Default fallback
+  const [spread, setSpread] = useState(1.3);
+  const [capRate, setCapRate] = useState(9.0); // P-based cap
+  const [leverageLTV, setLeverageLTV] = useState(90); // 90% or 95%
+  const [handlingFee, setHandlingFee] = useState(1.0); // 1%
+  const [simulatedHibor, setSimulatedHibor] = useState(4.5); // For stress test
+  const [bondPriceDrop, setBondPriceDrop] = useState(10); // % drop
   const [showGuaranteed, setShowGuaranteed] = useState(false);
+  const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
+
+  // HIBOR Caching State
+  const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
+  const [isFetchingRates, setIsFetchingRates] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'live' | 'cached' | 'fallback' | 'manual'>('fallback');
+
+  // Mortgage Refi State
+  const [propertyValue, setPropertyValue] = useState(15000000);
+  const [existingMortgage, setExistingMortgage] = useState(6000000);
+  const [mortgageLtv, setMortgageLtv] = useState(60); // Target LTV for Refi
+  const [primeRate, setPrimeRate] = useState(5.875); // Major Bank Prime
+  const [mortgageHSpread, setMortgageHSpread] = useState(1.3); // H + 1.3
+  const [mortgagePModifier, setMortgagePModifier] = useState(1.75); // P - 1.75
+  const [mortgageTenor, setMortgageTenor] = useState(30);
+
+  // Market Risk & Sensitivity
   const [sensitivityYear, setSensitivityYear] = useState(15);
 
   // System Configuration State
-  const [dataSource, setDataSource] = useState('manual'); // live | manual
   const [globalMinSpread, setGlobalMinSpread] = useState(1.0);
   const [globalMaxLTV, setGlobalMaxLTV] = useState(95);
   const [regulatoryMode, setRegulatoryMode] = useState('hkma'); // hkma | mas
   const [autoHedging, setAutoHedging] = useState(false);
-
-  // Live Feed State
-  const [isFetchingRates, setIsFetchingRates] = useState(false);
-  const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
-
-  const t = TRANSLATIONS[lang];
 
   // Notification State
   const [notifications, setNotifications] = useState<{ id: number, title: string, message: string, time: string, type: 'info' | 'warning' | 'success' }[]>([
@@ -1229,6 +1223,89 @@ const App = () => {
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(1);
+  // --- HIBOR Persistence & Fetching ---
+  useEffect(() => {
+    const CACHE_KEY = 'hibor_cache';
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 Hours
+
+    const fetchLiveHibor = async () => {
+      setIsFetchingRates(true);
+      setFetchError(null);
+      try {
+        // Use HKMA Open API (CORS friendly, official source)
+        // Note: Data might have a slight lag (e.g. 1-2 weeks) but is reliable.
+        const response = await fetch('https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?segment=hibor.fixing&offset=0');
+        const data = await response.json();
+
+        if (data.header && data.header.success && data.result && data.result.records && data.result.records.length > 0) {
+          const latestRecord = data.result.records[0];
+          const rate = latestRecord.ir_1m; // 1-month HIBOR
+          const dateStr = latestRecord.end_of_day;
+
+          if (rate && !isNaN(rate)) {
+            setHibor(rate);
+            const recordDate = new Date(dateStr);
+            setLastRateUpdate(recordDate);
+            setDataSource('live');
+
+            // Add notification
+            setNotifications(prev => [{
+              id: Date.now(),
+              title: t.marketDataUpdate,
+              message: `HIBOR (HKMA) updated: ${rate}% (As of ${dateStr})`,
+              time: 'Just now',
+              type: 'info'
+            }, ...prev]);
+            setUnreadCount(c => c + 1);
+
+            // Save to cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+              rate: rate,
+              timestamp: Date.now(), // Cache timestamp (when we fetched it)
+              dataDate: dateStr      // Actual data date
+            }));
+            setIsFetchingRates(false);
+            return;
+          }
+        }
+
+        throw new Error("Invalid data structure from HKMA API");
+
+      } catch (err) {
+        console.error("HIBOR Fetch Error:", err);
+        setFetchError("Failed to fetch live rate. Please input manually.");
+        setDataSource('fallback'); // This will enable manual input
+        setHibor(2.50); // Set a more realistic fallback (current ~2.50) rather than 4.15
+      } finally {
+        setIsFetchingRates(false);
+      }
+    };
+
+    // 1. Check Cache
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    if (cachedData) {
+      try {
+        const { rate, timestamp, dataDate } = JSON.parse(cachedData);
+        const age = Date.now() - timestamp;
+
+        if (age < CACHE_DURATION) {
+          setHibor(rate);
+          // If we have a data date, use that for display, otherwise fallback to cache time
+          setLastRateUpdate(dataDate ? new Date(dataDate) : new Date(timestamp));
+          setDataSource('cached');
+          return; // Skip fetch
+        }
+      } catch (e) {
+        localStorage.removeItem(CACHE_KEY);
+      }
+    }
+
+    // 2. Fetch if no valid cache
+    fetchLiveHibor();
+
+  }, []); // Run once on mount
+
+
 
   // --- Helper: Mortgage PMT ---
   const calculatePMT = (rate: number, nper: number, pv: number) => {
@@ -1248,67 +1325,7 @@ const App = () => {
     setBudget(unlockedCash);
   };
 
-  // --- Live Feed Simulation ---
-  useEffect(() => {
-    if (dataSource === 'live') {
-      const fetchLiveHibor = async () => {
-        setIsFetchingRates(true);
-        // In a real production environment, this would call a secure backend proxy 
-        // that handles the CORS request to the HKAB website.
-        // For this demo, we simulate the network delay and return a realistic current rate.
-        try {
-          // Simulate network delay
-          await new Promise(resolve => setTimeout(resolve, 1500));
 
-          // Mock parsing logic from https://www.hkab.org.hk/tc/rates/hibor
-          // Current 1M HIBOR is fluctuating around 4.12 - 4.16
-          const simulatedLiveRate = 4.13571; // Specific value to look authentic
-
-          setHibor(simulatedLiveRate);
-          setSimulatedHibor(simulatedLiveRate);
-          setLastRateUpdate(new Date());
-
-          // Add notification
-          setNotifications(prev => [{
-            id: Date.now(),
-            title: t.marketDataUpdate,
-            message: `HIBOR Rate refreshed: ${simulatedLiveRate}%`,
-            time: 'Just now',
-            type: 'info'
-          }, ...prev]);
-          setUnreadCount(c => c + 1);
-
-          // Cache it
-          localStorage.setItem('hibor_live_cache', JSON.stringify({
-            rate: simulatedLiveRate,
-            timestamp: new Date().toISOString()
-          }));
-        } catch (e) {
-          console.error("Failed to fetch live rates", e);
-        } finally {
-          setIsFetchingRates(false);
-        }
-      };
-
-      // Check cache first
-      const cached = localStorage.getItem('hibor_live_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const cacheTime = new Date(parsed.timestamp);
-        const now = new Date();
-        // Use cache if less than 1 hour old
-        if ((now.getTime() - cacheTime.getTime()) < 3600000) {
-          setHibor(parsed.rate);
-          setSimulatedHibor(parsed.rate);
-          setLastRateUpdate(cacheTime);
-        } else {
-          fetchLiveHibor();
-        }
-      } else {
-        fetchLiveHibor();
-      }
-    }
-  }, [dataSource]);
 
   // --- Calculations ---
   const {
@@ -1935,9 +1952,12 @@ const App = () => {
                         </div>
 
                         {/* Mortgage Rate Terms (Replaces single input) */}
-                        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
-                          <InputField label={t.primeRate} value={primeRate} onChange={setPrimeRate} suffix="%" step={0.125} />
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                          <InputField label={t.hiborRate} value={parseFloat(hibor.toFixed(2))} onChange={() => { }} prefix="" suffix="%" disabled />
                           <InputField label={t.hSpread} value={mortgageHSpread} onChange={setMortgageHSpread} suffix="%" step={0.1} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InputField label={t.primeRate} value={primeRate} onChange={setPrimeRate} suffix="%" step={0.125} />
                           <InputField label={t.pCap} value={mortgagePModifier} onChange={setMortgagePModifier} suffix="%" step={0.1} />
                         </div>
 
@@ -1989,7 +2009,7 @@ const App = () => {
                         onChange={setHibor}
                         prefix=""
                         step={0.01}
-                        disabled={dataSource === 'live'}
+                        disabled={dataSource === 'live' || dataSource === 'cached'}
                       />
                       <InputField label={t.spread} value={spread} onChange={setSpread} prefix="" step={0.05} />
                     </div>
@@ -2429,21 +2449,21 @@ const App = () => {
                         </p>
                         <SelectField
                           label="Primary Feed"
-                          value={dataSource}
-                          onChange={setDataSource}
-                          options={[{ value: 'live', label: 'Bloomberg (Live)' }, { value: 'manual', label: 'Manual Input' }]}
+                          value={dataSource === 'cached' ? 'live' : dataSource}
+                          onChange={(val: any) => setDataSource(val === 'live' ? 'live' : 'manual')}
+                          options={[{ value: 'live', label: 'HKMA (Open API)' }, { value: 'manual', label: 'Manual Input' }]}
                         />
 
                         {/* Caching Source Details */}
-                        {dataSource === 'live' && (
+                        {(dataSource === 'live' || dataSource === 'cached' || dataSource === 'fallback') && (
                           <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
                             <div className="flex justify-between items-center">
                               <div className="flex items-center gap-2 text-xs text-slate-600">
                                 <LinkIcon className="w-3 h-3" />
                                 <span className="font-bold">{t.sourceUrl}</span>
                               </div>
-                              <a href="https://www.hkab.org.hk/tc/rates/hibor" target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#c5a059] hover:underline truncate max-w-[150px]">
-                                hkab.org.hk/tc/rates/hibor
+                              <a href="https://api.hkma.gov.hk" target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#c5a059] hover:underline truncate max-w-[150px]">
+                                api.hkma.gov.hk
                               </a>
                             </div>
                             <div className="flex justify-between items-center">
@@ -2452,16 +2472,16 @@ const App = () => {
                                 <span className="font-bold">{t.cachingStatus}</span>
                               </div>
                               <span className="text-[10px] text-emerald-600 font-mono">
-                                {isFetchingRates ? 'Syncing...' : 'Cached (LocalStorage)'}
+                                {isFetchingRates ? 'Syncing...' : dataSource === 'cached' ? 'Cached (LocalStorage)' : 'Live (HKMA)'}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <div className="flex items-center gap-2 text-xs text-slate-600">
                                 <Clock className="w-3 h-3" />
-                                <span className="font-bold">{t.lastUpdated}</span>
+                                <span className="font-bold">Data Date</span>
                               </div>
                               <span className="text-[10px] text-slate-500 font-mono">
-                                {lastRateUpdate ? lastRateUpdate.toLocaleTimeString() : 'Pending...'}
+                                {lastRateUpdate ? lastRateUpdate.toLocaleDateString() : 'N/A'}
                               </span>
                             </div>
                           </div>
