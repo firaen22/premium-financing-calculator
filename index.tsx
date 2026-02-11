@@ -122,7 +122,7 @@ const PrintStyles = () => (
 const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: any) => {
   if (!dataY10 || !dataY15 || !dataY20 || !dataY30) return null;
 
-  const isZh = lang !== 'en';
+  const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
   const exchangeRate = 7.8;
 
   const years = [dataY10, dataY15, dataY20, dataY30];
@@ -139,9 +139,9 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
     }).format(amount);
   };
 
-  const CalculationRow = ({ label, labelZh, dataKey, isNeg = false }: any) => (
+  const CalculationRow = ({ label, dataKey, isNeg = false }: any) => (
     <div className={rowStyle}>
-      <div className="pl-3 font-medium text-slate-700">{isZh ? labelZh : label}</div>
+      <div className="pl-3 font-medium text-slate-700">{label}</div>
       {years.map((y, i) => (
         <div key={i} className={`text-right pr-4 font-mono ${isNeg ? 'text-red-600' : 'text-slate-900'}`}>
           {isNeg ? `(${f(y[dataKey], 'USD')})` : f(y[dataKey], 'USD')}
@@ -153,27 +153,27 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
   return (
     <div className="w-full">
       <div className={headerStyle}>
-        <div className="pl-3">{isZh ? '項目' : 'ITEM'}</div>
-        <div className="text-right pr-4">Year 10 (USD)</div>
-        <div className="text-right pr-4">Year 15 (USD)</div>
-        <div className="text-right pr-4">Year 20 (USD)</div>
-        <div className="text-right pr-4">Year 30 (USD)</div>
+        <div className="pl-3">{t.item}</div>
+        <div className="text-right pr-4">{t.yearHeader.replace('{year}', '10')}</div>
+        <div className="text-right pr-4">{t.yearHeader.replace('{year}', '15')}</div>
+        <div className="text-right pr-4">{t.yearHeader.replace('{year}', '20')}</div>
+        <div className="text-right pr-4">{t.yearHeader.replace('{year}', '30')}</div>
       </div>
 
-      <div className={sectionHeaderStyle}>{isZh ? '傳承給下一代 / 取消計劃 (淨資産)' : 'NET EQUITY / INHERITANCE'}</div>
-      <CalculationRow label="Policy Surrender Value (AIA)" labelZh="退保價值：AIA友邦保單" dataKey="surrenderValue" />
-      <CalculationRow label="Bond Principal (Net)" labelZh="銀行資產" dataKey="bondPrincipal" />
-      <CalculationRow label="Reserve Cash" labelZh="備用現金" dataKey="cashValue" />
-      <CalculationRow label="(Less) Policy Loan" labelZh="減：保單貸款" dataKey="loan" isNeg />
-      <CalculationRow label="(Less) Mortgage Balance" labelZh="減：按揭餘額" dataKey="mortgageBalance" isNeg />
+      <div className={sectionHeaderStyle}>{t.netEquityInheritance}</div>
+      <CalculationRow label={t.policySurrenderValue} dataKey="surrenderValue" />
+      <CalculationRow label={t.bondPrincipalNetLabel} dataKey="bondPrincipal" />
+      <CalculationRow label={t.reserveCash} dataKey="cashValue" />
+      <CalculationRow label={t.lessPolicyLoan} dataKey="loan" isNeg />
+      <CalculationRow label={t.lessMortgageBalance} dataKey="mortgageBalance" isNeg />
 
-      <div className={sectionHeaderStyle}>{isZh ? '經營方案現金流 (累計收益)' : 'CUMULATIVE CASH FLOW'}</div>
-      <CalculationRow label="Cumulative Bond Interest" labelZh="加：債券基金利息 (累計)" dataKey="cumulativeBondInterest" />
-      <CalculationRow label="(Less) Cumulative Mortgage Payments" labelZh="減：按揭供款 (累計)" dataKey="cumulativeMortgageCost" isNeg />
-      <CalculationRow label="(Less) Cumulative Loan Interests" labelZh="減：保單貸款利息 (累計)" dataKey="cumulativeInterest" isNeg />
+      <div className={sectionHeaderStyle}>{t.cumulativeCashFlow}</div>
+      <CalculationRow label={t.cumulativeBondInterest} dataKey="cumulativeBondInterest" />
+      <CalculationRow label={t.lessCumulativeMortgagePayments} dataKey="cumulativeMortgageCost" isNeg />
+      <CalculationRow label={t.lessCumulativeLoanInterests} dataKey="cumulativeInterest" isNeg />
 
       <div className="grid grid-cols-5 bg-slate-100 py-3 mt-4 border-y border-slate-900 font-bold">
-        <div className="pl-3 text-xs">{isZh ? '預計淨資産 (USD)' : 'NET EQUITY (USD)'}</div>
+        <div className="pl-3 text-xs">{t.netEquityUsd}</div>
         {years.map((y, i) => (
           <div key={i} className="text-right pr-4 text-xs font-mono">
             {f(y ? y.netEquity : 0, 'USD')}
@@ -181,7 +181,7 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
         ))}
       </div>
       <div className="grid grid-cols-5 bg-slate-100/50 py-3 border-b border-slate-900 font-bold">
-        <div className="pl-3 text-xs font-serif text-[#c5a059]">{isZh ? '預計淨資産 (HKD)' : 'NET EQUITY (HKD)'}</div>
+        <div className="pl-3 text-xs font-serif text-[#c5a059]">{t.netEquityHkd}</div>
         {years.map((y, i) => (
           <div key={i} className="text-right pr-4 text-xs font-mono text-[#c5a059]">
             {f(y ? y.netEquity : 0, 'HKD')}
@@ -202,17 +202,17 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
     <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-8 overflow-hidden flex flex-col font-serif">
       <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
-          <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">PRIVATE Wealth</div>
-          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none">Financing<br />Strategy</div>
+          <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">{t.privateWealth}</div>
+          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none">{t.financingStrategy}</div>
         </div>
-        <div className="text-[10px] text-slate-400 uppercase tracking-widest">Page {pageNum} of 8</div>
+        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{t.page} {pageNum} {t.of} 8</div>
       </div>
       <div className="flex-1">
         {children}
       </div>
       <div className="mt-2 flex justify-between items-end border-t border-slate-100 pt-2 text-[9px] text-slate-300">
-        <div>STRICTLY CONFIDENTIAL • FOR PROFESSIONAL ADVISOR USE ONLY</div>
-        <div>{new Date().toLocaleDateString()} • REF: PF-2024-8921</div>
+        <div>{t.confidentialFooter}</div>
+        <div>{new Date().toLocaleDateString()} • {t.refPrefix}: PF-2024-8921</div>
       </div>
     </div>
   );
@@ -236,59 +236,59 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
       <div className="pdf-only page-break bg-slate-900 w-[297mm] h-[210mm] relative p-16 flex flex-col justify-center overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-[#c5a059] opacity-10 -skew-x-12 translate-x-20"></div>
         <div className="relative border-l-4 border-[#c5a059] pl-10">
-          <div className="text-white text-lg font-serif tracking-[0.3em] uppercase mb-4 opacity-60">Wealth Management</div>
+          <div className="text-white text-lg font-serif tracking-[0.3em] uppercase mb-4 opacity-60">{t.wealthManagement}</div>
           <h1 className="text-white text-7xl font-serif leading-tight mb-8">
-            Premium Financing<br />
-            <span className="text-[#c5a059]">Strategic Proposal</span>
+            {t.premiumFinancing}<br />
+            <span className="text-[#c5a059]">{t.strategicProposal}</span>
           </h1>
           <div className="w-32 h-1 bg-[#c5a059] mb-12"></div>
           <div className="space-y-4">
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Prepared For</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">{t.preparedFor}</div>
               <div className="text-2xl text-white font-serif opacity-90">{clientName}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Presented By</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">{t.presentedBy}</div>
               <div className="text-xl text-white font-serif opacity-90 italic">{representativeName}</div>
             </div>
           </div>
         </div>
         <div className="absolute bottom-16 right-16 text-right">
-          <div className="text-4xl text-white font-serif opacity-20 mb-2 italic">Strictly Private</div>
-          <div className="text-xs text-white/40 font-mono tracking-widest uppercase">{new Date().getFullYear()} COLLECTION</div>
+          <div className="text-4xl text-white font-serif opacity-20 mb-2 italic">{t.strictlyPrivate}</div>
+          <div className="text-xs text-white/40 font-mono tracking-widest uppercase">{new Date().getFullYear()} {t.collection}</div>
         </div>
       </div>
 
       {/* Page 2: Executive Summary */}
       <PageContainer pageNum={2}>
-        <SectionTitle title={t.executiveSummary} subtitle="Strategic Overview & Objectives" />
+        <SectionTitle title={t.executiveSummary} subtitle={t.strategicOverviewSubtitle} />
         <div className="grid grid-cols-2 gap-12 mt-10">
           <div className="space-y-8">
             <div className="bg-slate-50 p-8 border border-slate-100 italic text-slate-600 leading-relaxed text-sm">
-              "This proposal outlines a tax-efficient wealth enhancement strategy utilizing high-quality fixed income assets and universal life insurance. By leveraging existing property equity, we aim to augment the total estate value while maintaining a neutral net-carry position."
+              {t.execSummaryBody}
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-white border-l-2 border-slate-900 p-4 shadow-sm">
-                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">Target Net Equity (Y30)</div>
+                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.targetNetEquity}</div>
                 <div className="text-2xl font-serif text-slate-900 mb-1">{formatCurrency(netEquityAt30)}</div>
-                <div className="text-[9px] text-emerald-600 font-bold">PROJECTION SUCCESS</div>
+                <div className="text-[9px] text-emerald-600 font-bold">{t.projectionSuccess}</div>
               </div>
               <div className="bg-white border-l-2 border-[#c5a059] p-4 shadow-sm">
-                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">Projected ROI (Annual)</div>
+                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.projectedRoi}</div>
                 <div className="text-2xl font-serif text-[#c5a059] mb-1">{roi.toFixed(1)}%</div>
-                <div className="text-[9px] text-[#c5a059] font-bold italic">OPTIMIZED STRUCTURE</div>
+                <div className="text-[9px] text-[#c5a059] font-bold italic">{t.optimizedStructure}</div>
               </div>
             </div>
           </div>
           <div className="space-y-6">
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 flex items-center gap-2">
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Key Objectives
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {t.keyObjectives}
             </h4>
             <div className="space-y-4">
               {[
-                { t: "Asset Diversification", d: "Reallocating property equity into liquid financial instruments and insurance protection." },
-                { t: "Liquidity Enhancement", d: "Maintaining accessible cash reserves while keeping assets fully productive." },
-                { t: "Estate Maximization", d: "Structuring for efficient inter-generational wealth transfer (Inheritance)." }
+                { t: t.objAssetDiversification, d: t.objAssetDiversificationDesc },
+                { t: t.objLiquidityEnhancement, d: t.objLiquidityEnhancementDesc },
+                { t: t.objEstateMaximization, d: t.objEstateMaximizationDesc }
               ].map((item, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[8px] font-bold mt-1 shrink-0">{i + 1}</div>
@@ -305,7 +305,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 3: Capital Allocation */}
       <PageContainer pageNum={3}>
-        <SectionTitle title={t.capitalAllocation} subtitle="Asset Structure & Funding Source" />
+        <SectionTitle title={t.capitalAllocation} subtitle={t.assetStructureSubtitle} />
 
         {/* Concept Diagram Section */}
         <div className="mt-2 bg-slate-50 border border-slate-100 rounded p-4">
@@ -339,7 +339,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 4: Performance Studio */}
       <PageContainer pageNum={4}>
-        <SectionTitle title={t.performanceStudio} subtitle="30-Year Financial Projection" />
+        <SectionTitle title={t.performanceStudio} subtitle={t.financialProjectionSubtitle} />
         <div className="mt-6 border border-slate-100 p-8 rounded bg-white">
           <div className="h-96 w-full mt-4">
             <ResponsiveContainer width="100%" height="100%">
@@ -403,9 +403,9 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
               { y: 30, v: dataY30.surrenderValue, g: 0, l: "Base Policy" },
             ].map((m, i) => (
               <div key={i} className="text-center">
-                <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">{m.l || `Year ${m.y} Projection`}</div>
+                <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">{m.l || t.yearProjection.replace('{year}', m.y)}</div>
                 <div className="text-xl font-serif text-slate-900 border-b border-slate-100 pb-2 mb-2">{formatCurrency(m.v)}</div>
-                {m.g !== 0 && <div className="text-[9px] font-bold text-emerald-600 font-mono">+{formatCurrency(m.g)} Gain</div>}
+                {m.g !== 0 && <div className="text-[9px] font-bold text-emerald-600 font-mono">+{formatCurrency(m.g)} {t.gain}</div>}
               </div>
             ))}
           </div>
@@ -414,51 +414,51 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 5: Holdings Analysis */}
       <PageContainer pageNum={5}>
-        <SectionTitle title={t.holdingsAnalysis} subtitle="Asset Details & Financing Terms" />
+        <SectionTitle title={t.holdingsAnalysis} subtitle={t.assetStructureSubtitle} />
         <div className="grid grid-cols-2 gap-10 mt-10">
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
-              <Shield className="w-3 h-3 text-[#c5a059]" /> Insurance (AIA Global)
+              <Shield className="w-3 h-3 text-[#c5a059]" /> {t.insuranceAia}
             </h4>
             <div className="bg-slate-50 rounded p-6 space-y-4 border border-slate-100 shadow-inner">
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Total Premium</span>
+                <span className="text-slate-500">{t.totalPolicyValue}</span>
                 <span className="font-serif font-bold text-slate-900">{formatCurrency(totalPremium)}</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Premium Financing (Loan)</span>
+                <span className="text-slate-500">{t.premiumFinancingLoan}</span>
                 <span className="font-serif font-bold text-slate-900">{formatCurrency(bankLoan)}</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Interest Calculation Basis</span>
+                <span className="text-slate-500">{t.interestCalcBasis}</span>
                 <span className="font-mono text-slate-900 font-bold">1M HIBOR + 1.25%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Financing LTV</span>
-                <span className="font-serif font-bold text-slate-900">90% of Day-1 CV</span>
+                <span className="text-slate-500">{t.financingLtv}</span>
+                <span className="font-serif font-bold text-slate-900">90%</span>
               </div>
             </div>
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
-              <Server className="w-3 h-3 text-blue-900" /> Fixed Income (Bond Fund)
+              <Server className="w-3 h-3 text-blue-900" /> {t.fixedIncomeBond}
             </h4>
             <div className="bg-slate-50 rounded p-6 space-y-4 border border-slate-100 shadow-inner">
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Fund Principal (Market Value)</span>
+                <span className="text-slate-500">{t.fundPrincipal}</span>
                 <span className="font-serif font-bold text-slate-900">$2,000,000</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Target Annual Yield</span>
+                <span className="text-slate-500">{t.targetAnnualYield}</span>
                 <span className="font-serif font-bold text-slate-900">8.50%</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
-                <span className="text-slate-500">Pledge to Bank</span>
-                <span className="font-sans font-bold text-slate-900">100% Secure Collateral</span>
+                <span className="text-slate-500">{t.pledgeToBank}</span>
+                <span className="font-sans font-bold text-slate-900">{t.secureCollateral}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-slate-500">Investment Status</span>
-                <span className="text-emerald-600 font-bold uppercase italic">Active Management</span>
+                <span className="text-slate-500">{t.investmentStatus}</span>
+                <span className="text-emerald-600 font-bold uppercase italic">{t.activeManagement}</span>
               </div>
             </div>
           </div>
@@ -467,7 +467,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 6: Detailed Calculations */}
       <PageContainer pageNum={6}>
-        <SectionTitle title={t.detailedCalculations} subtitle="Milestone Year Breakdowns (USD/HKD)" />
+        <SectionTitle title={t.detailedCalculations} subtitle={t.milestoneBreakdownSubtitle} />
         <div className="mt-8 bg-white border border-slate-200 rounded-sm shadow-sm p-4">
           <DetailedCalculationTable
             dataY10={dataY10}
@@ -478,13 +478,13 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           />
         </div>
         <div className="mt-4 text-[8px] text-slate-400 italic leading-relaxed">
-          Disclaimer: Calculations above assume constant interest rates and fund yields as specified in the system parameters. Fluctuations in HIBOR or Prime Rate will impact the net carry and cumulative gain.
+          {t.calculationDisclaimer}
         </div>
       </PageContainer>
 
       {/* Page 7: Ledger Statement */}
       <PageContainer pageNum={7}>
-        <SectionTitle title={t.ledgerStatement} subtitle="30-Year Cash Flow & Equity Projection" />
+        <SectionTitle title={t.ledgerStatement} subtitle={t.cashFlowProjectionSubtitle} />
         <div className="mt-2">
           <table className="w-full text-[6px] border-collapse leading-tight">
             <thead>
@@ -521,76 +521,68 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
             </tbody>
           </table>
           <div className="mt-2 text-[6px] text-slate-400 italic text-right">
-            * Values in USD unless otherwise specified. Projections assume constant rates.
+            {t.ledgerDisclaimer}
           </div>
         </div>
       </PageContainer>
 
       {/* Page 8: Risk Analysis */}
       <PageContainer pageNum={8}>
-        <SectionTitle title={t.riskAnalysis} subtitle="Stress Testing & Sensitivities" />
+        <SectionTitle title={t.riskAnalysis} subtitle={t.stressTestingSubtitle} />
         <div className="mt-10 grid grid-cols-2 gap-12">
           <div className="space-y-8">
             <div className="bg-red-50 p-6 border-l-4 border-red-500 rounded">
-              <h5 className="text-[10px] font-bold uppercase text-red-900 mb-2">Interest Rate Sensitivity</h5>
+              <h5 className="text-[10px] font-bold uppercase text-red-900 mb-2">{t.interestRateSensitivity}</h5>
               <p className="text-[10px] text-red-700 leading-relaxed">
-                A 2% increase in HIBOR would reduce the annual net carry by approximately $40,000. Break-even HIBOR for this strategy is 7.25%.
+                {t.interestRateSensitivityDesc}
               </p>
             </div>
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4">Risk Mitigation Strategies</h4>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4">{t.riskMitigationStrategies}</h4>
               <ul className="space-y-3 text-[10px] text-slate-600">
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>Interest Cap: Mortgage capping mechanism protects against extreme rate spikes.</span>
+                  <span>{t.riskMitigation1}</span>
                 </li>
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>Collateral Buffer: $2M Bond fund provides significant equity cushion for the loan.</span>
+                  <span>{t.riskMitigation2}</span>
                 </li>
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>Liquidity Reserve: $138k initial cash reserve held for unforeseen margin calls.</span>
+                  <span>{t.riskMitigation3}</span>
                 </li>
               </ul>
             </div>
           </div>
           <div className="bg-slate-50 p-8 rounded flex flex-col items-center justify-center border border-slate-100">
-            <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">STRESS MAP</div>
+            <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">{t.stressMap}</div>
             <div className="w-full grid grid-cols-5 grid-rows-5 gap-1 shrink-0">
               {[...Array(25)].map((_, i) => (
                 <div key={i} className={`h-8 rounded-sm ${i < 10 ? 'bg-emerald-200' : i < 18 ? 'bg-orange-200' : 'bg-red-200'} opacity-60`}></div>
               ))}
             </div>
-            <div className="mt-4 text-[9px] text-slate-400 uppercase tracking-widest font-bold">Market Risk Heatmap (Simulated)</div>
+            <div className="mt-4 text-[9px] text-slate-400 uppercase tracking-widest font-bold">{t.marketRiskHeatmap}</div>
           </div>
         </div>
       </PageContainer>
 
       {/* Page 9: Disclaimers */}
       <PageContainer pageNum={9}>
-        <SectionTitle title={t.disclaimers} subtitle="Terms, Conditions & Regulatory Notices" />
+        <SectionTitle title={t.disclaimers} subtitle={t.termsConditionsSubtitle} />
         <div className="mt-10 overflow-y-auto max-h-[130mm] pr-4 space-y-6 text-[9px] text-slate-500 leading-relaxed text-justify">
-          <p>
-            This proposal is for illustrative purposes only and does not constitute an offer, solicitation or recommendation to purchase any insurance product or financial instrument. The information contained herein is based on current market conditions and assumptions which are subject to change without notice.
-          </p>
-          <p>
-            Investment involved risks. The price of units and the income from them may go down as well as up and any past performance figures shown are not indicative of future performance. You should not invest unless the intermediary who sells it to you has explained to you that the product is suitable for you having regard to your financial situation, investment experience and investment objectives.
-          </p>
-          <p>
-            Premium financing involves borrowing money to pay for life insurance premiums. This strategy carries risks including interest rate risk (should the cost of borrowing exceed the policy returns), margin call risk (should the collateral value fall below the bank's requirements), and policy surrender risk. Guaranteed and non-guaranteed values of the insurance policy are as illustrated by AIA (Hong Kong) and are subject to the carrier's performance and credit risk.
-          </p>
-          <p>
-            In the event of a cross-border solicitation (specifically for Mainland China residents), please note that this proposal is for informational use only and any transaction must be completed in accordance with the regulatory requirements of Hong Kong and the PRC. No solicitation of insurance business is intended within the mainland territory.
-          </p>
+          <p>{t.disclaimer1}</p>
+          <p>{t.disclaimer2}</p>
+          <p>{t.disclaimer3}</p>
+          <p>{t.disclaimer4}</p>
           <div className="pt-10 border-t border-slate-100 mt-10">
             <div className="flex justify-between">
               <div className="w-48 border-b border-slate-400 h-10"></div>
               <div className="w-48 border-b border-slate-400 h-10"></div>
             </div>
             <div className="flex justify-between mt-2 font-bold uppercase tracking-widest text-[8px] text-slate-400">
-              <span>Client Signature</span>
-              <span>Advisor Signature</span>
+              <span>{t.clientSignature}</span>
+              <span>{t.advisorSignature}</span>
             </div>
           </div>
         </div>
@@ -649,7 +641,6 @@ const TRANSLATIONS = {
     rm: "RM",
     seniorBanker: "Senior Banker",
     financingProposal: "Financing Proposal",
-    preparedFor: "Prepared for:",
     estateOf: "Estate of Mr. H.N.W.",
     hiborRate: "1M HIBOR Rate",
     capitalAllocation: "Capital Allocation",
@@ -791,7 +782,98 @@ const TRANSLATIONS = {
     performanceStudio: "Performance Studio",
     detailedCalculations: "Detailed Calculations",
     riskAnalysis: "Risk Analysis",
-    disclaimers: "Important Disclaimers"
+    disclaimers: "Important Disclaimers",
+    // PDF Specific - Cover
+    financingStrategy: "Financing Strategy",
+    page: "Page",
+    of: "of",
+    confidentialFooter: "STRICTLY CONFIDENTIAL • FOR PROFESSIONAL ADVISOR USE ONLY",
+    refPrefix: "REF",
+    premiumFinancing: "Premium Financing",
+    strategicProposal: "Strategic Proposal",
+    preparedFor: "Prepared For",
+    presentedBy: "Presented By",
+    strictlyPrivate: "Strictly Private",
+    collection: "COLLECTION",
+
+    // Detailed Calculation Table
+    item: "ITEM",
+    yearHeader: "Year {year} (USD)",
+    netEquityInheritance: "NET EQUITY / INHERITANCE",
+    policySurrenderValue: "Policy Surrender Value (AIA)",
+    bondPrincipalNetLabel: "Bond Principal (Net)",
+    reserveCash: "Reserve Cash",
+    lessPolicyLoan: "(Less) Policy Loan",
+    lessMortgageBalance: "(Less) Mortgage Balance",
+    cumulativeCashFlow: "CUMULATIVE CASH FLOW",
+    cumulativeBondInterest: "Cumulative Bond Interest",
+    lessCumulativeMortgagePayments: "(Less) Cumulative Mortgage Payments",
+    lessCumulativeLoanInterests: "(Less) Cumulative Loan Interests",
+    netEquityUsd: "NET EQUITY (USD)",
+    netEquityHkd: "NET EQUITY (HKD)",
+
+    // Exec Summary
+    strategicOverviewSubtitle: "Strategic Overview & Objectives",
+    execSummaryBody: "\"This proposal outlines a tax-efficient wealth enhancement strategy utilizing high-quality fixed income assets and universal life insurance. By leveraging existing property equity, we aim to augment the total estate value while maintaining a neutral net-carry position.\"",
+    targetNetEquity: "Target Net Equity (Y30)",
+    projectionSuccess: "PROJECTION SUCCESS",
+    projectedRoi: "Projected ROI (Annual)",
+    optimizedStructure: "OPTIMIZED STRUCTURE",
+    keyObjectives: "Key Objectives",
+    objAssetDiversification: "Asset Diversification",
+    objAssetDiversificationDesc: "Reallocating property equity into liquid financial instruments and insurance protection.",
+    objLiquidityEnhancement: "Liquidity Enhancement",
+    objLiquidityEnhancementDesc: "Maintaining accessible cash reserves while keeping assets fully productive.",
+    objEstateMaximization: "Estate Maximization",
+    objEstateMaximizationDesc: "Structuring for efficient inter-generational wealth transfer (Inheritance).",
+
+    // Strategy
+    assetStructureSubtitle: "Asset Structure & Funding Source",
+    insuranceAia: "Insurance (AIA Global)",
+    premiumFinancingLoan: "Premium Financing (Loan)",
+    interestCalcBasis: "Interest Calculation Basis",
+    financingLtv: "Financing LTV",
+    fixedIncomeBond: "Fixed Income (Bond Fund)",
+    fundPrincipal: "Fund Principal (Market Value)",
+    targetAnnualYield: "Target Annual Yield",
+    pledgeToBank: "Pledge to Bank",
+    secureCollateral: "100% Secure Collateral",
+    investmentStatus: "Investment Status",
+    activeManagement: "Active Management",
+
+    // Performance
+    financialProjectionSubtitle: "30-Year Financial Projection",
+    basePolicy: "Base Policy",
+    yearProjection: "Year {year} Projection",
+    gain: "Gain",
+
+    // Detailed Calc
+    milestoneBreakdownSubtitle: "Milestone Year Breakdowns (USD/HKD)",
+    calculationDisclaimer: "Disclaimer: Calculations above assume constant interest rates and fund yields as specified in the system parameters. Fluctuations in HIBOR or Prime Rate will impact the net carry and cumulative gain.",
+
+    // Ledger
+    cashFlowProjectionSubtitle: "30-Year Cash Flow & Equity Projection",
+    ledgerDisclaimer: "* Values in USD unless otherwise specified. Projections assume constant rates.",
+
+    // Risk
+    stressTestingSubtitle: "Stress Testing & Sensitivities",
+    interestRateSensitivity: "Interest Rate Sensitivity",
+    interestRateSensitivityDesc: "A 2% increase in HIBOR would reduce the annual net carry by approximately $40,000. Break-even HIBOR for this strategy is 7.25%.",
+    riskMitigationStrategies: "Risk Mitigation Strategies",
+    riskMitigation1: "Interest Cap: Mortgage capping mechanism protects against extreme rate spikes.",
+    riskMitigation2: "Collateral Buffer: $2M Bond fund provides significant equity cushion for the loan.",
+    riskMitigation3: "Liquidity Reserve: $138k initial cash reserve held for unforeseen margin calls.",
+    stressMap: "STRESS MAP",
+    marketRiskHeatmap: "Market Risk Heatmap (Simulated)",
+
+    // Legal
+    termsConditionsSubtitle: "Terms, Conditions & Regulatory Notices",
+    disclaimer1: "This proposal is for illustrative purposes only and does not constitute an offer, solicitation or recommendation to purchase any insurance product or financial instrument. The information contained herein is based on current market conditions and assumptions which are subject to change without notice.",
+    disclaimer2: "Investment involved risks. The price of units and the income from them may go down as well as up and any past performance figures shown are not indicative of future performance. You should not invest unless the intermediary who sells it to you has explained to you that the product is suitable for you having regard to your financial situation, investment experience and investment objectives.",
+    disclaimer3: "Premium financing involves borrowing money to pay for life insurance premiums. This strategy carries risks including interest rate risk (should the cost of borrowing exceed the policy returns), margin call risk (should the collateral value fall below the bank's requirements), and policy surrender risk. Guaranteed and non-guaranteed values of the insurance policy are as illustrated by AIA (Hong Kong) and are subject to the carrier's performance and credit risk.",
+    disclaimer4: "In the event of a cross-border solicitation (specifically for Mainland China residents), please note that this proposal is for informational use only and any transaction must be completed in accordance with the regulatory requirements of Hong Kong and the PRC. No solicitation of insurance business is intended within the mainland territory.",
+    clientSignature: "Client Signature",
+    advisorSignature: "Advisor Signature",
   },
   zh_hk: {
     // ... existing translations ...
@@ -807,7 +889,6 @@ const TRANSLATIONS = {
     rm: "客戶經理",
     seniorBanker: "資深銀行家",
     financingProposal: "融資提案",
-    preparedFor: "客戶:",
     estateOf: "H.N.W. 先生家族信託",
     hiborRate: "一個月 HIBOR",
     capitalAllocation: "資本配置",
@@ -949,7 +1030,97 @@ const TRANSLATIONS = {
     performanceStudio: "表現分析",
     detailedCalculations: "詳細計算",
     riskAnalysis: "風險分析",
-    disclaimers: "免責聲明"
+    disclaimers: "免責聲明",
+    // Detailed Calculation Table
+    item: "項目",
+    yearHeader: "第 {year} 年 (USD)",
+    netEquityInheritance: "傳承給下一代 / 取消計劃 (淨資産)",
+    policySurrenderValue: "退保價值：AIA友邦保單",
+    bondPrincipalNetLabel: "銀行資產",
+    reserveCash: "備用現金",
+    lessPolicyLoan: "減：保單貸款",
+    lessMortgageBalance: "減：按揭餘額",
+    cumulativeCashFlow: "經營方案現金流 (累計收益)",
+    cumulativeBondInterest: "加：債券基金利息 (累計)",
+    lessCumulativeMortgagePayments: "減：按揭供款 (累計)",
+    lessCumulativeLoanInterests: "減：保單貸款利息 (累計)",
+    netEquityUsd: "預計淨資産 (USD)",
+    netEquityHkd: "預計淨資産 (HKD)",
+    // PDF Specific - Cover
+    financingStrategy: "融資策略",
+    page: "頁",
+    of: "共",
+    confidentialFooter: "嚴格機密 • 僅供專業顧問使用",
+    refPrefix: "參考編號",
+    premiumFinancing: "保費融資",
+    strategicProposal: "策略建議書",
+    preparedFor: "客戶",
+    presentedBy: "顧問",
+    strictlyPrivate: "嚴格保密",
+    collection: "系列",
+
+    // Exec Summary
+    strategicOverviewSubtitle: "策略概覽與目標",
+    execSummaryBody: "\"本建議書概述了一項利用高質量固定收益資產和萬用壽險的稅務優化財富增值策略。通過利用現有物業權益，我們旨在增加總遺產價值，同時保持淨利差中立。\"",
+    targetNetEquity: "目標淨權益 (第30年)",
+    projectionSuccess: "預測成功",
+    projectedRoi: "預計投資回報率 (年化)",
+    optimizedStructure: "優化結構",
+    keyObjectives: "主要目標",
+    objAssetDiversification: "資產分散",
+    objAssetDiversificationDesc: "將物業權益重新分配至流動金融工具和保險保障。",
+    objLiquidityEnhancement: "流動性提升",
+    objLiquidityEnhancementDesc: "在保持資產完全生產力的同時，維持可動用的現金儲備。",
+    objEstateMaximization: "遺產最大化",
+    objEstateMaximizationDesc: "為高效的代際財富傳承（繼承）構建結構。",
+
+    // Strategy
+    assetStructureSubtitle: "資產結構與資金來源",
+    insuranceAia: "保險 (AIA Global)",
+    premiumFinancingLoan: "保費融資 (貸款)",
+    interestCalcBasis: "利息計算基準",
+    financingLtv: "融資按揭成數 (LTV)",
+    fixedIncomeBond: "固定收益 (債券基金)",
+    fundPrincipal: "基金本金 (市值)",
+    targetAnnualYield: "目標年收益率",
+    pledgeToBank: "抵押予銀行",
+    secureCollateral: "100% 安全抵押品",
+    investmentStatus: "投資狀況",
+    activeManagement: "主動管理",
+
+    // Performance
+    financialProjectionSubtitle: "30年財務預測",
+    basePolicy: "基本保單",
+    yearProjection: "第 {year} 年預測",
+    gain: "收益",
+
+    // Detailed Calc
+    milestoneBreakdownSubtitle: "里程碑年度細分 (USD/HKD)",
+    calculationDisclaimer: "免責聲明：以上計算假設利率和基金收益率如系統參數所示維持不變。HIBOR 或最優惠利率的波動將影響淨利差和累計收益。",
+
+    // Ledger
+    cashFlowProjectionSubtitle: "30年現金流與權益預測",
+    ledgerDisclaimer: "* 除非另有說明，數值單位為美元。預測假設利率不變。",
+
+    // Risk
+    stressTestingSubtitle: "壓力測試與敏感度分析",
+    interestRateSensitivity: "利率敏感度",
+    interestRateSensitivityDesc: "HIBOR 上升 2% 將使年度淨利差減少約 $40,000。此策略的收支平衡 HIBOR 為 7.25%。",
+    riskMitigationStrategies: "風險緩解策略",
+    riskMitigation1: "利率上限：按揭上限機制可防止極端利率飆升。",
+    riskMitigation2: "抵押緩衝：200萬美元債券基金為貸款提供顯著的權益緩衝。",
+    riskMitigation3: "流動性儲備：保留13.8萬美元初始現金儲備，以應對不可預見的保證金追收。",
+    stressMap: "壓力圖",
+    marketRiskHeatmap: "市場風險熱圖 (模擬)",
+
+    // Legal
+    termsConditionsSubtitle: "條款、條件與監管通告",
+    disclaimer1: "本建議書僅供參考，並不構成購買任何保險產品或金融工具的要約、招攬或建議。此處包含的信息基於當前市場狀況和假設，如有更改，恕不另行通知。",
+    disclaimer2: "投資涉及風險。單位價格及其收益可升可跌，過往表現數據並非未來表現的指標。除非向您銷售產品的中介人已向您解釋，考慮到您的財務狀況、投資經驗和投資目標，該產品適合您，否則您不應投資。",
+    disclaimer3: "保費融資涉及借款以支付人壽保險保費。此策略涉及風險，包括利率風險（若借貸成本超過保單回報）、追收保證金風險（若抵押品價值跌至低於銀行要求）及保單退保風險。保險保單的保證及非保證價值由 AIA (香港) 說明，並受承保人的表現及信貸風險影響。",
+    disclaimer4: "如涉及跨境招攬（特別是針對中國內地居民），請注意本建議書僅供參考，任何交易必須符合香港及中國內地的監管要求。無意在內地境內招攬保險業務。",
+    clientSignature: "客戶簽署",
+    advisorSignature: "顧問簽署",
   },
   zh_cn: {
     // ... existing translations ...
@@ -965,7 +1136,6 @@ const TRANSLATIONS = {
     rm: "客户经理",
     seniorBanker: "资深银行家",
     financingProposal: "融资提案",
-    preparedFor: "客户:",
     estateOf: "H.N.W. 先生家族信托",
     hiborRate: "一个月 HIBOR",
     capitalAllocation: "资本配置",
@@ -1107,7 +1277,97 @@ const TRANSLATIONS = {
     performanceStudio: "表现分析",
     detailedCalculations: "详细计算",
     riskAnalysis: "风险分析",
-    disclaimers: "免责声明"
+    disclaimers: "免责声明",
+    // Detailed Calculation Table
+    item: "项目",
+    yearHeader: "第 {year} 年 (USD)",
+    netEquityInheritance: "传承给下一代 / 取消计划 (净资产)",
+    policySurrenderValue: "退保价值：AIA友邦保单",
+    bondPrincipalNetLabel: "银行资产",
+    reserveCash: "备用现金",
+    lessPolicyLoan: "减：保单贷款",
+    lessMortgageBalance: "减：按揭余额",
+    cumulativeCashFlow: "经营方案现金流 (累计收益)",
+    cumulativeBondInterest: "加：债券基金利息 (累计)",
+    lessCumulativeMortgagePayments: "减：按揭供款 (累计)",
+    lessCumulativeLoanInterests: "减：保单贷款利息 (累计)",
+    netEquityUsd: "预计净资产 (USD)",
+    netEquityHkd: "预计净资产 (HKD)",
+    // PDF Specific - Cover
+    financingStrategy: "融资策略",
+    page: "页",
+    of: "共",
+    confidentialFooter: "严格机密 • 仅供专业顾问使用",
+    refPrefix: "参考编号",
+    premiumFinancing: "保费融资",
+    strategicProposal: "策略建议书",
+    preparedFor: "客户",
+    presentedBy: "顾问",
+    strictlyPrivate: "严格保密",
+    collection: "系列",
+
+    // Exec Summary
+    strategicOverviewSubtitle: "策略概览与目标",
+    execSummaryBody: "\"本建议书概述了一项利用高质量固定收益资产和万用寿险的税务优化财富增值策略。通过利用现有物业权益，我们旨在增加总遗产价值，同时保持净利差中立。\"",
+    targetNetEquity: "目标净权益 (第30年)",
+    projectionSuccess: "预测成功",
+    projectedRoi: "预计投资回报率 (年化)",
+    optimizedStructure: "优化结构",
+    keyObjectives: "主要目标",
+    objAssetDiversification: "资产分散",
+    objAssetDiversificationDesc: "将物业权益重新分配至流动金融工具和保险保障。",
+    objLiquidityEnhancement: "流动性提升",
+    objLiquidityEnhancementDesc: "在保持资产完全生产力的同时，维持可动用的现金储备。",
+    objEstateMaximization: "遗产最大化",
+    objEstateMaximizationDesc: "为高效的代际财富传承（继承）构建结构。",
+
+    // Strategy
+    assetStructureSubtitle: "资产结构与资金来源",
+    insuranceAia: "保险 (AIA Global)",
+    premiumFinancingLoan: "保费融资 (贷款)",
+    interestCalcBasis: "利息计算基准",
+    financingLtv: "融资按揭成数 (LTV)",
+    fixedIncomeBond: "固定收益 (债券基金)",
+    fundPrincipal: "基金本金 (市值)",
+    targetAnnualYield: "目标年收益率",
+    pledgeToBank: "抵押予银行",
+    secureCollateral: "100% 安全抵押品",
+    investmentStatus: "投资状况",
+    activeManagement: "主动管理",
+
+    // Performance
+    financialProjectionSubtitle: "30年财务预测",
+    basePolicy: "基本保单",
+    yearProjection: "第 {year} 年预测",
+    gain: "收益",
+
+    // Detailed Calc
+    milestoneBreakdownSubtitle: "里程碑年度细分 (USD/HKD)",
+    calculationDisclaimer: "免责声明：以上计算假设利率和基金收益率如系统参数所示维持不变。HIBOR 或最优惠利率的波动将影响净利差和累计收益。",
+
+    // Ledger
+    cashFlowProjectionSubtitle: "30年现金流与权益预测",
+    ledgerDisclaimer: "* 除非另有说明，数值单位为美元。预测假设利率不变。",
+
+    // Risk
+    stressTestingSubtitle: "压力测试与敏感度分析",
+    interestRateSensitivity: "利率敏感度",
+    interestRateSensitivityDesc: "HIBOR 上升 2% 将使年度净利差减少约 $40,000。此策略的收支平衡 HIBOR 为 7.25%。",
+    riskMitigationStrategies: "风险缓解策略",
+    riskMitigation1: "利率上限：按揭上限机制可防止极端利率飙升。",
+    riskMitigation2: "抵押缓冲：200万美元债券基金为贷款提供显著的权益缓冲。",
+    riskMitigation3: "流动性储备：保留13.8万美元初始现金储备，以应对不可预见的保证金追收。",
+    stressMap: "压力图",
+    marketRiskHeatmap: "市场风险热图 (模拟)",
+
+    // Legal
+    termsConditionsSubtitle: "条款、条件与监管通告",
+    disclaimer1: "本建议书仅供参考，并不构成购买任何保险产品或金融工具的要约、招揽或建议。此处包含的信息基于当前市场状况和假设，如有更改，恕不另行通知。",
+    disclaimer2: "投资涉及风险。单位价格及其收益可升可跌，过往表现数据并非未来表现的指标。除非向您销售产品的中介人已向您解释，考虑到您的财务状况、投资经验和投资目标，该产品适合您，否则您不应投资。",
+    disclaimer3: "保费融资涉及借款以支付人寿保险保费。此策略涉及风险，包括利率风险（若借贷成本超过保单回报）、追收保证金风险（若抵押品价值跌至低于银行要求）及保单退保风险。保险保单的保证及非保证价值由 AIA (香港) 说明，并受承保人的表现及信贷风险影响。",
+    disclaimer4: "如涉及跨境招揽（特别是针对中国内地居民），请注意本建议书仅供参考，任何交易必须符合香港及中国内地的监管要求。无意在内地境内招揽保险业务。",
+    clientSignature: "客户签署",
+    advisorSignature: "顾问签署",
   },
 };
 
