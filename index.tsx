@@ -872,6 +872,7 @@ const ReturnStudio = ({
       closingEquity: currData.netEquity,
       annualRoC: currData.annualRoC,
       cumulativeMortgageCost: currData.cumulativeMortgageCost || 0,
+      mortgageInterest: currData.cumulativeMortgageInterest || 0,
       mortgagePrincipalRepaid
     };
   };
@@ -1001,18 +1002,35 @@ const ReturnStudio = ({
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.costOfFunding}</h4>
 
               <div className="space-y-2">
+                {/* Premium Financing Interest */}
                 <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-white rounded shadow-sm text-red-600">
                       <Landmark className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-slate-700">{labels.loanInterest}</div>
+                      <div className="text-sm font-bold text-slate-700">{labels.pfInterest || "Premium Financing Interest"}</div>
                       <div className="text-[10px] text-slate-400 font-mono">Rate: {loanRate.toFixed(2)}%</div>
                     </div>
                   </div>
                   <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.loanInterest)}</div>
                 </div>
+
+                {/* Mortgage Interest (If Applicable) */}
+                {stats.mortgageInterest > 0 && (
+                  <div className="flex items-center justify-between p-4 bg-orange-50/50 border border-orange-100 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded shadow-sm text-orange-600">
+                        <Home className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-slate-700">{labels.mortgageInterest || "Mortgage Interest"}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">Interest Portion</div>
+                      </div>
+                    </div>
+                    <div className="font-serif text-orange-700 font-medium">-{formatCurrency(stats.mortgageInterest)}</div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1338,19 +1356,22 @@ const App = () => {
     if (fundSource === 'mortgage') {
       let balance = unlockedCash; // We assume the "Budget" is the Loan amount
       const annualPmt = monthlyMortgagePmt * 12;
+      let cumInterest = 0;
 
       for (let y = 0; y <= 30; y++) {
         if (y === 0) {
-          mortgageSchedule.push({ balance: balance, annualPmt: 0 });
+          mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: 0, annualInterest: 0 });
         } else if (y <= mortgageTenor) {
           // Simple annual amortization approximation for ledger
           const interestPart = balance * (effectiveMortgageRate / 100);
           const principalPart = annualPmt - interestPart;
+
+          cumInterest += interestPart;
           balance -= principalPart;
           if (balance < 0) balance = 0;
-          mortgageSchedule.push({ balance: balance, annualPmt: annualPmt });
+          mortgageSchedule.push({ balance: balance, annualPmt: annualPmt, cumInterest: cumInterest, annualInterest: interestPart });
         } else {
-          mortgageSchedule.push({ balance: 0, annualPmt: 0 });
+          mortgageSchedule.push({ balance: 0, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
         }
       }
     }
@@ -1390,6 +1411,7 @@ const App = () => {
       cumulativeNetGain: 0,
       mortgageBalance: yr0MortgageBal,
       cumulativeMortgageCost: 0,
+      cumulativeMortgageInterest: 0,
       annualMortgagePayment: 0
     });
 
@@ -1410,9 +1432,11 @@ const App = () => {
       // Mortgage Logic
       let mtgBal = 0;
       let annualMtgPmt = 0;
+      let cumMtgInt = 0;
       if (fundSource === 'mortgage') {
         mtgBal = mortgageSchedule[yr]?.balance || 0;
         annualMtgPmt = mortgageSchedule[yr]?.annualPmt || 0;
+        cumMtgInt = mortgageSchedule[yr]?.cumInterest || 0;
         runningCumMtgCost += annualMtgPmt;
         // Subtract Mortgage Balance from Net Equity (Balance Sheet Logic)
         // Net Equity = Assets - Liabilities. Liabilities include Mortgage Balance.
@@ -1464,6 +1488,7 @@ const App = () => {
         cumulativeNetGain, // Profit Value
         mortgageBalance: mtgBal,
         cumulativeMortgageCost: runningCumMtgCost,
+        cumulativeMortgageInterest: cumMtgInt,
         annualMortgagePayment: annualMtgPmt
       });
     }
