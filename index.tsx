@@ -3896,52 +3896,51 @@ const App = () => {
                     </div>
                   </div>
                 </div>
-                </div>
               )}
 
+            </div>
           </div>
         </div>
+
+        {/* Footer with Disclaimer */}
+        <footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50">
+          <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
+            {t.globalDisclaimer}
+          </p>
+          <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
+            © 2024 Private Wealth Management. Confidential & Proprietary.
+          </p>
+        </footer>
+
+      </main>
+
+      {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */}
+      <div className="pdf-container" ref={pdfRef}>
+        <PDFProposal
+          projectionData={projectionData}
+          lang={lang}
+          budget={budget}
+          totalPremium={totalPremium}
+          bankLoan={bankLoan}
+          roi={roi}
+          netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
+          propertyValue={propertyValue}
+          unlockedCash={unlockedCash}
+          hibor={hibor}
+          currentMtgRate={effectiveMortgageRate}
+          cashReserve={cashReserve}
+          netBondPrincipal={netBondPrincipal}
+          pfEquity={pfEquity}
+          fundSource={fundSource}
+          sensitivityData={sensitivityData}
+          clientName={clientName}
+          representativeName={representativeName}
+          spread={spread}
+          leverageLTV={leverageLTV}
+          bondYield={bondYield}
+        />
+      </div>
     </div>
-
-          {/* Footer with Disclaimer */ }
-  < footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50" >
-    <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
-      {t.globalDisclaimer}
-    </p>
-    <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
-      © 2024 Private Wealth Management. Confidential & Proprietary.
-    </p>
-  </footer >
-
-      </main >
-
-  {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */ }
-  < div className = "pdf-container" ref = { pdfRef } >
-    <PDFProposal
-      projectionData={projectionData}
-      lang={lang}
-      budget={budget}
-      totalPremium={totalPremium}
-      bankLoan={bankLoan}
-      roi={roi}
-      netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
-      propertyValue={propertyValue}
-      unlockedCash={unlockedCash}
-      hibor={hibor}
-      currentMtgRate={effectiveMortgageRate}
-      cashReserve={cashReserve}
-      netBondPrincipal={netBondPrincipal}
-      pfEquity={pfEquity}
-      fundSource={fundSource}
-      sensitivityData={sensitivityData}
-      clientName={clientName}
-      representativeName={representativeName}
-      spread={spread}
-      leverageLTV={leverageLTV}
-      bondYield={bondYield}
-    />
-      </div >
-    </div >
   );
 };
 
