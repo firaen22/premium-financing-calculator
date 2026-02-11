@@ -192,7 +192,7 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
   );
 };
 
-const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource, clientName, representativeName }: any) => {
+const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource, clientName, representativeName, sensitivityData }: any) => {
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
 
@@ -254,7 +254,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           </div>
         </div>
         <div className="absolute bottom-16 right-16 text-right">
-          <div className="text-4xl text-white font-serif opacity-20 mb-2 italic">{t.strictlyPrivate}</div>
+
           <div className="text-xs text-white/40 font-mono tracking-widest uppercase">{new Date().getFullYear()} {t.collection}</div>
         </div>
       </div>
@@ -555,12 +555,14 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
               </ul>
             </div>
           </div>
-          <div className="bg-slate-50 p-8 rounded flex flex-col items-center justify-center border border-slate-100">
+          <div className="bg-slate-50 p-8 rounded flex flex-col items-center justify-center border border-slate-100 w-full">
             <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">{t.stressMap}</div>
-            <div className="w-full grid grid-cols-5 grid-rows-5 gap-1 shrink-0">
-              {[...Array(25)].map((_, i) => (
-                <div key={i} className={`h-8 rounded-sm ${i < 10 ? 'bg-emerald-200' : i < 18 ? 'bg-orange-200' : 'bg-red-200'} opacity-60`}></div>
-              ))}
+            <div className="w-full">
+              <Heatmap
+                xLabels={sensitivityData?.xLabels || []}
+                yLabels={sensitivityData?.yLabels || []}
+                data={sensitivityData?.data || []}
+              />
             </div>
             <div className="mt-4 text-[9px] text-slate-400 uppercase tracking-widest font-bold">{t.marketRiskHeatmap}</div>
           </div>
@@ -3778,6 +3780,7 @@ const App = () => {
                         netBondPrincipal={netBondPrincipal}
                         pfEquity={pfEquity}
                         fundSource={fundSource}
+                        sensitivityData={sensitivityData}
                         clientName={clientName}
                         representativeName={representativeName}
                       />
