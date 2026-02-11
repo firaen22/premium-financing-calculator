@@ -192,7 +192,7 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
   );
 };
 
-const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource }: any) => {
+const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource, clientName, representativeName }: any) => {
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
 
@@ -243,11 +243,11 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="space-y-4">
             <div>
               <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Prepared For</div>
-              <div className="text-2xl text-white font-serif opacity-90">Estate of Mr. H.N.W.</div>
+              <div className="text-2xl text-white font-serif opacity-90">{clientName}</div>
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-widest text-[#c5a059] font-bold mb-1">Presented By</div>
-              <div className="text-xl text-white font-serif opacity-90 italic">Private Wealth Advisory Team</div>
+              <div className="text-xl text-white font-serif opacity-90 italic">{representativeName}</div>
             </div>
           </div>
         </div>
@@ -310,23 +310,25 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
             {isZh ? '方案概念圖' : 'STRATEGY CONCEPT DIAGRAM'}
           </div>
-          <FlowDiagram
-            budget={budget}
-            cash={cashReserve}
-            bond={netBondPrincipal}
-            equity={pfEquity}
-            loan={bankLoan}
-            premium={totalPremium}
-            labels={{
-              capital: isZh ? '資本' : 'CAPITAL',
-              liquidity: isZh ? '流動現金' : 'LIQUID CASH',
-              yieldFundNet: isZh ? '收益基金 (淨)' : 'YIELD FUND (NET)',
-              policyEquityCaps: isZh ? '初始保費' : 'INITIAL PREMIUM',
-              leverage: isZh ? '銀行貸款' : 'BANK LOAN',
-              totalExposure: isZh ? 'AIA 資本保全保單' : 'AIA CAPITAL PRESERVED POLICY'
-            }}
-            sourceType={fundSource}
-          />
+          <div className="min-h-[600px] flex items-center justify-center">
+            <FlowDiagram
+              budget={budget}
+              cash={cashReserve}
+              bond={netBondPrincipal}
+              equity={pfEquity}
+              loan={bankLoan}
+              premium={totalPremium}
+              labels={{
+                capital: isZh ? '資本' : 'CAPITAL',
+                liquidity: isZh ? '流動現金' : 'LIQUID CASH',
+                yieldFundNet: isZh ? '收益基金 (淨)' : 'YIELD FUND (NET)',
+                policyEquityCaps: isZh ? '初始保費' : 'INITIAL PREMIUM',
+                leverage: isZh ? '銀行貸款' : 'BANK LOAN',
+                totalExposure: isZh ? 'AIA 資本保全保單' : 'AIA CAPITAL PRESERVED POLICY'
+              }}
+              sourceType={fundSource}
+            />
+          </div>
         </div>
 
         {/* Funding Details */}
@@ -1769,6 +1771,8 @@ const App = () => {
   const [bondPriceDrop, setBondPriceDrop] = useState(10); // % drop
   const [showGuaranteed, setShowGuaranteed] = useState(false);
   const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
+  const [clientName, setClientName] = useState('Estate of Mr. H.N.W.');
+  const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
   // HIBOR Caching State
   const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
@@ -3130,7 +3134,23 @@ const App = () => {
               {activeView === 'systemConfig' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
 
-
+                  {/* Document Settings */}
+                  <Card title={lang === 'en' ? 'Document Settings' : '文件設定'} subtitle={lang === 'en' ? 'Client & Representative Information' : '客戶及代表資料'}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <InputField
+                        label={lang === 'en' ? 'Client Name' : '客戶姓名'}
+                        value={clientName}
+                        onChange={(val: string) => setClientName(val)}
+                        hint={lang === 'en' ? 'Displayed on PDF cover page' : '顯示於PDF封面'}
+                      />
+                      <InputField
+                        label={lang === 'en' ? 'Representative Name' : '代表姓名'}
+                        value={representativeName}
+                        onChange={(val: string) => setRepresentativeName(val)}
+                        hint={lang === 'en' ? 'Advisor or team name' : '顧問或團隊名稱'}
+                      />
+                    </div>
+                  </Card>
 
                   {/* Data Feeds Config */}
                   <Card title={t.dataFeeds} subtitle="Market Data Integration">
@@ -3360,6 +3380,8 @@ const App = () => {
                         netBondPrincipal={netBondPrincipal}
                         pfEquity={pfEquity}
                         fundSource={fundSource}
+                        clientName={clientName}
+                        representativeName={representativeName}
                       />
                     </div>
                   </div>
@@ -3399,6 +3421,8 @@ const App = () => {
           netBondPrincipal={netBondPrincipal}
           pfEquity={pfEquity}
           fundSource={fundSource}
+          clientName={clientName}
+          representativeName={representativeName}
         />
       </div>
     </div >
