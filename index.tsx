@@ -426,7 +426,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
             lang={lang}
           />
         </div>
-        <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded text-[9px] text-orange-800 leading-relaxed italic">
+        <div className="mt-4 text-[8px] text-slate-400 italic leading-relaxed">
           Disclaimer: Calculations above assume constant interest rates and fund yields as specified in the system parameters. Fluctuations in HIBOR or Prime Rate will impact the net carry and cumulative gain.
         </div>
       </PageContainer>
