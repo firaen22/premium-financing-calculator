@@ -3344,6 +3344,35 @@ const App = () => {
                         <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">A4 Landscape • 8-Page Professional Suite</p>
                       </div>
                     </div>
+
+                    {/* Quick Edit Inputs */}
+                    <div className="flex-1 flex flex-col sm:flex-row gap-4 px-4 w-full md:w-auto">
+                      <div className="flex-1">
+                        <label className="block text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">
+                          {lang === 'en' ? 'Client Name' : '客戶姓名'}
+                        </label>
+                        <input
+                          type="text"
+                          value={clientName}
+                          onChange={(e) => setClientName(e.target.value)}
+                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#c5a059]"
+                          placeholder={lang === 'en' ? 'Enter Client Name' : '輸入客戶姓名'}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">
+                          {lang === 'en' ? 'Representative' : '代表姓名'}
+                        </label>
+                        <input
+                          type="text"
+                          value={representativeName}
+                          onChange={(e) => setRepresentativeName(e.target.value)}
+                          className="w-full text-xs font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:border-[#c5a059]"
+                          placeholder={lang === 'en' ? 'Enter Rep Name' : '輸入代表姓名'}
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-3 w-full md:w-auto">
                       <button
                         onClick={() => setActiveView('allocation')}
