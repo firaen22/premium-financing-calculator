@@ -221,7 +221,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
     <div className="mb-8">
       <h2 className="text-3xl font-serif text-slate-900 mb-2">{title}</h2>
       <div className="w-16 h-1 bg-[#c5a059] mb-3"></div>
-      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em]">{subtitle}</p>
+      {subtitle && <p className="text-[10px] uppercase font-bold text-slate-400 tracking-[0.2em]">{subtitle}</p>}
     </div>
   );
 
@@ -433,43 +433,43 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
 
       {/* Page 7: Ledger Statement */}
       <PageContainer pageNum={7}>
-        <SectionTitle title={t.ledgerStatement} subtitle="30-Year Cash Flow & Equity Projection" />
-        <div className="mt-6">
-          <table className="w-full text-[8px] border-collapse">
+        <SectionTitle title={t.ledgerStatement} />
+        <div className="mt-2">
+          <table className="w-full text-[6px] border-collapse leading-tight">
             <thead>
               <tr className="bg-slate-100 text-slate-600 border-b border-slate-200">
-                <th className="py-2 px-1 text-left font-bold uppercase tracking-wider">{t.year}</th>
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cumBondInt}</th>
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cashReserve}</th>
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.bondCapitalNet}</th>
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.policyValue}</th>
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.totalLoan}</th>
-                {fundSource === 'mortgage' && <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-orange-800">{t.mortgageBalance}</th>}
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.cumLoanInt}</th>
-                {fundSource === 'mortgage' && <th className="py-2 px-1 text-right font-bold uppercase tracking-wider text-orange-600">{t.mtgCost}</th>}
-                <th className="py-2 px-1 text-right font-bold uppercase tracking-wider bg-slate-200 text-slate-900">{t.netEquity}</th>
+                <th className="py-1 px-1 text-left font-bold uppercase tracking-wider">{t.year}</th>
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cumBondInt}</th>
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-emerald-700">{t.cashReserve}</th>
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.bondCapitalNet}</th>
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-slate-700">{t.policyValue}</th>
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.totalLoan}</th>
+                {fundSource === 'mortgage' && <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-orange-800">{t.mortgageBalance}</th>}
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-red-800">{t.cumLoanInt}</th>
+                {fundSource === 'mortgage' && <th className="py-1 px-1 text-right font-bold uppercase tracking-wider text-orange-600">{t.mtgCost}</th>}
+                <th className="py-1 px-1 text-right font-bold uppercase tracking-wider bg-slate-200 text-slate-900">{t.netEquity}</th>
               </tr>
             </thead>
             <tbody>
               {projectionData.map((row: any, i: number) => (
                 <tr key={row.year} className={`border-b border-slate-50 font-mono ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                  <td className="py-1.5 px-1 text-left font-bold text-slate-900">{row.year}</td>
-                  <td className="py-1.5 px-1 text-right text-emerald-600">+{formatCurrency(row.cumulativeBondInterest)}</td>
-                  <td className="py-1.5 px-1 text-right text-emerald-600">{formatCurrency(row.cashValue)}</td>
-                  <td className="py-1.5 px-1 text-right text-slate-600">{formatCurrency(row.bondPrincipal)}</td>
-                  <td className="py-1.5 px-1 text-right text-slate-600">{formatCurrency(row.surrenderValue)}</td>
-                  <td className="py-1.5 px-1 text-right text-red-700">{formatCurrency(row.loan)}</td>
-                  {fundSource === 'mortgage' && <td className="py-1.5 px-1 text-right text-orange-800">{formatCurrency(row.mortgageBalance)}</td>}
-                  <td className="py-1.5 px-1 text-right text-red-400">({formatCurrency(row.cumulativeInterest)})</td>
-                  {fundSource === 'mortgage' && <td className="py-1.5 px-1 text-right text-orange-600">({formatCurrency(row.annualMortgagePayment)})</td>}
-                  <td className={`py-1.5 px-1 text-right font-bold ${row.netEquity >= 0 ? 'text-slate-900' : 'text-red-600'} bg-slate-50`}>
+                  <td className="py-0.5 px-1 text-left font-bold text-slate-900">{row.year}</td>
+                  <td className="py-0.5 px-1 text-right text-emerald-600">+{formatCurrency(row.cumulativeBondInterest)}</td>
+                  <td className="py-0.5 px-1 text-right text-emerald-600">{formatCurrency(row.cashValue)}</td>
+                  <td className="py-0.5 px-1 text-right text-slate-600">{formatCurrency(row.bondPrincipal)}</td>
+                  <td className="py-0.5 px-1 text-right text-slate-600">{formatCurrency(row.surrenderValue)}</td>
+                  <td className="py-0.5 px-1 text-right text-red-700">{formatCurrency(row.loan)}</td>
+                  {fundSource === 'mortgage' && <td className="py-0.5 px-1 text-right text-orange-800">{formatCurrency(row.mortgageBalance)}</td>}
+                  <td className="py-0.5 px-1 text-right text-red-400">({formatCurrency(row.cumulativeInterest)})</td>
+                  {fundSource === 'mortgage' && <td className="py-0.5 px-1 text-right text-orange-600">({formatCurrency(row.annualMortgagePayment)})</td>}
+                  <td className={`py-0.5 px-1 text-right font-bold ${row.netEquity >= 0 ? 'text-slate-900' : 'text-red-600'} bg-slate-50`}>
                     {row.formattedNetEquity}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="mt-4 text-[8px] text-slate-400 italic text-right">
+          <div className="mt-2 text-[6px] text-slate-400 italic text-right">
             * Values in USD unless otherwise specified. Projections assume constant rates.
           </div>
         </div>
