@@ -1173,6 +1173,7 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels }: any) => {
 const App = () => {
   // --- State ---
   const [activeView, setActiveView] = useState('allocation');
+  const [preventCrossBorder, setPreventCrossBorder] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const t = TRANSLATIONS[lang];
@@ -2431,6 +2432,26 @@ const App = () => {
 
               {activeView === 'systemConfig' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
+
+                  {/* Compliance & Risk Controls */}
+                  <Card title="Compliance Controls" subtitle="Cross-Border & Regulatory" goldAccent>
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex items-center gap-4">
+                        <Shield className="w-8 h-8 text-slate-400" />
+                        <div>
+                          <div className="text-sm font-bold text-slate-800">Prevent Cross-Border Sales (China)</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Enables mandatory regulatory disclaimers on all generated proposals. Does not restrict access based on location.
+                          </div>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={preventCrossBorder} onChange={(e) => setPreventCrossBorder(e.target.checked)} className="sr-only peer" />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#c5a059] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#c5a059]"></div>
+                      </label>
+                    </div>
+                  </Card>
+
                   {/* Data Feeds Config */}
                   <Card title={t.dataFeeds} subtitle="Market Data Integration">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -2440,12 +2461,12 @@ const App = () => {
                             <Server className="w-5 h-5 text-slate-600" />
                             <h4 className="text-sm font-bold text-slate-800">HIBOR Source</h4>
                           </div>
-                          <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${dataSource === 'live' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
-                            {dataSource} Mode
+                          <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${dataSource === 'live' ? 'bg-emerald-100 text-emerald-700' : dataSource === 'cached' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
+                            {dataSource === 'cached' ? 'Live' : dataSource} Mode
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                          Select the primary source for Interbank rates. 'Live' pulls from the active Bloomberg Terminal integration. 'Manual' allows override for scenario planning.
+                          Select the primary source for Interbank rates. 'Live' pulls from the active HKMA Open API integration. 'Manual' allows override for scenario planning.
                         </p>
                         <SelectField
                           label="Primary Feed"
@@ -2488,20 +2509,33 @@ const App = () => {
                         )}
                       </div>
 
-                      <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <Database className="w-5 h-5 text-slate-600" />
-                            <h4 className="text-sm font-bold text-slate-800">NAV Calculation</h4>
+                      <div className="flex flex-col gap-6">
+                        {/* Nightly Batch */}
+                        <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <Server className="w-5 h-5 text-slate-600" />
+                              <h4 className="text-sm font-bold text-slate-800">Nightly Batch</h4>
+                            </div>
+                            <span className="text-[10px] px-2 py-1 bg-slate-200 text-slate-600 rounded font-bold uppercase">Idle</span>
                           </div>
-                          <RefreshCw className="w-4 h-4 text-slate-400" />
-                        </div>
-                        <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-                          Configure the update frequency for Net Asset Value calculations on collateralized bond funds.
-                        </p>
-                        <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-200">
-                          <span className="text-xs font-bold text-slate-600">Frequency</span>
-                          <span className="text-sm font-serif text-[#020617]">Daily (EOD)</span>
+                          <p className="text-xs text-slate-500 mb-2 leading-relaxed">
+                            Automated overnight processing tasks.
+                          </p>
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
+                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
+                              <span><b>Scenario Archiving:</b> Save all active projections to database for audit.</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
+                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
+                              <span><b>Report Generation:</b> Generate PDF statements for client portfolio reviews.</span>
+                            </li>
+                            <li className="flex items-start gap-2 text-[10px] text-slate-600">
+                              <span className="w-1 h-1 rounded-full bg-slate-400 mt-1.5"></span>
+                              <span><b>Rate Sync:</b> Re-run stress tests with T-1 closing rates.</span>
+                            </li>
+                          </ul>
                         </div>
                       </div>
                     </div>
@@ -2565,21 +2599,21 @@ const App = () => {
               )}
 
             </div>
-          </div>
-        </div>
+          </div >
+        </div >
 
         {/* Footer with Disclaimer */}
-        <footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50">
+        < footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50" >
           <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
             {t.globalDisclaimer}
           </p>
           <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
             © 2024 Private Wealth Management. Confidential & Proprietary.
           </p>
-        </footer>
+        </footer >
 
-      </main>
-    </div>
+      </main >
+    </div >
   );
 };
 
