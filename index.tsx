@@ -310,7 +310,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4 text-center">
             {isZh ? '方案概念圖' : 'STRATEGY CONCEPT DIAGRAM'}
           </div>
-          <div className="min-h-[600px] flex items-center justify-center">
+          <div className="min-h-[400px] flex items-center justify-center">
             <FlowDiagram
               budget={budget}
               cash={cashReserve}
@@ -1249,9 +1249,9 @@ const FlowDiagram = ({
   budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: any, sourceType: 'cash' | 'mortgage'
 }) => {
   return (
-    <div className="w-full flex justify-center py-8">
+    <div className="w-full flex justify-center py-4">
       {/* Increased viewBox width to 500 for more breathing room for larger blocks, height to 600 */}
-      <svg width="100%" height="600" viewBox="0 0 500 600" className="w-full max-w-lg font-sans" style={{ overflow: 'visible' }}>
+      <svg width="100%" height="380" viewBox="0 0 500 600" className="w-full max-w-lg font-sans" style={{ overflow: 'visible' }}>
         <defs>
           <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,6 L6,3 z" fill="#94a3b8" />
