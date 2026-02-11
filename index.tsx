@@ -332,48 +332,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
         </div>
 
         {/* Funding Details */}
-        <div className="grid grid-cols-2 gap-8 mt-8">
-          <div className="bg-white p-6 rounded border border-slate-100 shadow-sm">
-            <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4">
-              {isZh ? '資金來源分析' : 'Funding Source Analysis'}
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-end border-b border-slate-100 pb-2">
-                <span className="text-xs text-slate-600">{isZh ? '物業估值' : 'Property Valuation'}</span>
-                <span className="text-sm font-serif">{formatCurrency(propertyValue)}</span>
-              </div>
-              <div className="flex justify-between items-end border-b border-slate-100 pb-2">
-                <span className="text-xs text-slate-600">{isZh ? '按揭再融資（已解鎖）' : 'Mortgage Refinance (Unlocked)'}</span>
-                <span className="text-sm font-serif text-[#c5a059]">{formatCurrency(unlockedCash)}</span>
-              </div>
-              <div className="flex justify-between items-end">
-                <span className="text-xs font-bold text-slate-900 uppercase">{isZh ? '有效策略預算' : 'Effective Strategy Budget'}</span>
-                <span className="text-lg font-serif text-slate-900 font-bold">{formatCurrency(budget)}</span>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white p-6 rounded border border-slate-100 shadow-sm">
-            <div className="text-[11px] font-bold uppercase text-slate-400 tracking-widest mb-4">
-              {isZh ? '投資組合構成' : 'Portfolio Composition'}
-            </div>
-            <div className="flex justify-center gap-8 mt-6">
-              {[
-                { l: isZh ? '保險' : 'Insurance', v: totalPremium, color: '#c5a059' },
-                { l: isZh ? '債券基金' : 'Bond Fund', v: netBondPrincipal, color: '#020617' },
-                { l: isZh ? '現金儲備' : 'Cash Reserve', v: cashReserve, color: '#15803d' },
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full border-3 flex items-center justify-center mb-2" style={{ borderColor: item.color, borderWidth: '3px' }}>
-                    <div className="text-[9px] font-bold font-mono">{((item.v / budget) * 100).toFixed(0)}%</div>
-                  </div>
-                  <div className="text-[9px] font-bold uppercase text-slate-600 text-center">{item.l}</div>
-                  <div className="text-[10px] font-serif text-slate-400">{formatCurrency(item.v)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </PageContainer>
 
       {/* Page 4: Performance Studio */}
