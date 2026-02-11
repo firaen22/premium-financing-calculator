@@ -116,9 +116,13 @@ const PrintStyles = () => (
     .force-preview .pdf-only {
       display: block !important;
       visibility: visible !important;
+      position: relative !important;
+      left: 0 !important;
+      top: 0 !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
       margin-bottom: 3rem !important;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-      position: relative !important;
     }
   `}</style>
 );
@@ -196,7 +200,12 @@ const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: 
   );
 };
 
-const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30, propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve, netBondPrincipal, pfEquity, fundSource, clientName, representativeName, sensitivityData }: any) => {
+const PDFProposal = ({
+  projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
+  propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve,
+  netBondPrincipal, pfEquity, fundSource, clientName, representativeName,
+  sensitivityData, spread, leverageLTV, bondYield
+}: any) => {
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
 
@@ -209,7 +218,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
           <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">{t.privateWealth}</div>
           <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest leading-none">{t.financingStrategy}</div>
         </div>
-        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{t.page} {pageNum} {t.of} 8</div>
+        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{t.page} {pageNum} {t.of} 9</div>
       </div>
       <div className="flex-1">
         {children}
@@ -435,11 +444,11 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
                 <span className="text-slate-500">{t.interestCalcBasis}</span>
-                <span className="font-mono text-slate-900 font-bold">1M HIBOR + 1.25%</span>
+                <span className="font-mono text-slate-900 font-bold">{t.hiborRate.replace('一個月 ', '')} + {spread}%</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-slate-500">{t.financingLtv}</span>
-                <span className="font-serif font-bold text-slate-900">90%</span>
+                <span className="font-serif font-bold text-slate-900">{leverageLTV}%</span>
               </div>
             </div>
           </div>
@@ -450,11 +459,11 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
             <div className="bg-slate-50 rounded p-6 space-y-4 border border-slate-100 shadow-inner">
               <div className="flex justify-between text-xs pb-2 border-b border-white">
                 <span className="text-slate-500">{t.fundPrincipal}</span>
-                <span className="font-serif font-bold text-slate-900">$2,000,000</span>
+                <span className="font-serif font-bold text-slate-900">{formatCurrency(netBondPrincipal)}</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
                 <span className="text-slate-500">{t.targetAnnualYield}</span>
-                <span className="font-serif font-bold text-slate-900">8.50%</span>
+                <span className="font-serif font-bold text-slate-900">{bondYield.toFixed(2)}%</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white">
                 <span className="text-slate-500">{t.pledgeToBank}</span>
@@ -566,6 +575,7 @@ const PDFProposal = ({ projectionData, lang, budget, totalPremium, bankLoan, roi
                 xLabels={sensitivityData?.xLabels || []}
                 yLabels={sensitivityData?.yLabels || []}
                 data={sensitivityData?.data || []}
+                lang={lang}
               />
             </div>
             <div className="mt-4 text-[9px] text-slate-400 uppercase tracking-widest font-bold">{t.marketRiskHeatmap}</div>
@@ -782,7 +792,7 @@ const TRANSLATIONS = {
     projectedMinimum: "Projected Minimum",
     netCarryNeutral: "Net Carry Neutral",
     netEquityAtYear: "Net Equity @ Year {year}",
-    pdfPreview: "Report Preview",
+    pdfPreview: "Report Review",
     strategyConcept: "Strategy Concept Diagram",
     executiveSummary: "Executive Summary",
     performanceStudio: "Performance Studio",
@@ -1030,7 +1040,7 @@ const TRANSLATIONS = {
     projectedMinimum: "預計最差情況",
     netCarryNeutral: "息差平衡",
     netEquityAtYear: "第 {year} 年淨資產",
-    pdfPreview: "報告預覽",
+    pdfPreview: "審閱報告",
     strategyConcept: "方案概念圖",
     executiveSummary: "執行摘要",
     performanceStudio: "表現分析",
@@ -1277,7 +1287,7 @@ const TRANSLATIONS = {
     projectedMinimum: "预计最差情况",
     netCarryNeutral: "息差平衡",
     netEquityAtYear: "第 {year} 年净资产",
-    pdfPreview: "报告预览",
+    pdfPreview: "审阅报告",
     strategyConcept: "方案概念图",
     executiveSummary: "执行摘要",
     performanceStudio: "表现分析",
@@ -1578,7 +1588,8 @@ const Heatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels: numbe
 }
 
 // --- Static Heatmap Component for PDF (No Interactivity, Safe CSS) ---
-const StaticHeatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels: number[], data: number[][] }) => {
+const StaticHeatmap = ({ xLabels, yLabels, data, lang }: { xLabels: number[], yLabels: number[], data: number[][], lang: string }) => {
+  const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
   return (
     <div className="w-full">
       <div className="w-full">
@@ -1587,7 +1598,7 @@ const StaticHeatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels:
           <div className="w-16 flex-none bg-slate-50"></div> {/* Corner */}
           {xLabels.map(x => (
             <div key={x} className="flex-1 text-center py-2 text-[10px] font-bold text-slate-500 bg-slate-50 border-b border-slate-100">
-              HIBOR {x}%
+              {lang === 'en' ? 'HIBOR' : t.hiborRate.replace('一個月 ', '')} {x}%
             </div>
           ))}
         </div>
@@ -1595,8 +1606,8 @@ const StaticHeatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels:
         {yLabels.map((y, i) => (
           <div key={y} className="flex h-12">
             {/* Y Axis Label */}
-            <div className="w-16 flex-none flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border-r border-slate-100 px-2">
-              Yield {y}%
+            <div className="w-16 flex-none flex items-center justify-center text-[10px] font-bold text-slate-500 bg-slate-50 border-r border-slate-100 px-2 text-center">
+              {lang === 'en' ? 'Yield' : t.yieldLabel || '收益率'} {y}%
             </div>
             {/* Cells */}
             {data[i].map((val, j) => {
@@ -2118,18 +2129,18 @@ const Sidebar = ({ activeView, onNavigate, isOpen, onClose, labels, lang, onDown
         </nav>
 
         <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50 space-y-4">
-          <button
-            onClick={onDownloadPDF}
-            disabled={isGeneratingPDF}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGeneratingPDF ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {lang === 'en' ? 'Download PDF' : '導出 PDF 報告'}
-          </button>
+          <div className="mt-auto pt-6 border-t border-slate-100">
+            <button
+              onClick={() => activeView === 'pdfPreview' ? onDownloadPDF() : onNavigate('pdfPreview')}
+              disabled={isGeneratingPDF}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50"
+            >
+              {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : activeView === 'pdfPreview' ? <Download className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              {activeView === 'pdfPreview'
+                ? (lang === 'en' ? 'Download PDF' : '導出報告')
+                : (lang === 'en' ? 'Generate Report' : '生成報告')}
+            </button>
+          </div>
 
           <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono">
             <span>v2.5.0 (Server-Side)</span>
@@ -3259,6 +3270,22 @@ const App = () => {
                       sourceType={fundSource}
                     />
                   </Card>
+
+                  {/* Next Step Button */}
+                  <div className="flex justify-center pt-8 pb-12">
+                    <button
+                      onClick={() => handleNavigate('pdfPreview')}
+                      className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95"
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <span className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold mb-1">{lang === 'en' ? 'Configuration Complete' : '配置完成'}</span>
+                        <span className="text-base font-bold">{lang === 'en' ? 'Review & Download Report' : '預覽並導出報告'}</span>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                        <ChevronRight className="w-6 h-6 text-white" />
+                      </div>
+                    </button>
+                  </div>
                 </>
               )}
 
@@ -3570,6 +3597,22 @@ const App = () => {
                       </p>
                     </div>
                   </Card>
+
+                  {/* Next Step Button */}
+                  <div className="flex justify-center pt-4 pb-12">
+                    <button
+                      onClick={() => handleNavigate('pdfPreview')}
+                      className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95"
+                    >
+                      <div className="flex flex-col items-start text-left">
+                        <span className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold mb-1">{lang === 'en' ? 'Analysis Complete' : '分析完成'}</span>
+                        <span className="text-base font-bold">{lang === 'en' ? 'Review Final Report' : '審閱最終報告'}</span>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                        <ChevronRight className="w-6 h-6 text-white" />
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -3833,6 +3876,26 @@ const App = () => {
                     </div>
                   </div>
 
+                  {/* Quick Summary Board */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4 duration-500">
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.totalPolicyValue}</div>
+                      <div className="text-lg font-serif font-bold text-slate-900">{formatCurrency(totalPremium)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.lendingFacility}</div>
+                      <div className="text-lg font-serif font-bold text-slate-900">{formatCurrency(bankLoan)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.netEquityY30}</div>
+                      <div className="text-lg font-serif font-bold text-[#c5a059]">{formatCurrency(projectionData?.[30]?.netEquity || 0)}</div>
+                    </div>
+                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.projectedRoi}</div>
+                      <div className="text-lg font-serif font-bold text-emerald-600">{roi.toFixed(1)}%</div>
+                    </div>
+                  </div>
+
                   <div className="w-full flex flex-col items-center force-preview overflow-x-hidden pt-4 pb-20">
                     <div className="transform scale-[0.4] sm:scale-[0.55] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top flex flex-col items-center">
                       <PDFProposal
@@ -3854,6 +3917,9 @@ const App = () => {
                         sensitivityData={sensitivityData}
                         clientName={clientName}
                         representativeName={representativeName}
+                        spread={spread}
+                        leverageLTV={leverageLTV}
+                        bondYield={bondYield}
                       />
                     </div>
                   </div>
@@ -3897,6 +3963,9 @@ const App = () => {
           sensitivityData={sensitivityData}
           clientName={clientName}
           representativeName={representativeName}
+          spread={spread}
+          leverageLTV={leverageLTV}
+          bondYield={bondYield}
         />
       </div>
     </div>
