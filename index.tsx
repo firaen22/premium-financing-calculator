@@ -59,6 +59,8 @@ import {
   Check,
   Printer
 } from 'lucide-react';
+import { calculateProjection, calculateStressTest, BASE_FACTORS, GUARANTEED_FACTORS, formatCurrency } from './src/utils/calculations';
+import GeminiAnalysis from './src/components/GeminiAnalysis';
 
 const PrintStyles = () => (
   <style>{`
@@ -594,35 +596,7 @@ const PDFProposal = ({
   );
 };
 
-const BASE_FACTORS: { [key: number]: number } = {
-  0: 0.8000, 1: 0.8000, 2: 0.8211, 3: 0.8442, 4: 0.8734, 5: 1.0066,
-  6: 1.0838, 7: 1.1862, 8: 1.2407, 9: 1.2992, 10: 1.3879,
-  11: 1.4427, 12: 1.5056, 13: 1.5886, 14: 1.6558, 15: 1.7472,
-  16: 1.8367, 17: 1.9223, 18: 2.0262, 19: 2.1262, 20: 2.2469,
-  21: 2.3459, 22: 2.4530, 23: 2.5764, 24: 2.7080, 25: 2.8379,
-  26: 2.9755, 27: 3.1255, 28: 3.2799, 29: 3.4488, 30: 3.6222
-};
-
-// Helper to generate guaranteed factors (lower than total)
-const generateGuaranteed = (factors: { [key: number]: number }) => {
-  const guaranteed: { [key: number]: number } = {};
-  Object.keys(factors).forEach(key => {
-    const k = Number(key);
-    // Guaranteed is ~80% of total at year 0, rising to ~70% at year 30 (just a mock curve)
-    guaranteed[k] = factors[k] * (0.85 - (k * 0.005));
-  });
-  return guaranteed;
-};
-
-const GUARANTEED_FACTORS = generateGuaranteed(BASE_FACTORS);
-
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(val);
-};
+// BASE_FACTORS, GUARANTEED_FACTORS, and formatCurrency removed (imported from utils)
 
 const formatPercent = (val: number) => `${val.toFixed(2)}%`;
 
@@ -2362,373 +2336,21 @@ const App = () => {
     oneOffBondFee,
     netBondPrincipal
   } = useMemo(() => {
-    const equity = budget - cashReserve - bondAlloc;
-    const ltvDecimal = leverageLTV / 100.0;
-
-    // Use the base factors directly
-    const currentFactors = BASE_FACTORS;
-    const initialCSVFactor = currentFactors[0] || 0;
-
-    let tPremium = 0;
-    const denominator = 1 - (ltvDecimal * initialCSVFactor);
-    if (denominator > 0 && equity > 0) {
-      tPremium = equity / denominator;
-    }
-
-    const loan = Math.max(0, tPremium - equity);
-
-    // Effective Rate Logic
-    const baseRate = interestBasis === 'hibor' ? hibor : cofRate;
-    const effRate = Math.min(baseRate + spread, capRate);
-
-    // Bond Logic: Fee is one-off, deducted from capital. Yield applies to Net Capital.
-    const oneOffFee = bondAlloc * (handlingFee / 100);
-    const netBondAlloc = bondAlloc - oneOffFee;
-
-    // Monthly Cashflow Calculation (Year 1 Run-rate)
-    const mBondIncome = (netBondAlloc * (bondYield / 100)) / 12;
-    const mLoanInterest = (loan * (effRate / 100)) / 12;
-    const mMortgageCost = fundSource === 'mortgage' ? monthlyMortgagePmt : 0;
-    const mNetCashflow = mBondIncome - mLoanInterest - mMortgageCost;
-
-    // Generate Mortgage Schedule if applicable
-    const mortgageSchedule = [];
-    if (fundSource === 'mortgage') {
-      let balance = unlockedCash; // We assume the "Budget" is the Loan amount
-      const annualPmt = monthlyMortgagePmt * 12;
-      let cumInterest = 0;
-
-      for (let y = 0; y <= 30; y++) {
-        if (y === 0) {
-          mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: 0, annualInterest: 0 });
-        } else if (y <= mortgageTenor) {
-          // Simple annual amortization approximation for ledger
-          const interestPart = balance * (effectiveMortgageRate / 100);
-          const principalPart = annualPmt - interestPart;
-
-          cumInterest += interestPart;
-          balance -= principalPart;
-          if (balance < 0) balance = 0;
-          mortgageSchedule.push({ balance: balance, annualPmt: annualPmt, cumInterest: cumInterest, annualInterest: interestPart });
-        } else {
-          mortgageSchedule.push({ balance: 0, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
-        }
-      }
-    }
-
-    const data = [];
-
-    // Initialize Year 0
-    const yr0Factor = currentFactors[0];
-    const yr0Surrender = tPremium * yr0Factor;
-    const yr0Assets = yr0Surrender + netBondAlloc + cashReserve;
-    const yr0Liabilities = loan;
-
-    // If Mortgage is source, we have an additional liability (The Mortgage Loan)
-    // Net Equity = (Assets - PremiumLoan) - MortgageBalance
-    const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
-    const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
-
-    data.push({
-      year: 0,
-      surrenderValue: yr0Surrender,
-      bondPrincipal: netBondAlloc,
-      cumulativeBondInterest: 0,
-      bondFundNetValue: netBondAlloc,
-      cashValue: cashReserve,
-      totalAssets: yr0Assets,
-      loan: yr0Liabilities,
-      cumulativeInterest: 0,
-      netEquity: yr0NetEquity,
-      formattedNetEquity: formatCurrency(yr0NetEquity),
-      formattedLoan: formatCurrency(yr0Liabilities),
-      annualBondIncome: 0,
-      annualLoanInterest: 0,
-      annualPolicyGrowth: 0,
-      annualNetGain: 0,
-      annualRoC: 0,
-      cumulativePolicyGrowth: 0,
-      cumulativeNetGain: 0,
-      mortgageBalance: yr0MortgageBal,
-      cumulativeMortgageCost: 0,
-      cumulativeMortgageInterest: 0,
-      annualMortgagePayment: 0
+    return calculateProjection({
+      budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
+      leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
+      effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor
     });
-
-    let runningCumMtgCost = 0;
-
-    for (let yr = 1; yr <= 30; yr++) {
-      const factor = currentFactors[yr] || currentFactors[30];
-      const surrenderValue = tPremium * factor;
-
-      const cumulativeBondInterest = netBondAlloc * (bondYield / 100) * yr;
-      const bondFundNetValue = netBondAlloc + cumulativeBondInterest;
-      const cumulativeInterest = loan * (effRate / 100) * yr;
-      const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-      const currentLiabilities = loan;
-
-      let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
-
-      // Mortgage Logic
-      let mtgBal = 0;
-      let annualMtgPmt = 0;
-      let cumMtgInt = 0;
-      if (fundSource === 'mortgage') {
-        mtgBal = mortgageSchedule[yr]?.balance || 0;
-        annualMtgPmt = mortgageSchedule[yr]?.annualPmt || 0;
-        cumMtgInt = mortgageSchedule[yr]?.cumInterest || 0;
-        runningCumMtgCost += annualMtgPmt;
-        // Subtract Mortgage Balance from Net Equity (Balance Sheet Logic)
-        // Net Equity = Assets - Liabilities. Liabilities include Mortgage Balance.
-        netEquity -= mtgBal;
-        // Note: We do NOT subtract runningCumMtgCost from NetEquity here. 
-        // Net Equity is what you own vs what you owe. Sunk costs (payments) are gone but handled in Net Gain.
-      }
-
-      const prev = data[yr - 1];
-      const annualBondIncome = cumulativeBondInterest - prev.cumulativeBondInterest;
-      const annualLoanInterest = cumulativeInterest - prev.cumulativeInterest;
-      const annualPolicyGrowth = surrenderValue - prev.surrenderValue;
-
-      // Net Gain for the year
-      let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualMtgPmt;
-
-      let annualRoC = 0;
-      // If Mortgage, initial equity is near 0. Using budget as denominator for relative perf.
-      const denom = fundSource === 'mortgage' ? budget : prev.netEquity;
-      if (denom !== 0) {
-        annualRoC = (annualNetGain / denom) * 100;
-      }
-
-      const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
-
-      // Cumulative Net Gain (Performance / Profit)
-      // Profit = Current Net Equity - Initial Equity - External Costs Paid (Mortgage Payments)
-      const cumulativeNetGain = netEquity - yr0NetEquity - (fundSource === 'mortgage' ? runningCumMtgCost : 0);
-
-      data.push({
-        year: yr,
-        surrenderValue,
-        bondPrincipal: netBondAlloc,
-        cumulativeBondInterest,
-        bondFundNetValue,
-        cashValue: cashReserve,
-        totalAssets: currentAssets,
-        loan: currentLiabilities,
-        cumulativeInterest,
-        netEquity, // Balance Sheet Value
-        formattedNetEquity: formatCurrency(netEquity),
-        formattedLoan: formatCurrency(currentLiabilities),
-        annualBondIncome,
-        annualLoanInterest,
-        annualPolicyGrowth,
-        annualNetGain,
-        annualRoC,
-        cumulativePolicyGrowth,
-        cumulativeNetGain, // Profit Value
-        mortgageBalance: mtgBal,
-        cumulativeMortgageCost: runningCumMtgCost,
-        cumulativeMortgageInterest: cumMtgInt,
-        annualMortgagePayment: annualMtgPmt
-      });
-    }
-
-    // Final Equity is the Balance Sheet value
-    const final = data[30].netEquity;
-
-    // ROI based on Cumulative Net Gain
-    const totalGain = data[30].cumulativeNetGain;
-
-    // For ROI denominator:
-    // If Mortgage: Denominator is difficult as initial equity is ~0. Can use Budget (Exposure) or Total Costs Paid.
-    // Usually clients ask "Return on Capital Employed". If Capital is 0 (100% financed), ROI is infinite.
-    // Let's use 'Budget' as a proxy for 'Asset Value Controlled' to give a sensible % 
-    // OR just use totalGain if budget is 0?
-    // Let's stick to using `budget` for stability, but conceptually it's "Return on Assets Managed".
-    const roiVal = (totalGain / budget) * 100;
-
-    return {
-      pfEquity: equity,
-      totalPremium: tPremium,
-      bankLoan: loan,
-      effectiveRate: effRate,
-      projectionData: data,
-      finalNetEquity: final,
-      roi: roiVal,
-      monthlyBondIncome: mBondIncome,
-      monthlyLoanInterest: mLoanInterest,
-      monthlyNetCashflow: mNetCashflow,
-      oneOffBondFee: oneOffFee,
-      netBondPrincipal: netBondAlloc,
-      monthlyMortgagePmt: mMortgageCost
-    };
-
-  }, [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, propertyValue, existingMortgage, mortgageLtv, effectiveMortgageRate, mortgageTenor]);
+  }, [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor]);
 
 
   // --- Stressed Projections (For Market Risk) ---
   const { stressedProjection, stressStats, sensitivityData } = useMemo(() => {
-    // Recalculate based on stress parameters
-    const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
-
-    // 1. Bond Shock (Immediate drop at T=0 applied to principal)
-    // The prompt implies a scenario where assets drop. We will model this as the bond fund value dropping.
-    // However, usually stress tests apply to the *current* situation. 
-    // For simplicity in this projection, we assume the bond fund starts at (1 - drop) value.
-    const stressedBondPrincipal = netBondPrincipal * (1 - bondPriceDrop / 100);
-
-    // 2. Simulated HIBOR Rate
-    const stressedRate = Math.min(simulatedHibor + spread, capRate);
-
-    const data = [];
-    const baselineData = projectionData; // For comparison
-
-    // Initial Setup (Year 0)
-    // Year 0 Equity reflects the immediate shock if any
-    const yr0Factor = factors[0] || 0;
-    const yr0Surrender = totalPremium * yr0Factor;
-    const yr0Assets = yr0Surrender + stressedBondPrincipal + cashReserve;
-    const yr0Liabilities = bankLoan;
-    // Mortgage Logic
-    const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
-    const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
-
-    data.push({
-      year: 0,
-      netEquity: yr0NetEquity,
-      baselineNetEquity: baselineData?.[0]?.netEquity || 0,
-      ltv: (yr0Liabilities / (yr0Surrender + stressedBondPrincipal)) * 100
+    return calculateStressTest({
+      projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
+      totalPremium, netBondPrincipal, bondYield, bankLoan, spread, capRate,
+      budget, cashReserve, sensitivityYear, fundSource, unlockedCash
     });
-
-    let lowestEquity = yr0NetEquity;
-
-    // Calculate Mortgage Schedule for Stress Test (Assuming Rate stays same as it's usually fixed or P-linked, not HIBOR linked directly in this context, or we simplify)
-    // We will use the same mortgage schedule as baseline for simplicity
-    let runningCumMtgCost = 0;
-
-    for (let yr = 1; yr <= 30; yr++) {
-      const factor = factors[yr] || factors[30];
-      const surrenderValue = totalPremium * factor;
-
-      // Bond grows from the stressed principal
-      const cumulativeBondInterest = stressedBondPrincipal * (bondYield / 100) * yr;
-      const bondFundNetValue = stressedBondPrincipal + cumulativeBondInterest;
-
-      const cumulativeInterest = bankLoan * (stressedRate / 100) * yr;
-
-      const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-      const currentLiabilities = bankLoan;
-
-      let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
-
-      // Mortgage Deductions
-      if (fundSource === 'mortgage') {
-        const mtgBal = baselineData[yr]?.mortgageBalance || 0;
-        // const annualPmt = baselineData[yr]?.annualMortgagePayment || 0;
-        // runningCumMtgCost += annualPmt;
-        netEquity -= mtgBal;
-        // REMOVED: netEquity -= runningCumMtgCost; (Match balance sheet logic)
-      }
-
-      if (netEquity < lowestEquity) lowestEquity = netEquity;
-
-      // LTV Calculation: Loan / (Policy + Bond)
-      const collateralValue = surrenderValue + bondFundNetValue;
-      const ltv = collateralValue > 0 ? (currentLiabilities / collateralValue) * 100 : 0;
-
-      data.push({
-        year: yr,
-        netEquity,
-        baselineNetEquity: baselineData[yr]?.netEquity || 0,
-        ltv,
-        surrenderValue,
-        bondFundNetValue
-      });
-    }
-
-    // --- Break-even HIBOR Calculation (Simplified) ---
-    // Solve for Rate where (BondYield + PolicyYield) - CostOfFunds = 0
-    // We use Year 1 run-rate for immediate risk.
-    // Income = (StressedBond * Yield) + (Policy_Y1 - Policy_Y0) 
-    // Cost = Loan * (X + Spread)
-    // This is an approximation. 
-    // Better metric: What HIBOR rate makes Year 30 Net Equity = Initial Budget? (Break-even on Capital)
-    // Or Year 1 Cashflow Break-even. 
-    // Let's use "Net Carry Break-even": The rate where annual asset income equals annual loan cost.
-    // Policy income is tricky as it's not cash, but growth. We'll use Year 1 growth.
-
-    const policyGrowthY1 = (totalPremium * (factors[1] || 0)) - (totalPremium * (factors[0] || 0));
-    const annualBondIncome = stressedBondPrincipal * (bondYield / 100);
-    const totalAnnualIncome = annualBondIncome + policyGrowthY1;
-
-    // Mortgage Cost needs to be covered too for true break even
-    const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
-
-    // totalAnnualIncome - MortgagePmt = Loan * (BE_Rate + Spread)
-    // (totalAnnualIncome - MortgagePmt) / Loan = BE_Rate + Spread
-
-    let breakEvenHibor = 0;
-    if (bankLoan > 0) {
-      breakEvenHibor = (((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100) - spread;
-    } else {
-      breakEvenHibor = 100; // Infinite if no loan
-    }
-
-    // --- Sensitivity Heatmap Data ---
-    // X: HIBOR (1, 2, 3, 4, 5, 6)
-    // Y: Bond Yield (3, 4, 5, 6, 7)
-    // Value: Net Equity at Year 15
-    const xLabels = [1, 2, 3, 4, 5, 6];
-    const yLabels = [3, 4, 5, 6, 7];
-    const heatMapRows = [];
-
-    for (const yieldVal of yLabels) {
-      const row = [];
-      for (const hiborVal of xLabels) {
-        // Quick Calc for Year 15 Net Equity
-        // Re-use current params but swap yield & hibor
-        const rate = Math.min(hiborVal + spread, capRate);
-        const yr = sensitivityYear;
-
-        // Policy at Y15 (Using current Stress toggle settings)
-        const surr = totalPremium * (factors[yr] || 0);
-
-        // Bond at Y15 (using stressed principal)
-        const bondVal = stressedBondPrincipal + (stressedBondPrincipal * (yieldVal / 100) * yr);
-
-        // Loan Cost
-        const interest = bankLoan * (rate / 100) * yr;
-
-        let result = (surr + bondVal + cashReserve) - bankLoan - interest;
-
-        if (fundSource === 'mortgage') {
-          const mtgBal = baselineData[yr]?.mortgageBalance || 0;
-          // const cumMtgCost = baselineData[yr]?.cumulativeMortgageCost || 0;
-          result = result - mtgBal;
-          // REMOVED: result = result - cumMtgCost;
-        }
-
-        // Profit relative to Budget
-        const profit = result - (fundSource === 'mortgage' ? 0 : budget);
-        row.push(profit);
-      }
-      heatMapRows.push(row);
-    }
-
-
-    return {
-      stressedProjection: data,
-      stressStats: {
-        breakEvenHibor,
-        lowestEquity
-      },
-      sensitivityData: {
-        xLabels,
-        yLabels,
-        data: heatMapRows
-      }
-    }
-
   }, [projectionData, simulatedHibor, bondPriceDrop, showGuaranteed, totalPremium, netBondPrincipal, bondYield, bankLoan, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash]);
 
 
@@ -2839,7 +2461,16 @@ const App = () => {
       />
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-72 transition-all duration-300">
+      <main className="flex-1 lg:ml-72 transition-all duration-300 relative">
+        <GeminiAnalysis
+          projectionData={projectionData}
+          lang={lang}
+          roi={roi}
+          netEquity={finalNetEquity}
+          leverageLTV={leverageLTV}
+          bondYield={bondYield}
+          hibor={hibor}
+        />
 
         {/* Top Header */}
         <header className="bg-white sticky top-0 z-10 px-6 md:px-10 py-5 flex items-center justify-between border-b border-slate-200">
