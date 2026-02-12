@@ -2146,7 +2146,7 @@ const App = () => {
   const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
   const [isFetchingRates, setIsFetchingRates] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<'live' | 'cached' | 'fallback' | 'manual'>('fallback');
+  const [dataSource, setDataSource] = useState<'live' | 'cached' | 'fallback' | 'manual'>('live');
 
   // Mortgage Refi State
   const [propertyValue, setPropertyValue] = useState(15000000);
