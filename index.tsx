@@ -3230,23 +3230,7 @@ const App = () => {
               {activeView === 'systemConfig' && (
                 <div className="space-y-8 animate-in fade-in duration-500">
 
-                  {/* Document Settings */}
-                  <Card title={lang === 'en' ? 'Document Settings' : '文件設定'} subtitle={lang === 'en' ? 'Client & Representative Information' : '客戶及代表資料'}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <InputField
-                        label={lang === 'en' ? 'Client Name' : '客戶姓名'}
-                        value={clientName}
-                        onChange={(val: string) => setClientName(val)}
-                        hint={lang === 'en' ? 'Displayed on PDF cover page' : '顯示於PDF封面'}
-                      />
-                      <InputField
-                        label={lang === 'en' ? 'Representative Name' : '代表姓名'}
-                        value={representativeName}
-                        onChange={(val: string) => setRepresentativeName(val)}
-                        hint={lang === 'en' ? 'Advisor or team name' : '顧問或團隊名稱'}
-                      />
-                    </div>
-                  </Card>
+
 
                   {/* Data Feeds Config */}
                   <Card title={t.dataFeeds} subtitle="Market Data Integration">
