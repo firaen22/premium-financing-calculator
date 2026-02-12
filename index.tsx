@@ -2588,7 +2588,7 @@ const App = () => {
                     <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
                       <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                        <span className="text-xs font-bold text-slate-700">Bloomberg API</span>
+                        <span className="text-xs font-bold text-slate-700">HKMA API</span>
                       </div>
                       <span className={`text-[10px] uppercase font-bold ${dataSource === 'live' ? 'text-emerald-600' : 'text-slate-400'}`}>
                         {dataSource === 'live' ? 'Active' : 'Standby'}
