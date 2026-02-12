@@ -2581,36 +2581,7 @@ const App = () => {
                     onChange={setShowGuaranteed}
                   />
                 </Card>
-              ) : activeView === 'systemConfig' ? (
-                // --- System Config Sidebar Controls (Optional) ---
-                <Card title={t.providerStatus} subtitle="System Health" goldAccent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${dataSource === 'live' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></div>
-                        <span className="text-xs font-bold text-slate-700">HKMA API</span>
-                      </div>
-                      <span className={`text-[10px] uppercase font-bold ${dataSource === 'live' ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {dataSource === 'live' ? 'Active' : 'Standby'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-emerald-50 rounded border border-emerald-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-xs font-bold text-slate-700">Core Ledger</span>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold text-emerald-600">Synced</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-100">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-slate-400"></div>
-                        <span className="text-xs font-bold text-slate-500">Nightly Batch</span>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Pending</span>
-                    </div>
-                  </div>
-                </Card>
-              ) : (
+              ) : activeView === 'systemConfig' ? null : (
                 // --- Default Controls ---
                 <>
                   <Card
@@ -3524,23 +3495,23 @@ const App = () => {
               )}
 
             </div>
-          </div>
-        </div>
+          </div >
+        </div >
 
         {/* Footer with Disclaimer */}
-        <footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50">
+        < footer className="mt-12 py-8 border-t border-slate-200 text-center bg-slate-50" >
           <p className="text-[10px] text-slate-400 leading-relaxed max-w-4xl mx-auto px-6">
             {t.globalDisclaimer}
           </p>
           <p className="text-[10px] text-slate-300 mt-4 font-mono uppercase tracking-widest">
             © 2024 Private Wealth Management. Confidential & Proprietary.
           </p>
-        </footer>
+        </footer >
 
-      </main>
+      </main >
 
       {/* Hidden PDF Container - Stays in DOM for Recharts sizing but off-screen */}
-      <div className="pdf-container" ref={pdfRef}>
+      < div className="pdf-container" ref={pdfRef} >
         <PDFProposal
           projectionData={projectionData}
           lang={lang}
@@ -3564,8 +3535,8 @@ const App = () => {
           leverageLTV={leverageLTV}
           bondYield={bondYield}
         />
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
