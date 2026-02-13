@@ -2657,13 +2657,13 @@ const App = () => {
 
                       {interestBasis === 'hibor' ? (
                         <InputField
-                          label={t.hiborRate}
+                          label={`${t.hiborRate}${dataSource === 'live' ? ' (LIVE)' : dataSource === 'cached' ? ' (CACHED)' : ''}`}
                           value={hibor}
                           onChange={setHibor}
                           prefix=""
                           step={0.01}
                           disabled={dataSource === 'live' || dataSource === 'cached'}
-                          suffix={dataSource === 'live' ? "% (Live)" : dataSource === 'cached' ? "% (Cached)" : "%"}
+                          suffix="%"
                         />
                       ) : (
                         <InputField
