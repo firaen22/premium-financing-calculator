@@ -1039,18 +1039,18 @@ const TRANSLATIONS = {
 
     // Exec Summary
     strategicOverviewSubtitle: "策略概覽與目標",
-    execSummaryBody: "\"本建議書概述了一項利用高質量固定收益資產和萬用壽險的稅務優化財富增值策略。通過利用現有物業權益，我們旨在增加總遺產價值，同時保持淨利差中立。\"",
+    execSummaryBody: "\"本方案旨在優化您的財富傳承架構。透過活化現有資產持倉的融資潛力，策略性整合優質固收工具與保本分紅計劃；在確保淨利差中性（NIM Neutral）的基礎上，極大化整體資產規模與傳承預期價值。\"",
     targetNetEquity: "目標淨權益 (第30年)",
     projectionSuccess: "預測成功",
     projectedRoi: "預計投資回報率 (年化)",
     optimizedStructure: "優化結構",
     keyObjectives: "主要目標",
-    objAssetDiversification: "資產分散",
-    objAssetDiversificationDesc: "將物業權益重新分配至流動金融工具和保險保障。",
-    objLiquidityEnhancement: "流動性提升",
-    objLiquidityEnhancementDesc: "在保持資產完全生產力的同時，維持可動用的現金儲備。",
-    objEstateMaximization: "遺產最大化",
-    objEstateMaximizationDesc: "為高效的代際財富傳承（繼承）構建結構。",
+    objAssetDiversification: "活化資產潛力",
+    objAssetDiversificationDesc: "透過融資釋放現有持倉價值，策略性整合優質固收工具與保本分紅計劃。",
+    objLiquidityEnhancement: "淨利差中性 (NIM Neutral)",
+    objLiquidityEnhancementDesc: "在確保收支平衡的基礎上，實現財富增值目標。",
+    objEstateMaximization: "傳承價值極大化",
+    objEstateMaximizationDesc: "優化架構以極大化整體資產規模與預期傳承價值。",
 
     // Strategy
     assetStructureSubtitle: "資產結構與資金來源",
@@ -1286,18 +1286,18 @@ const TRANSLATIONS = {
 
     // Exec Summary
     strategicOverviewSubtitle: "策略概览与目标",
-    execSummaryBody: "\"本建议书概述了一项利用高质量固定收益资产和万用寿险的税务优化财富增值策略。通过利用现有物业权益，我们旨在增加总遗产价值，同时保持净利差中立。\"",
+    execSummaryBody: "\"本方案旨在优化您的财富传承架构。透过活化现有资产持仓的融资潜力，策略性整合优质固收工具与保本分红计划；在确保净利差中性（NIM Neutral）的基础上，极大化整体资产规模与传承预期价值。\"",
     targetNetEquity: "目标净权益 (第30年)",
     projectionSuccess: "预测成功",
     projectedRoi: "预计投资回报率 (年化)",
     optimizedStructure: "优化结构",
     keyObjectives: "主要目标",
-    objAssetDiversification: "资产分散",
-    objAssetDiversificationDesc: "将物业权益重新分配至流动金融工具和保险保障。",
-    objLiquidityEnhancement: "流动性提升",
-    objLiquidityEnhancementDesc: "在保持资产完全生产力的同时，维持可动用的现金储备。",
-    objEstateMaximization: "遗产最大化",
-    objEstateMaximizationDesc: "为高效的代际财富传承（继承）构建结构。",
+    objAssetDiversification: "活化资产潜力",
+    objAssetDiversificationDesc: "透过融资释放现有持仓价值，策略性整合优质固收工具与保本分红计划。",
+    objLiquidityEnhancement: "净利差中性 (NIM Neutral)",
+    objLiquidityEnhancementDesc: "在确保收支平衡的基础上，实现财富增值目标。",
+    objEstateMaximization: "传承价值极大化",
+    objEstateMaximizationDesc: "优化架构以极大化整体资产规模与预期传承价值。",
 
     // Strategy
     assetStructureSubtitle: "资产结构与资金来源",
