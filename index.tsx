@@ -60,6 +60,7 @@ import {
   Printer
 } from 'lucide-react';
 import { calculateProjection, calculateStressTest, BASE_FACTORS, GUARANTEED_FACTORS, formatCurrency } from './src/utils/calculations';
+import { useHibor } from './src/hooks/useHibor';
 import GeminiAnalysis from './src/components/GeminiAnalysis';
 
 const PrintStyles = () => (
@@ -2218,86 +2219,48 @@ const App = () => {
 
 
   // --- HIBOR Persistence & Fetching ---
+  // --- HIBOR Persistence & Fetching ---
+  const { rate: liveRate, date: liveDate, loading: liveLoading, error: liveError } = useHibor();
+
   useEffect(() => {
-    const CACHE_KEY = 'hibor_cache';
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 Hours
-
-    const fetchLiveHibor = async () => {
+    if (liveLoading) {
       setIsFetchingRates(true);
-      setFetchError(null);
-      try {
-        // Use HKMA Open API (CORS friendly, official source)
-        // Note: Data might have a slight lag (e.g. 1-2 weeks) but is reliable.
-        const response = await fetch('https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?segment=hibor.fixing&offset=0');
-        const data = await response.json();
-
-        if (data.header && data.header.success && data.result && data.result.records && data.result.records.length > 0) {
-          const latestRecord = data.result.records[0];
-          const rate = latestRecord.ir_1m; // 1-month HIBOR
-          const dateStr = latestRecord.end_of_day;
-
-          if (rate && !isNaN(rate)) {
-            setHibor(rate);
-            const recordDate = new Date(dateStr);
-            setLastRateUpdate(recordDate);
-            setDataSource('live');
-
-            // Add notification
-            setNotifications(prev => [{
-              id: Date.now(),
-              title: t.marketDataUpdate,
-              message: `HIBOR (HKMA) updated: ${rate}% (As of ${dateStr})`,
-              time: 'Just now',
-              type: 'info'
-            }, ...prev]);
-            setUnreadCount(c => c + 1);
-
-            // Save to cache
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-              rate: rate,
-              timestamp: Date.now(), // Cache timestamp (when we fetched it)
-              dataDate: dateStr      // Actual data date
-            }));
-            setIsFetchingRates(false);
-            return;
-          }
-        }
-
-        throw new Error("Invalid data structure from HKMA API");
-
-      } catch (err) {
-        console.error("HIBOR Fetch Error:", err);
-        setFetchError("Failed to fetch live rate. Please input manually.");
-        setDataSource('fallback'); // This will enable manual input
-        setHibor(2.50); // Set a more realistic fallback (current ~2.50) rather than 4.15
-      } finally {
-        setIsFetchingRates(false);
-      }
-    };
-
-    // 1. Check Cache
-    const cachedData = localStorage.getItem(CACHE_KEY);
-    if (cachedData) {
-      try {
-        const { rate, timestamp, dataDate } = JSON.parse(cachedData);
-        const age = Date.now() - timestamp;
-
-        if (age < CACHE_DURATION) {
-          setHibor(rate);
-          // If we have a data date, use that for display, otherwise fallback to cache time
-          setLastRateUpdate(dataDate ? new Date(dataDate) : new Date(timestamp));
-          setDataSource('cached');
-          return; // Skip fetch
-        }
-      } catch (e) {
-        localStorage.removeItem(CACHE_KEY);
-      }
+      return;
     }
 
-    // 2. Fetch if no valid cache
-    fetchLiveHibor();
+    setIsFetchingRates(false);
 
-  }, []); // Run once on mount
+    if (liveRate !== null) {
+      setHibor(liveRate);
+      setDataSource('live');
+
+      if (liveDate) {
+        const recordDate = new Date(liveDate);
+        setLastRateUpdate(recordDate);
+
+        // Add notification only if it's a fresh update (simple check)
+        setNotifications(prev => {
+          // Avoid duplicate notifications for the same date/rate if component re-renders
+          const msg = `HIBOR (HKMA) updated: ${liveRate}%`;
+          if (prev.some(n => n.message.includes(msg))) return prev;
+
+          return [{
+            id: Date.now(),
+            title: t.marketDataUpdate,
+            message: `${msg} (As of ${liveDate})`,
+            time: 'Just now',
+            type: 'info'
+          }, ...prev];
+        });
+        setUnreadCount(c => c + 1);
+      }
+    } else if (liveError) {
+      console.error("HIBOR Hook Error:", liveError);
+      setFetchError("Failed to fetch live rate. Please input manually.");
+      setDataSource('fallback');
+      // Keep default or previously set value
+    }
+  }, [liveRate, liveDate, liveLoading, liveError]); // t.marketDataUpdate omitted to avoid effect loop, usually static
 
 
 
@@ -2705,6 +2668,7 @@ const App = () => {
                           prefix=""
                           step={0.01}
                           disabled={dataSource === 'live' || dataSource === 'cached'}
+                          suffix={dataSource === 'live' ? "% (Live)" : dataSource === 'cached' ? "% (Cached)" : "%"}
                         />
                       ) : (
                         <InputField
