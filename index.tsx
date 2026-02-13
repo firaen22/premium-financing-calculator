@@ -61,7 +61,7 @@ import {
 } from 'lucide-react';
 import { calculateProjection, calculateStressTest, BASE_FACTORS, GUARANTEED_FACTORS, formatCurrency } from './src/utils/calculations';
 import { useHibor } from './src/hooks/useHibor';
-import GeminiAnalysis from './src/components/GeminiAnalysis';
+
 
 const PrintStyles = () => (
   <style>{`
@@ -2425,15 +2425,7 @@ const App = () => {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-72 transition-all duration-300 relative">
-        <GeminiAnalysis
-          projectionData={projectionData}
-          lang={lang}
-          roi={roi}
-          netEquity={finalNetEquity}
-          leverageLTV={leverageLTV}
-          bondYield={bondYield}
-          hibor={hibor}
-        />
+
 
         {/* Top Header */}
         <header className="bg-white sticky top-0 z-10 px-6 md:px-10 py-5 flex items-center justify-between border-b border-slate-200">
