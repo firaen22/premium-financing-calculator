@@ -1650,10 +1650,11 @@ const FlowDiagram = ({
 
           {/* Connectors */}
           {/* Connectors */}
-          <path d="M250 90 L 250 110" fill="none" stroke="#cbd5e1" strokeWidth="1.5" />
-          <path d="M250 110 L 85 110 L 85 125" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
-          <path d="M250 110 L 415 110 L 415 125" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
-          <path d="M250 110 L 250 210" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          {/* Connectors */}
+          <path d="M250 90 L 250 100" fill="none" stroke="#cbd5e1" strokeWidth="1.5" />
+          <path d="M250 100 L 85 100 L 85 110" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          <path d="M250 100 L 415 100 L 415 110" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
+          <path d="M250 100 L 250 210" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" />
 
           {/* Level 2 Left: Liquidity */}
           <g filter="url(#shadow)">
