@@ -189,7 +189,7 @@ const PDFProposal = ({
   projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
   propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve,
   netBondPrincipal, pfEquity, fundSource, clientName, representativeName,
-  sensitivityData, spread, leverageLTV, bondYield
+  sensitivityData, spread, leverageLTV, bondYield, sensitivityYear
 }: any) => {
   if (!projectionData || projectionData.length < 31) return null;
   const isZh = lang !== 'en';
@@ -557,7 +557,9 @@ const PDFProposal = ({
             </div>
           </div>
           <div className="bg-slate-50 p-8 rounded flex flex-col items-center justify-center border border-slate-100 w-full">
-            <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">{t.stressMap}</div>
+            <div className="text-3xl font-serif text-slate-400 mb-4 font-bold opacity-20 uppercase tracking-[0.5em]">
+              {t.stressMap} - {lang === 'en' ? 'Year' : '第'} {sensitivityYear} {lang === 'en' ? '' : '年'}
+            </div>
             <div className="w-full">
               <StaticHeatmap
                 xLabels={sensitivityData?.xLabels || []}
@@ -3444,6 +3446,7 @@ const App = () => {
                           spread={spread}
                           leverageLTV={leverageLTV}
                           bondYield={bondYield}
+                          sensitivityYear={sensitivityYear}
                         />
                       </div>
                     </div>
@@ -3491,6 +3494,7 @@ const App = () => {
           spread={spread}
           leverageLTV={leverageLTV}
           bondYield={bondYield}
+          sensitivityYear={sensitivityYear}
         />
       </div >
     </div >
