@@ -1512,7 +1512,7 @@ const InputField = ({
   suffix = "",
   disabled = false
 }: any) => (
-  <div className="mb-8 relative group">
+  <div className="mb-5 md:mb-8 relative group">
     <label className="absolute -top-3 left-0 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white pr-2 transition-colors group-focus-within:text-[#c5a059]">
       {label}
     </label>
@@ -1533,7 +1533,7 @@ const InputField = ({
 );
 
 const SelectField = ({ label, value, onChange, options, disabled = false }: any) => (
-  <div className="mb-8 relative group">
+  <div className="mb-5 md:mb-8 relative group">
     <label className="absolute -top-2.5 left-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white pr-2 group-focus-within:text-[#c5a059]">
       {label}
     </label>
@@ -1552,7 +1552,7 @@ const SelectField = ({ label, value, onChange, options, disabled = false }: any)
 );
 
 const ToggleField = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (val: boolean) => void }) => (
-  <div className="mb-8 flex items-center justify-between">
+  <div className="mb-5 md:mb-8 flex items-center justify-between">
     <span className="text-sm font-medium text-slate-700">{label}</span>
     <button
       onClick={() => onChange(!checked)}
@@ -1564,7 +1564,7 @@ const ToggleField = ({ label, checked, onChange }: { label: string, checked: boo
 );
 
 const KPICard = ({ label, value, subtext, highlight = false, alert = false }: { label: string, value: string, subtext: string, highlight?: boolean, alert?: boolean }) => (
-  <div className={`p-6 border ${highlight ? 'bg-[#020617] border-[#020617] text-white' : alert ? 'bg-red-50 border-red-100' : 'bg-white border-slate-200'}`}>
+  <div className={`p-4 md:p-6 border ${highlight ? 'bg-[#020617] border-[#020617] text-white' : alert ? 'bg-red-50 border-red-100' : 'bg-white border-slate-200'}`}>
     <div className={`text-[9px] font-bold uppercase tracking-[0.2em] mb-3 ${highlight ? 'text-[#c5a059]' : alert ? 'text-red-600' : 'text-slate-500'}`}>
       {label}
     </div>
@@ -1725,8 +1725,9 @@ const FlowDiagram = ({
               <Briefcase x={158} y={38} width={24} height={24} stroke="#0f172a" strokeWidth={1.5} />
             )}
 
-            <text x={210} y={42} textAnchor="start" fill="#64748b" fontSize="10" fontWeight="bold" letterSpacing="1.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.capital}</text>
-            <text x={210} y={68} textAnchor="start" fill="#0f172a" fontSize="20" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(budget)}</text>
+            {/* Capital */}
+            <text x={210} y={42} textAnchor="start" fill="#64748b" fontSize="12" fontWeight="bold" letterSpacing="1.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.capital}</text>
+            <text x={210} y={68} textAnchor="start" fill="#0f172a" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(budget)}</text>
           </g>
 
           {/* Connectors */}
@@ -1742,8 +1743,8 @@ const FlowDiagram = ({
             <rect x="10" y="110" width="150" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
             <circle cx="45" cy="150" r="20" fill="#f0fdf4" stroke="#dcfce7" />
             <Wallet x={33} y={138} width={24} height={24} stroke="#15803d" strokeWidth={1.5} />
-            <text x={75} y={135} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.liquidity}</text>
-            <text x={75} y={160} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(cash)}</text>
+            <text x={75} y={135} textAnchor="start" fill="#64748b" fontSize="11" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.liquidity}</text>
+            <text x={75} y={160} textAnchor="start" fill="#0f172a" fontSize="17" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(cash)}</text>
           </g>
 
           {/* Level 2 Right: Yield Fund */}
@@ -1751,8 +1752,8 @@ const FlowDiagram = ({
             <rect x="330" y="110" width="170" height="80" rx="8" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
             <circle cx="365" cy="150" r="20" fill="#fefce8" stroke="#fef9c3" />
             <TrendingUp x={353} y={138} width={24} height={24} stroke="#ca8a04" strokeWidth={1.5} />
-            <text x={395} y={135} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.yieldFundNet}</text>
-            <text x={395} y={160} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
+            <text x={395} y={135} textAnchor="start" fill="#64748b" fontSize="11" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.yieldFundNet}</text>
+            <text x={395} y={160} textAnchor="start" fill="#0f172a" fontSize="17" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
           </g>
 
           {/* Level 3: Policy Initial */}
@@ -1760,8 +1761,8 @@ const FlowDiagram = ({
             <rect x="150" y="210" width="200" height="80" rx="8" fill="#ffffff" stroke="#020617" strokeWidth="2" />
             <circle cx="190" cy="250" r="22" fill="#f1f5f9" stroke="#e2e8f0" />
             <FileText x={178} y={238} width={24} height={24} stroke="#334155" strokeWidth={1.5} />
-            <text x={225} y={235} textAnchor="start" fill="#64748b" fontSize="9" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.policyEquityCaps}</text>
-            <text x={225} y={262} textAnchor="start" fill="#0f172a" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
+            <text x={225} y={235} textAnchor="start" fill="#64748b" fontSize="11" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.policyEquityCaps}</text>
+            <text x={225} y={262} textAnchor="start" fill="#0f172a" fontSize="20" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
           </g>
 
           {/* Connector Premium to Exposure */}
@@ -1775,8 +1776,8 @@ const FlowDiagram = ({
             <rect x="20" y="305" width="160" height="70" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="1" />
             <circle cx="50" cy="340" r="20" fill="#fffbeb" stroke="#fcd34d" />
             <Landmark x={38} y={328} width={24} height={24} stroke="#b45309" strokeWidth={1.5} />
-            <text x={80} y={327} textAnchor="start" fill="#b45309" fontSize="9" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.leverage}</text>
-            <text x={80} y={350} textAnchor="start" fill="#0f172a" fontSize="15" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(loan)}</text>
+            <text x={80} y={327} textAnchor="start" fill="#b45309" fontSize="11" fontWeight="bold" letterSpacing="0.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.leverage}</text>
+            <text x={80} y={350} textAnchor="start" fill="#0f172a" fontSize="17" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(loan)}</text>
           </g>
 
           {/* Connector Loan to Junction */}
@@ -1790,8 +1791,8 @@ const FlowDiagram = ({
             <circle cx="135" cy="430" r="26" fill="#1e293b" stroke="#334155" />
             <Shield x={119} y={414} width={32} height={32} stroke="#c5a059" strokeWidth={1.5} />
 
-            <text x={175} y={418} textAnchor="start" fill="#94a3b8" fontSize="10" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.totalExposure}</text>
-            <text x={175} y={450} textAnchor="start" fill="#ffffff" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
+            <text x={175} y={418} textAnchor="start" fill="#94a3b8" fontSize="12" fontWeight="bold" letterSpacing="1" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.totalExposure}</text>
+            <text x={175} y={450} textAnchor="start" fill="#ffffff" fontSize="24" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
           </g>
 
         </g>
@@ -2054,7 +2055,7 @@ const ReturnStudio = ({
           </div>
 
           {/* Simple Chart Visualization */}
-          <div className="lg:w-1/3 h-[400px]">
+          <div className="lg:w-1/3 h-[300px] md:h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={[
@@ -2520,7 +2521,7 @@ const App = () => {
 
 
         {/* Top Header */}
-        <header className="bg-white sticky top-0 z-10 px-6 md:px-10 py-5 flex items-center justify-between border-b border-slate-200">
+        <header className="bg-white sticky top-0 z-10 px-4 md:px-10 py-4 md:py-5 flex items-center justify-between border-b border-slate-200">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Trigger */}
             <button
@@ -2597,7 +2598,7 @@ const App = () => {
           </div>
         </header>
 
-        <div className="p-4 md:p-10 max-w-[1600px] mx-auto space-y-8">
+        <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-6 md:space-y-8">
 
           {/* Dashboard Grid */}
           <div className={`grid grid-cols-1 ${activeView === 'pdfPreview' ? 'lg:grid-cols-1' : 'lg:grid-cols-12'} gap-8`}>
@@ -2939,7 +2940,7 @@ const App = () => {
               {activeView === 'allocation' && (
                 <>
                   {/* Top KPIs */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     <KPICard
                       label={t.totalPolicyValue}
                       value={formatCurrency(totalPremium)}
