@@ -646,6 +646,17 @@ const TRANSLATIONS = {
     bondIncome: "Bond Income",
     loanInterest: "Loan Interest",
     netMonthlyCashflow: "Net Monthly Cashflow",
+    propertyAndFinancing: "Property & Financing",
+    fullPayment: "Full Payment",
+    remortgage: "Remortgage",
+    inputCash: "Input Cash",
+    annualInterestRate: "Annual Interest Rate",
+    hPlan: "H PLAN",
+    capRate: "CAP RATE",
+    lower: "Lower",
+    mortgageLtvShort: "LTV",
+    mortgageTermShort: "Term",
+    liquidReserve: "Liquid Reserve",
     structureVis: "Structure Visualization",
     fundFlow: "Fund Flow",
     capital: "CAPITAL",
@@ -894,6 +905,17 @@ const TRANSLATIONS = {
     bondIncome: "債券收入",
     loanInterest: "貸款利息",
     netMonthlyCashflow: "淨月度現金流",
+    propertyAndFinancing: "物業與融資",
+    fullPayment: "全數付清",
+    remortgage: "重新按揭",
+    inputCash: "投入現金",
+    annualInterestRate: "年利率 (%)",
+    hPlan: "H PLAN",
+    capRate: "CAP RATE",
+    lower: "較低",
+    mortgageLtvShort: "按揭成數 (%)",
+    mortgageTermShort: "按揭年期 (年)",
+    liquidReserve: "流動資金儲備",
     structureVis: "方案概念圖",
     fundFlow: "資金流向",
     capital: "資本",
@@ -1093,7 +1115,7 @@ const TRANSLATIONS = {
 
     // Legal
     termsConditionsSubtitle: "條款、條件與監管通告",
-    disclaimer1: "本建議書僅供參考，並不構成購買任何保險產品或金融工具的要約、招攬或建議。此處包含的信息基於當前市場狀況和假設，如有更改，恕不另行通知。",
+    disclaimer1: "本建議書僅供參考，並不構成銷售任何金融產品或服務的要約、招攬或建議。此處包含的信息基於當前市場狀況和假設，如有更改，恕不另行通知。",
     disclaimer2: "投資涉及風險。單位價格及其收益可升可跌，過往表現數據並非未來表現的指標。除非向您銷售產品的中介人已向您解釋，考慮到您的財務狀況、投資經驗和投資目標，該產品適合您，否則您不應投資。",
     disclaimer3: "保費融資涉及借款以支付人壽保險保費。此策略涉及風險，包括利率風險（若借貸成本超過保單回報）、追收保證金風險（若抵押品價值跌至低於銀行要求）及保單退保風險。保險保單的保證及非保證價值由 AIA (香港) 說明，並受承保人的表現及信貸風險影響。",
     disclaimer4: "如涉及跨境招攬（特別是針對中國內地居民），請注意本建議書僅供參考，任何交易必須符合香港及中國內地的監管要求。無意在內地境內招攬保險業務。",
@@ -1141,6 +1163,17 @@ const TRANSLATIONS = {
     bondIncome: "债券收入",
     loanInterest: "贷款利息",
     netMonthlyCashflow: "净月度现金流",
+    propertyAndFinancing: "物业与融资",
+    fullPayment: "全额付清",
+    remortgage: "重新按揭",
+    inputCash: "投入现金",
+    annualInterestRate: "年利率 (%)",
+    hPlan: "H PLAN",
+    capRate: "CAP RATE",
+    lower: "较低",
+    mortgageLtvShort: "按揭成数 (%)",
+    mortgageTermShort: "按揭年期 (年)",
+    liquidReserve: "流动资金储备",
     structureVis: "方案概念图",
     fundFlow: "资金流向",
     capital: "资本",
@@ -2124,11 +2157,13 @@ const App = () => {
   const [preventCrossBorder, setPreventCrossBorder] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isFullPayment, setIsFullPayment] = useState(false);
   const [lang, setLang] = useState<Language>('en');
   const t = TRANSLATIONS[lang];
 
   // Financial State
   const [budget, setBudget] = useState(1000000);
+  const [extraCash, setExtraCash] = useState(0);
   const [cashReserve, setCashReserve] = useState(200000);
   const [bondAlloc, setBondAlloc] = useState(3000000); // Default 3M bond
   const [bondYield, setBondYield] = useState(5.5);
@@ -2155,7 +2190,7 @@ const App = () => {
   // Mortgage Refi State
   const [propertyValue, setPropertyValue] = useState(15000000);
   const [existingMortgage, setExistingMortgage] = useState(6000000);
-  const [mortgageLtv, setMortgageLtv] = useState(60); // Target LTV for Refi
+  const [mortgageLtv, setMortgageLtv] = useState(70); // Target LTV for Refi
   const [primeRate, setPrimeRate] = useState(5.875); // Major Bank Prime
   const [mortgageHSpread, setMortgageHSpread] = useState(1.3); // H + 1.3
   const [mortgagePModifier, setMortgagePModifier] = useState(1.75); // P - 1.75
@@ -2282,7 +2317,7 @@ const App = () => {
   const monthlyMortgagePmt = calculatePMT(effectiveMortgageRate, mortgageTenor, unlockedCash);
 
   const handleApplyCapital = () => {
-    setBudget(unlockedCash);
+    setBudget(unlockedCash + extraCash);
   };
 
 
@@ -2570,37 +2605,184 @@ const App = () => {
                       </>
                     ) : (
                       <div className="space-y-6">
-                        <div className="grid grid-cols-2 gap-6">
-                          <InputField label={t.propVal} value={propertyValue} onChange={setPropertyValue} />
-                          <InputField label={t.existingLoan} value={existingMortgage} onChange={setExistingMortgage} />
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="col-span-1">
-                            <InputField label={t.refiLtv} value={mortgageLtv} onChange={setMortgageLtv} suffix="%" step={1} />
+                        {/* New Property Header & Toggle */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 text-slate-800">
+                            <Home className="w-5 h-5 text-[#c5a059]" />
+                            <span className="font-bold text-lg">{t.propertyAndFinancing}</span>
                           </div>
-                          <div className="col-span-2">
-                            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center">
-                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.unlockedCash}</div>
-                              <div className="text-lg font-serif font-medium text-slate-900">{formatCurrency(unlockedCash)}</div>
+                          <div className="flex items-center bg-slate-100 p-1 rounded-full">
+                            <button
+                              onClick={() => { setIsFullPayment(true); setExistingMortgage(0); }}
+                              className={`px-4 py-1.5 text-[11px] font-bold rounded-full transition-all ${isFullPayment ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                            >
+                              {t.fullPayment}
+                            </button>
+                            <button
+                              onClick={() => setIsFullPayment(false)}
+                              className={`px-4 py-1.5 text-[11px] font-bold rounded-full transition-all ${!isFullPayment ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
+                            >
+                              {t.remortgage}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Large Property Value Input */}
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">HKD</span>
+                            <div className="flex flex-col">
+                              <button onClick={() => setPropertyValue(prev => prev + 100000)} className="text-slate-300 hover:text-[#c5a059] transition-colors"><ChevronRight className="w-4 h-4 -rotate-90" /></button>
+                              <button onClick={() => setPropertyValue(prev => Math.max(0, prev - 100000))} className="text-slate-300 hover:text-[#c5a059] transition-colors"><ChevronRight className="w-4 h-4 rotate-90" /></button>
+                            </div>
+                          </div>
+                          <input
+                            type="number"
+                            value={propertyValue}
+                            onChange={(e) => setPropertyValue(parseFloat(e.target.value))}
+                            className="w-full bg-transparent text-4xl font-serif text-slate-900 focus:outline-none"
+                          />
+                        </div>
+
+                        {/* Existing Mortgage Input (Show only if not Full Payment) */}
+                        {!isFullPayment && (
+                          <div className="space-y-2">
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.existingLoan}</div>
+                            <input
+                              type="number"
+                              value={existingMortgage}
+                              onChange={(e) => setExistingMortgage(parseFloat(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xl font-serif focus:outline-none focus:border-[#c5a059]"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <label className="block cursor-pointer">
+                            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{t.inputCash}</div>
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 hover:border-[#c5a059] transition-colors">
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-400 font-serif text-lg">HKD</span>
+                                <input
+                                  type="number"
+                                  value={extraCash === 0 ? "" : extraCash}
+                                  onChange={(e) => setExtraCash(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                                  className="w-full bg-transparent text-2xl font-serif text-slate-900 focus:outline-none"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+
+                        <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest">{t.unlockedCapital}</span>
+                            <span className="text-xl font-serif font-bold text-emerald-700">{formatCurrency(unlockedCash + extraCash)}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100">
+                          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">{t.annualInterestRate}</div>
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* H PLAN */}
+                            <div className={`p-4 rounded-xl border-2 transition-all ${hibor + mortgageHSpread < primeRate - mortgagePModifier ? 'border-[#c5a059] bg-white shadow-lg scale-[1.02]' : 'border-slate-100 bg-slate-50'}`}>
+                              <div className="flex justify-between items-start mb-2">
+                                <span className={`text-[11px] font-bold tracking-wider ${hibor + mortgageHSpread < primeRate - mortgagePModifier ? 'text-[#c5a059]' : 'text-slate-400'}`}>{t.hPlan}</span>
+                                {hibor + mortgageHSpread < primeRate - mortgagePModifier && (
+                                  <span className="bg-[#fcd34d] text-[#78350f] text-[9px] font-black px-1.5 py-0.5 rounded">{t.lower}</span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 mb-4">
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 uppercase">HIBOR (H)</div>
+                                  <input
+                                    type="number"
+                                    value={hibor}
+                                    onChange={(e) => setHibor(parseFloat(e.target.value))}
+                                    className="w-full bg-transparent border-b border-slate-200 text-sm font-serif p-1 focus:outline-none focus:border-[#c5a059]"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 uppercase">SPREAD</div>
+                                  <input
+                                    type="number"
+                                    value={mortgageHSpread}
+                                    onChange={(e) => setMortgageHSpread(parseFloat(e.target.value))}
+                                    className="w-full bg-transparent border-b border-slate-200 text-sm font-serif p-1 focus:outline-none focus:border-[#c5a059]"
+                                  />
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">EFFECTIVE RATE</div>
+                              <div className="text-xl font-serif font-bold text-[#c5a059]">{formatPercent(hibor + mortgageHSpread)}</div>
+                            </div>
+
+                            {/* CAP RATE */}
+                            <div className={`p-4 rounded-xl border-2 transition-all ${primeRate - mortgagePModifier <= hibor + mortgageHSpread ? 'border-[#c5a059] bg-white shadow-lg scale-[1.02]' : 'border-slate-100 bg-slate-50'}`}>
+                              <div className="flex justify-between items-start mb-2">
+                                <span className={`text-[11px] font-bold tracking-wider ${primeRate - mortgagePModifier <= hibor + mortgageHSpread ? 'text-[#c5a059]' : 'text-slate-400'}`}>{t.capRate}</span>
+                                {primeRate - mortgagePModifier <= hibor + mortgageHSpread && (
+                                  <span className="bg-[#fcd34d] text-[#78350f] text-[9px] font-black px-1.5 py-0.5 rounded">{t.lower}</span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 mb-4">
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 uppercase">PRIME (P)</div>
+                                  <input
+                                    type="number"
+                                    value={primeRate}
+                                    onChange={(e) => setPrimeRate(parseFloat(e.target.value))}
+                                    className="w-full bg-transparent border-b border-slate-200 text-sm font-serif p-1 focus:outline-none focus:border-[#c5a059]"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="text-[9px] font-bold text-slate-400 uppercase">SPREAD (-)</div>
+                                  <input
+                                    type="number"
+                                    value={mortgagePModifier}
+                                    onChange={(e) => setMortgagePModifier(parseFloat(e.target.value))}
+                                    className="w-full bg-transparent border-b border-slate-200 text-sm font-serif p-1 focus:outline-none focus:border-[#c5a059]"
+                                  />
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">EFFECTIVE RATE</div>
+                              <div className="text-xl font-serif font-bold text-[#c5a059]">{formatPercent(primeRate - mortgagePModifier)}</div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Mortgage Rate Terms (Replaces single input) */}
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
-                          <InputField label={t.hiborRate} value={parseFloat(hibor.toFixed(2))} onChange={() => { }} prefix="" suffix="%" disabled />
-                          <InputField label={t.hSpread} value={mortgageHSpread} onChange={setMortgageHSpread} suffix="%" step={0.1} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <InputField label={t.primeRate} value={primeRate} onChange={setPrimeRate} suffix="%" step={0.125} />
-                          <InputField label={t.pCap} value={mortgagePModifier} onChange={setMortgagePModifier} suffix="%" step={0.1} />
+                        <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t.mortgageLtvShort}</div>
+                            <input
+                              type="number"
+                              value={mortgageLtv}
+                              onChange={(e) => setMortgageLtv(parseFloat(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xl font-serif focus:outline-none focus:border-[#c5a059]"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">{t.mortgageTermShort}</div>
+                            <input
+                              type="number"
+                              value={mortgageTenor}
+                              onChange={(e) => setMortgageTenor(parseFloat(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xl font-serif focus:outline-none focus:border-[#c5a059]"
+                            />
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                          <InputField label={t.tenor} value={mortgageTenor} onChange={setMortgageTenor} suffix="Yr" step={1} />
-                          <div className="bg-orange-50 p-2 rounded border border-orange-100 text-center flex flex-col justify-center">
-                            <div className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">{t.effectiveMtgRate}</div>
-                            <div className="text-xl font-serif font-bold text-orange-700">{formatPercent(effectiveMortgageRate)}</div>
+                        {/* Liquid Reserve Slider */}
+                        <div className="pt-6 border-t border-slate-100">
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t.liquidReserve}</span>
+                            <span className="text-lg font-bold text-[#c5a059]">0%</span>
+                          </div>
+                          <div className="relative h-1 bg-slate-200 rounded-full mb-6 mt-4">
+                            <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[#c5a059] rotate-45 transform left-[0%] shadow-lg border-2 border-white"></div>
+                          </div>
+                          <div className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {t.cashSource}: HK$0
                           </div>
                         </div>
 
