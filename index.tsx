@@ -2191,7 +2191,7 @@ const App = () => {
   const [propertyValue, setPropertyValue] = useState(15000000);
   const [existingMortgage, setExistingMortgage] = useState(6000000);
   const [mortgageLtv, setMortgageLtv] = useState(70); // Target LTV for Refi
-  const [primeRate, setPrimeRate] = useState(5.875); // Major Bank Prime
+  const [primeRate, setPrimeRate] = useState(5.5); // Major Bank Prime
   const [mortgageHSpread, setMortgageHSpread] = useState(1.3); // H + 1.3
   const [mortgagePModifier, setMortgagePModifier] = useState(1.75); // P - 1.75
   const [mortgageTenor, setMortgageTenor] = useState(30);
