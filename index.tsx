@@ -197,7 +197,7 @@ const PDFProposal = ({
   const t = TRANSLATIONS[lang];
 
   const PageContainer = ({ children, pageNum }: any) => (
-    <div className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-8 overflow-hidden flex flex-col font-serif">
+    <div id={`report-page-${pageNum}`} className="pdf-only page-break bg-white w-[297mm] h-[210mm] relative p-8 overflow-hidden flex flex-col font-serif">
       <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
           <div className="text-xl font-serif tracking-tighter text-slate-900 border-r border-slate-200 pr-3">{t.privateWealth}</div>
@@ -231,7 +231,7 @@ const PDFProposal = ({
   return (
     <>
       {/* Page 1: Cover */}
-      <div className="pdf-only page-break bg-slate-900 w-[297mm] h-[210mm] relative p-16 flex flex-col justify-center overflow-hidden">
+      <div id="report-page-1" className="pdf-only page-break bg-slate-900 w-[297mm] h-[210mm] relative p-16 flex flex-col justify-center overflow-hidden">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-[#c5a059] opacity-10 -skew-x-12 translate-x-20"></div>
         <div className="relative border-l-4 border-[#c5a059] pl-10">
           <div className="text-white text-lg font-serif tracking-[0.3em] uppercase mb-4 opacity-60">{t.wealthManagement}</div>
@@ -543,15 +543,40 @@ const PDFProposal = ({
               <ul className="space-y-3 text-[10px] text-slate-600">
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>{t.riskMitigation1}</span>
+                  <span>
+                    {(() => {
+                      const formatWan = (val: number, isHkd: boolean) => {
+                        const amount = isHkd ? val : val; // Assumes inputs are logical
+                        if (lang === 'en') return formatCurrency(amount);
+                        return `${(amount / 10000).toFixed(1).replace('.0', '')}萬${isHkd ? '港元' : '美元'}`;
+                      };
+                      return t.riskMitigation1;
+                    })()}
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>{t.riskMitigation2}</span>
+                  <span>
+                    {(() => {
+                      const formatWan = (val: number, isHkd: boolean) => {
+                        if (lang === 'en') return formatCurrency(val);
+                        return `${(val / 10000).toFixed(1).replace('.0', '')}萬${isHkd ? '港元' : '美元'}`;
+                      };
+                      return t.riskMitigation2.replace('{bondAmount}', formatWan(netBondPrincipal, true));
+                    })()}
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>{t.riskMitigation3}</span>
+                  <span>
+                    {(() => {
+                      const formatWan = (val: number, isHkd: boolean) => {
+                        if (lang === 'en') return formatCurrency(val);
+                        return `${(val / 10000).toFixed(1).replace('.0', '')}萬${isHkd ? '港元' : '美元'}`;
+                      };
+                      return t.riskMitigation3.replace('{reserveAmount}', formatWan(cashReserve, false));
+                    })()}
+                  </span>
                 </li>
               </ul>
             </div>
@@ -616,6 +641,17 @@ const TRANSLATIONS = {
     marketRisk: "Market Risk",
     bankControls: "Bank Controls",
     systemConfig: "System Configuration",
+    reportTabs: {
+      cover: "Cover",
+      summary: "Executive Summary",
+      allocation: "Capital Allocation",
+      performance: "Performance Studio",
+      holdings: "Holdings Analysis",
+      calculation: "Detailed Calculation",
+      ledger: "Ledger Statement",
+      risk: "Risk Analysis",
+      disclaimer: "Disclaimer"
+    },
     rm: "RM",
     seniorBanker: "Senior Banker",
     financingProposal: "Financing Proposal",
@@ -850,8 +886,8 @@ const TRANSLATIONS = {
     interestRateSensitivityDesc: "A 2% increase in HIBOR would reduce the annual net carry by approximately $40,000. Break-even HIBOR for this strategy is 7.25%.",
     riskMitigationStrategies: "Risk Mitigation Strategies",
     riskMitigation1: "Interest Cap: Mortgage capping mechanism protects against extreme rate spikes.",
-    riskMitigation2: "Collateral Buffer: HK$2M Bond fund provides significant equity cushion for the loan.",
-    riskMitigation3: "Liquidity Reserve: $138k initial cash reserve held for unforeseen margin calls.",
+    riskMitigation2: "Collateral Buffer: {bondAmount} Bond fund provides significant equity cushion for the loan.",
+    riskMitigation3: "Liquidity Reserve: {reserveAmount} initial cash reserve held for unforeseen margin calls.",
     stressMap: "STRESS MAP",
     marketRiskHeatmap: "Market Risk Heatmap (Simulated)",
 
@@ -874,6 +910,17 @@ const TRANSLATIONS = {
     holdingsAnalysis: "持倉分析",
     marketRisk: "市場風險",
     bankControls: "銀行控制",
+    reportTabs: {
+      cover: "封面",
+      summary: "執行摘要",
+      allocation: "資本配置",
+      performance: "表現分析",
+      holdings: "持倉分析",
+      calculation: "詳細計算",
+      ledger: "分類帳目",
+      risk: "風險分析",
+      disclaimer: "免責聲明"
+    },
     systemConfig: "系統配置",
     rm: "客戶經理",
     seniorBanker: "資深銀行家",
@@ -1108,8 +1155,8 @@ const TRANSLATIONS = {
     interestRateSensitivityDesc: "HIBOR 上升 2% 將使年度淨利差減少約 $40,000。此策略的收支平衡 HIBOR 為 7.25%。",
     riskMitigationStrategies: "風險緩解策略",
     riskMitigation1: "利率上限：按揭上限機制可防止極端利率飆升。",
-    riskMitigation2: "抵押緩衝：200萬港元債券基金為貸款提供顯著的權益緩衝。",
-    riskMitigation3: "流動性儲備：保留13.8萬美元初始現金儲備，以應對不可預見的保證金追收。",
+    riskMitigation2: "抵押緩衝：{bondAmount}債券基金為貸款提供顯著的權益緩衝。",
+    riskMitigation3: "流動性儲備：保留{reserveAmount}初始現金儲備，以應對不可預見的保證金追收。",
     stressMap: "壓力圖",
     marketRiskHeatmap: "市場風險熱圖 (模擬)",
 
@@ -1132,6 +1179,17 @@ const TRANSLATIONS = {
     holdingsAnalysis: "持仓分析",
     marketRisk: "市场风险",
     bankControls: "银行控制",
+    reportTabs: {
+      cover: "封面",
+      summary: "执行摘要",
+      allocation: "资本配置",
+      performance: "表现分析",
+      holdings: "持仓分析",
+      calculation: "详细计算",
+      ledger: "分类账目",
+      risk: "风险分析",
+      disclaimer: "免责声明"
+    },
     systemConfig: "系统配置",
     rm: "客户经理",
     seniorBanker: "资深银行家",
@@ -1366,8 +1424,8 @@ const TRANSLATIONS = {
     interestRateSensitivityDesc: "HIBOR 上升 2% 将使年度净利差减少约 $40,000。此策略的收支平衡 HIBOR 为 7.25%。",
     riskMitigationStrategies: "风险缓解策略",
     riskMitigation1: "利率上限：按揭上限机制可防止极端利率飙升。",
-    riskMitigation2: "抵押缓冲：200万港元债券基金为贷款提供显著的权益缓冲。",
-    riskMitigation3: "流动性储备：保留13.8万美元初始现金储备，以应对不可预见的保证金追收。",
+    riskMitigation2: "抵押缓冲：{bondAmount}债券基金为贷款提供显著的权益缓冲。",
+    riskMitigation3: "流动性储备：保留{reserveAmount}初始现金储备，以应对不可预見的保证金追收。",
     stressMap: "压力图",
     marketRiskHeatmap: "市场风险热图 (模拟)",
 
@@ -2176,6 +2234,8 @@ const App = () => {
   const [bondPriceDrop, setBondPriceDrop] = useState(10); // % drop
   const [showGuaranteed, setShowGuaranteed] = useState(false);
   const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
+  const [tempBudget, setTempBudget] = useState(1000000);
+  const [tempCashReserve, setTempCashReserve] = useState(200000);
   const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>('hibor');
   const [cofRate, setCofRate] = useState(5.0); // Cost of Funds rate for manual override
   const [clientName, setClientName] = useState('Estate of Mr. H.N.W.');
@@ -2318,6 +2378,12 @@ const App = () => {
 
   const handleApplyCapital = () => {
     setBudget(unlockedCash + extraCash);
+    setCashReserve(extraCash);
+  };
+
+  const handleApplyCash = () => {
+    setBudget(tempBudget);
+    setCashReserve(tempCashReserve);
   };
 
 
@@ -2600,9 +2666,21 @@ const App = () => {
                     subtitle={fundSource === 'cash' ? t.clientAssets : t.unlockedCapital}
                   >
                     {fundSource === 'cash' ? (
-                      <>
-                        <InputField label={t.totalBudget} value={budget} onChange={setBudget} />
-                      </>
+                      <div className="space-y-6">
+                        <InputField label={t.totalBudget} value={tempBudget} onChange={setTempBudget} />
+                        <InputField label={t.cashReserve} value={tempCashReserve} onChange={setTempCashReserve} />
+                        <div className="pt-2">
+                          <button
+                            onClick={handleApplyCash}
+                            className="w-full py-3 bg-[#c5a059] hover:bg-[#b45309] text-white text-xs font-bold uppercase tracking-widest rounded shadow transition-colors"
+                          >
+                            {t.applyCapital}
+                          </button>
+                          <div className="text-center text-[10px] text-slate-400 mt-2">
+                            Current Budget: <span className="font-mono text-slate-700">{formatCurrency(budget)}</span>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="space-y-6">
                         {/* New Property Header & Toggle */}
@@ -2791,8 +2869,7 @@ const App = () => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-100">
-                      <InputField label={t.cashReserve} value={cashReserve} onChange={setCashReserve} />
+                    <div className="mt-6 pt-6 border-t border-slate-100">
                       <InputField label={t.bondFund} value={bondAlloc} onChange={setBondAlloc} />
                     </div>
                     <InputField label={t.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" />
@@ -3588,6 +3665,47 @@ const App = () => {
                       <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.projectedRoi}</div>
                       <div className="text-lg font-serif font-bold text-emerald-600">{roi.toFixed(1)}%</div>
                     </div>
+                  </div>
+
+                  {/* Report Navigation Tabs - Glossy Compact Sidebar */}
+                  <div className="fixed left-[310px] bottom-4 z-50 bg-white/30 backdrop-blur-2xl border border-white/40 rounded-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col gap-1 transition-all group hover:bg-white/40 ring-1 ring-white/20">
+                    {[
+                      { id: 1, label: t.reportTabs.cover, icon: '01' },
+                      { id: 2, label: t.reportTabs.summary, icon: '02' },
+                      { id: 3, label: t.reportTabs.allocation, icon: '03' },
+                      { id: 4, label: t.reportTabs.performance, icon: '04' },
+                      { id: 5, label: t.reportTabs.holdings, icon: '05' },
+                      { id: 6, label: t.reportTabs.calculation, icon: '06' },
+                      { id: 7, label: t.reportTabs.ledger, icon: '07' },
+                      { id: 8, label: t.reportTabs.risk, icon: '08' },
+                      { id: 9, label: t.reportTabs.disclaimer, icon: '09' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          const el = document.getElementById(`report-page-${tab.id}`);
+                          if (el) {
+                            const offset = 120;
+                            const bodyRect = document.body.getBoundingClientRect().top;
+                            const elementRect = el.getBoundingClientRect().top;
+                            const elementPosition = elementRect - bodyRect;
+                            const offsetPosition = elementPosition - offset;
+
+                            window.scrollTo({
+                              top: offsetPosition,
+                              behavior: 'smooth'
+                            });
+                          }
+                        }}
+                        className="relative flex items-center gap-3 p-2 hover:bg-white/40 rounded-xl transition-all duration-300"
+                        title={tab.label}
+                      >
+                        <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-md shadow-inner text-[10px] font-bold text-slate-600 group-hover:bg-[#c5a059] group-hover:text-white transition-colors border border-white/30">{tab.icon}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden max-w-0 group-hover:max-w-[200px]">
+                          {tab.label}
+                        </span>
+                      </button>
+                    ))}
                   </div>
 
                   <div className="w-full flex flex-col items-center force-preview overflow-x-auto pt-4 pb-20">
