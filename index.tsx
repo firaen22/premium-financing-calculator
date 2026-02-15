@@ -541,19 +541,7 @@ const PDFProposal = ({
             <div>
               <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4">{t.riskMitigationStrategies}</h4>
               <ul className="space-y-3 text-[10px] text-slate-600">
-                <li className="flex gap-2">
-                  <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span>
-                    {(() => {
-                      const formatWan = (val: number, isHkd: boolean) => {
-                        const amount = isHkd ? val : val; // Assumes inputs are logical
-                        if (lang === 'en') return formatCurrency(amount);
-                        return `${(amount / 10000).toFixed(1).replace('.0', '')}萬${isHkd ? '港元' : '美元'}`;
-                      };
-                      return t.riskMitigation1;
-                    })()}
-                  </span>
-                </li>
+
                 <li className="flex gap-2">
                   <AlertTriangle className="w-3 h-3 text-orange-500 shrink-0" />
                   <span>
@@ -885,7 +873,7 @@ const TRANSLATIONS = {
     interestRateSensitivity: "Interest Rate Sensitivity",
     interestRateSensitivityDesc: "A 2% increase in HIBOR would reduce the annual net carry by approximately $40,000. Break-even HIBOR for this strategy is 7.25%.",
     riskMitigationStrategies: "Risk Mitigation Strategies",
-    riskMitigation1: "Interest Cap: Mortgage capping mechanism protects against extreme rate spikes.",
+
     riskMitigation2: "Collateral Buffer: {bondAmount} Bond fund provides significant equity cushion for the loan.",
     riskMitigation3: "Liquidity Reserve: {reserveAmount} initial cash reserve held for unforeseen margin calls.",
     stressMap: "STRESS MAP",
@@ -1154,7 +1142,7 @@ const TRANSLATIONS = {
     interestRateSensitivity: "利率敏感度",
     interestRateSensitivityDesc: "HIBOR 上升 2% 將使年度淨利差減少約 $40,000。此策略的收支平衡 HIBOR 為 7.25%。",
     riskMitigationStrategies: "風險緩解策略",
-    riskMitigation1: "利率上限：按揭上限機制可防止極端利率飆升。",
+
     riskMitigation2: "抵押緩衝：{bondAmount}債券基金為貸款提供顯著的權益緩衝。",
     riskMitigation3: "流動性儲備：保留{reserveAmount}初始現金儲備，以應對不可預見的保證金追收。",
     stressMap: "壓力圖",
@@ -1423,7 +1411,7 @@ const TRANSLATIONS = {
     interestRateSensitivity: "利率敏感度",
     interestRateSensitivityDesc: "HIBOR 上升 2% 将使年度净利差减少约 $40,000。此策略的收支平衡 HIBOR 为 7.25%。",
     riskMitigationStrategies: "风险缓解策略",
-    riskMitigation1: "利率上限：按揭上限机制可防止极端利率飙升。",
+
     riskMitigation2: "抵押缓冲：{bondAmount}债券基金为贷款提供显著的权益缓冲。",
     riskMitigation3: "流动性储备：保留{reserveAmount}初始现金储备，以应对不可预見的保证金追收。",
     stressMap: "压力图",
