@@ -2772,21 +2772,8 @@ const App = () => {
                           </div>
                         </div>
 
-                        {/* Liquid Reserve Slider */}
-                        <div className="pt-6 border-t border-slate-100">
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t.liquidReserve}</span>
-                            <span className="text-lg font-bold text-[#c5a059]">0%</span>
-                          </div>
-                          <div className="relative h-1 bg-slate-200 rounded-full mb-6 mt-4">
-                            <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[#c5a059] rotate-45 transform left-[0%] shadow-lg border-2 border-white"></div>
-                          </div>
-                          <div className="text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {t.cashSource}: HK$0
-                          </div>
-                        </div>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 pt-6 border-t border-slate-100">
                           <div className="flex justify-between items-center text-xs text-slate-500">
                             <span className="font-bold uppercase tracking-wider">{t.monthlyMtg}</span>
                             <span className="font-mono text-slate-900">{formatCurrency(monthlyMortgagePmt)}</span>
