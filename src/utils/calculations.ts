@@ -13,7 +13,7 @@ export const generateGuaranteed = (factors: { [key: number]: number }) => {
     const guaranteed: { [key: number]: number } = {};
     Object.keys(factors).forEach(key => {
         const k = Number(key);
-        guaranteed[k] = factors[k] * (0.85 - (k * 0.005));
+        guaranteed[k] = factors[k] * Math.max(0, 0.85 - (k * 0.005));
     });
     return guaranteed;
 };

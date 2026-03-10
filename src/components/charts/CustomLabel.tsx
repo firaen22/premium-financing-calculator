@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CustomLabel = (props: any) => {
+export const CustomLabel = React.memo((props: any) => {
     const { x, y, value, index, name, color } = props;
     // Last index is 30 for 30-year projection (0-30)
     if (index === 30) {
@@ -20,4 +20,4 @@ export const CustomLabel = (props: any) => {
         );
     }
     return null;
-};
+});

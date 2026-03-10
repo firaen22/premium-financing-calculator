@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../../utils/calculations';
 
-export const Heatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels: number[], data: number[][] }) => {
+export const Heatmap = React.memo(({ xLabels, yLabels, data }: { xLabels: number[], yLabels: number[], data: number[][] }) => {
     return (
         <div className="w-full overflow-x-auto">
             <div className="min-w-[400px]">
@@ -49,4 +49,4 @@ export const Heatmap = ({ xLabels, yLabels, data }: { xLabels: number[], yLabels
             </div>
         </div>
     )
-}
+});

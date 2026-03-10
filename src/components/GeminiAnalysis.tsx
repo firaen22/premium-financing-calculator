@@ -30,19 +30,18 @@ const GeminiAnalysis: React.FC<GeminiAnalysisProps> = ({
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Check for environment variable
+        // Only use environment variable — never store API keys in localStorage
         const envKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
         if (envKey) {
             setApiKey(envKey);
-        } else {
-            const storedKey = localStorage.getItem('gemini_api_key');
-            if (storedKey) setApiKey(storedKey);
         }
+        // Clean up any previously stored key from localStorage (security fix)
+        try { localStorage.removeItem('gemini_api_key'); } catch (_) { /* noop */ }
     }, []);
 
     const handleSaveKey = (key: string) => {
+        // Store key in memory only — never persist to localStorage
         setApiKey(key);
-        localStorage.setItem('gemini_api_key', key);
         setShowKeyInput(false);
     };
 

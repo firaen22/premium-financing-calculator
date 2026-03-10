@@ -37,7 +37,7 @@ export const HoldingsView = ({
                         <button
                             key={filter.key}
                             onClick={() => setChartFilters((prev: any) => ({ ...prev, [filter.key]: !prev[filter.key] }))}
-                            className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all ${chartFilters[filter.key]
+                            className={`px-3 py-2 min-h-[44px] min-w-[44px] text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all ${chartFilters[filter.key]
                                 ? 'text-white shadow-sm'
                                 : 'bg-white text-slate-300 border-slate-100'
                                 }`}
@@ -196,7 +196,9 @@ export const HoldingsView = ({
                     </button>
                 }
             >
-                <div className="overflow-x-auto max-h-[500px]">
+                <div className="relative overflow-x-auto max-h-[500px]">
+                    {/* Scroll indicator: fade on right edge when scrollable */}
+                    <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-20 md:hidden" />
                     <table className="w-full text-xs text-left">
                         <thead className="bg-slate-50 text-slate-500 sticky top-0 z-10">
                             <tr>

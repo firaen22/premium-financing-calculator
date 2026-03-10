@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, Suspense } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { TRANSLATIONS } from './i18n';
@@ -13,7 +13,6 @@ import {
     MarketRiskView,
     ReturnStudio,
     SystemConfigView,
-    PDFPreview
 } from './views';
 import {
     useAppState,
@@ -21,6 +20,9 @@ import {
     useBatchProcess,
     useNotificationState
 } from './hooks';
+
+// Lazy-load heavy PDF components
+const PDFPreview = React.lazy(() => import('./views/PDFPreview').then(m => ({ default: m.PDFPreview })));
 
 const App = () => {
     const state = useAppState();
@@ -38,7 +40,7 @@ const App = () => {
         runBatch
     } = useBatchProcess();
 
-    const t = TRANSLATIONS[state.lang];
+    const t = useMemo(() => TRANSLATIONS[state.lang], [state.lang]);
     const {
         notifications,
         showNotifications,
@@ -59,18 +61,25 @@ const App = () => {
     }, [liveRate, liveDate, state.dataSource]);
 
     const handleExportCSV = () => {
-        const headers = ['Year', 'Bond Interest', 'Cash Value', 'Bond Principal', 'Policy Value', 'Loan', 'Net Equity'];
+        const headers = ['Year', 'Bond Interest', 'Cash Value', 'Bond Principal', 'Policy Value', 'Loan', 'Mortgage Balance', 'Mortgage Principal Repaid', 'Net Equity'];
+        const projData = state.projection.projectionData;
+        const initialMtgBalance = projData[0]?.mortgageBalance || 0;
         const csvContent = [
             headers.join(','),
-            ...state.projection.projectionData.map(row => [
-                row.year,
-                row.cumulativeBondInterest,
-                row.cashValue,
-                row.bondPrincipal,
-                row.surrenderValue,
-                row.loan,
-                row.netEquity
-            ].join(','))
+            ...projData.map(row => {
+                const mortgagePrincipalRepaid = Math.max(0, initialMtgBalance - (row.mortgageBalance || 0));
+                return [
+                    row.year,
+                    row.cumulativeBondInterest,
+                    row.cashValue,
+                    row.bondPrincipal,
+                    row.surrenderValue,
+                    row.loan,
+                    row.mortgageBalance || 0,
+                    mortgagePrincipalRepaid,
+                    row.netEquity
+                ].join(',');
+            })
         ].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -228,7 +237,8 @@ const App = () => {
                     setAutoHedging={state.setAutoHedging}
                 />;
             case 'pdfPreview':
-                return <PDFPreview
+                return <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading report preview...</div>}>
+                    <PDFPreview
                     t={t}
                     lang={state.lang}
                     clientName={state.clientName}
@@ -256,7 +266,8 @@ const App = () => {
                     bondYield={state.bondYield}
                     sensitivityYear={state.sensitivityYear}
                     budget={state.budget}
-                />;
+                />
+                </Suspense>;
             default:
                 return null;
         }
@@ -349,35 +360,37 @@ const App = () => {
             </div>
 
             <div ref={pdfRef} className="pdf-container">
-                <PDFPreview
-                    t={t}
-                    lang={state.lang}
-                    clientName={state.clientName}
-                    setClientName={state.setClientName}
-                    representativeName={state.representativeName}
-                    setRepresentativeName={state.setRepresentativeName}
-                    onNavigate={() => { }}
-                    onDownloadPDF={() => { }}
-                    isGeneratingPDF={state.isGeneratingPDF}
-                    totalPremium={state.projection.totalPremium}
-                    bankLoan={state.projection.bankLoan}
-                    projectionData={state.projection.projectionData}
-                    roi={state.projection.roi}
-                    propertyValue={state.propertyValue}
-                    unlockedCash={state.unlockedCash}
-                    hibor={state.hibor}
-                    effectiveMortgageRate={state.effectiveMortgageRate}
-                    cashReserve={state.cashReserve}
-                    netBondPrincipal={state.projection.netBondPrincipal}
-                    pfEquity={state.projection.pfEquity}
-                    fundSource={state.fundSource}
-                    sensitivityData={state.stressTest.sensitivityData}
-                    spread={state.spread}
-                    leverageLTV={state.leverageLTV}
-                    bondYield={state.bondYield}
-                    sensitivityYear={state.sensitivityYear}
-                    budget={state.budget}
-                />
+                <Suspense fallback={null}>
+                    <PDFPreview
+                        t={t}
+                        lang={state.lang}
+                        clientName={state.clientName}
+                        setClientName={state.setClientName}
+                        representativeName={state.representativeName}
+                        setRepresentativeName={state.setRepresentativeName}
+                        onNavigate={() => { }}
+                        onDownloadPDF={() => { }}
+                        isGeneratingPDF={state.isGeneratingPDF}
+                        totalPremium={state.projection.totalPremium}
+                        bankLoan={state.projection.bankLoan}
+                        projectionData={state.projection.projectionData}
+                        roi={state.projection.roi}
+                        propertyValue={state.propertyValue}
+                        unlockedCash={state.unlockedCash}
+                        hibor={state.hibor}
+                        effectiveMortgageRate={state.effectiveMortgageRate}
+                        cashReserve={state.cashReserve}
+                        netBondPrincipal={state.projection.netBondPrincipal}
+                        pfEquity={state.projection.pfEquity}
+                        fundSource={state.fundSource}
+                        sensitivityData={state.stressTest.sensitivityData}
+                        spread={state.spread}
+                        leverageLTV={state.leverageLTV}
+                        bondYield={state.bondYield}
+                        sensitivityYear={state.sensitivityYear}
+                        budget={state.budget}
+                    />
+                </Suspense>
             </div>
         </div>
     );

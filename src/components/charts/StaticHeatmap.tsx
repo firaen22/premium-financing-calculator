@@ -2,7 +2,7 @@ import React from 'react';
 import { TRANSLATIONS } from '../../i18n/translations';
 import { formatCurrency } from '../../utils/calculations';
 
-export const StaticHeatmap = ({ xLabels, yLabels, data, lang }: { xLabels: number[], yLabels: number[], data: number[][], lang: string }) => {
+export const StaticHeatmap = React.memo(({ xLabels, yLabels, data, lang }: { xLabels: number[], yLabels: number[], data: number[][], lang: string }) => {
     const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
     return (
         <div className="w-full">
@@ -46,4 +46,4 @@ export const StaticHeatmap = ({ xLabels, yLabels, data, lang }: { xLabels: numbe
             </div>
         </div>
     )
-}
+});

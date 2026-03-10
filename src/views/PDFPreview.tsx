@@ -121,7 +121,7 @@ export const PDFPreview = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4 duration-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4 duration-500">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.totalPolicyValue}</div>
                     <div className="text-lg font-serif font-bold text-slate-900">{formatCurrency(totalPremium)}</div>
@@ -140,7 +140,14 @@ export const PDFPreview = ({
                 </div>
             </div>
 
-            <div className="fixed left-[310px] bottom-4 z-50 bg-white/30 backdrop-blur-2xl border border-white/40 rounded-2xl p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col gap-1 transition-all group hover:bg-white/40 ring-1 ring-white/20">
+            {/* Desktop: side nav, Mobile: bottom horizontal bar */}
+            <div className="fixed z-50
+                bottom-4 left-4 right-4 lg:left-[310px] lg:right-auto
+                bg-white/30 backdrop-blur-2xl border border-white/40 rounded-2xl p-1.5
+                shadow-[0_20px_50px_rgba(0,0,0,0.15)]
+                flex lg:flex-col gap-1
+                overflow-x-auto lg:overflow-x-visible
+                transition-all group hover:bg-white/40 ring-1 ring-white/20">
                 {[
                     { id: 1, label: t.reportTabs.cover, icon: '01' },
                     { id: 2, label: t.reportTabs.summary, icon: '02' },
@@ -169,11 +176,11 @@ export const PDFPreview = ({
                                 });
                             }
                         }}
-                        className="relative flex items-center gap-3 p-2 hover:bg-white/40 rounded-xl transition-all duration-300"
+                        className="relative flex items-center gap-3 p-2 min-w-[44px] min-h-[44px] hover:bg-white/40 rounded-xl transition-all duration-300"
                         title={tab.label}
                     >
-                        <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-md shadow-inner text-[10px] font-bold text-slate-600 group-hover:bg-[#c5a059] group-hover:text-white transition-colors border border-white/30">{tab.icon}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden max-w-0 group-hover:max-w-[200px]">
+                        <span className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-md shadow-inner text-[10px] font-bold text-slate-600 group-hover:bg-[#c5a059] group-hover:text-white transition-colors border border-white/30">{tab.icon}</span>
+                        <span className="hidden lg:inline text-[10px] font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden max-w-0 group-hover:max-w-[200px]">
                             {tab.label}
                         </span>
                     </button>

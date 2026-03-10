@@ -2,7 +2,7 @@ import React from 'react';
 import { Home, Briefcase } from 'lucide-react';
 import { formatCurrency } from '../../utils/calculations';
 
-export const FlowDiagram = ({
+export const FlowDiagram = React.memo(({
     budget,
     cash,
     bond,
@@ -102,4 +102,4 @@ export const FlowDiagram = ({
             </svg>
         </div>
     );
-};
+});
