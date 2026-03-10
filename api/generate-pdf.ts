@@ -39,17 +39,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!R2_ACCESS_KEY_ID) missing.push('R2_ACCESS_KEY_ID');
     if (!R2_SECRET_ACCESS_KEY) missing.push('R2_SECRET_ACCESS_KEY');
     if (!R2_BUCKET_NAME) missing.push('R2_BUCKET_NAME');
-    return res.status(500).json({ error: `Server Configuration Error: Missing environment variables: ${missing.join(', ')}` });
+    return res.status(500).json({ error: `Server Configuration Error: Missing environment variables: ${missing.join(', ')}`, code: 'SERVER_CONFIG_ERROR' });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' });
   }
 
   const { html, css } = req.body;
 
-  if (!html) {
-    return res.status(400).json({ error: 'HTML content missing' });
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'HTML content missing or invalid', code: 'INVALID_INPUT' });
+  }
+
+  if (html.length > 5000000) {
+    return res.status(413).json({ error: 'Content too large (exceeds 5MB)', code: 'PAYLOAD_TOO_LARGE' });
   }
 
   let browser = null;

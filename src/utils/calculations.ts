@@ -28,6 +28,8 @@ export const formatCurrency = (val: number) => {
     }).format(val);
 };
 
+export const formatPercent = (val: number) => `${val.toFixed(2)}%`;
+
 // Types
 export interface ProjectionData {
     year: number;
@@ -125,13 +127,29 @@ export interface StressTestOutput {
 }
 
 
+export const sanitize = (val: number, min = 0, max = Infinity, fallback = 0) => {
+    if (typeof val !== 'number' || isNaN(val) || !isFinite(val)) return fallback;
+    return Math.max(min, Math.min(max, val));
+};
+
 // Core Calculation Logic
 export const calculateProjection = (input: SimulationInput): SimulationOutput => {
-    const {
-        budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
-        leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
-        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor
-    } = input;
+    const budget = sanitize(input.budget, 0);
+    const cashReserve = sanitize(input.cashReserve, 0, budget);
+    const bondAlloc = sanitize(input.bondAlloc, 0);
+    const bondYield = sanitize(input.bondYield, 0, 100);
+    const hibor = sanitize(input.hibor, 0, 100);
+    const cofRate = sanitize(input.cofRate, 0, 100);
+    const interestBasis = input.interestBasis;
+    const spread = sanitize(input.spread, 0, 100);
+    const leverageLTV = sanitize(input.leverageLTV, 0, 100);
+    const capRate = sanitize(input.capRate, 0, 100);
+    const handlingFee = sanitize(input.handlingFee, 0, 100);
+    const fundSource = input.fundSource;
+    const unlockedCash = sanitize(input.unlockedCash, 0);
+    const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
+    const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0);
+    const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
 
     const equity = budget - cashReserve - bondAlloc;
     const ltvDecimal = leverageLTV / 100.0;
@@ -174,12 +192,18 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
                 mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: 0, annualInterest: 0 });
             } else if (y <= mortgageTenor) {
                 const interestPart = balance * (effectiveMortgageRate / 100);
-                const principalPart = annualPmt - interestPart;
+                let principalPart = annualPmt - interestPart;
+                let actualPmt = annualPmt;
+
+                if (balance < principalPart) {
+                    principalPart = balance;
+                    actualPmt = principalPart + interestPart;
+                }
 
                 cumInterest += interestPart;
                 balance -= principalPart;
                 if (balance < 0) balance = 0;
-                mortgageSchedule.push({ balance: balance, annualPmt: annualPmt, cumInterest: cumInterest, annualInterest: interestPart });
+                mortgageSchedule.push({ balance: balance, annualPmt: actualPmt, cumInterest: cumInterest, annualInterest: interestPart });
             } else {
                 mortgageSchedule.push({ balance: 0, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
             }
@@ -257,14 +281,14 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualMtgPmt;
 
         let annualRoC = 0;
-        const denom = fundSource === 'mortgage' ? budget : prev.netEquity;
+        const denom = budget;
         if (denom !== 0) {
             annualRoC = (annualNetGain / denom) * 100;
         }
 
         const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
 
-        const cumulativeNetGain = netEquity - yr0NetEquity - (fundSource === 'mortgage' ? runningCumMtgCost : 0);
+        const cumulativeNetGain = netEquity - yr0NetEquity;
 
         data.push({
             year: yr,
@@ -315,11 +339,21 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
 };
 
 export const calculateStressTest = (input: StressTestInput): StressTestOutput => {
-    const {
-        projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
-        totalPremium, netBondPrincipal, bondYield, bankLoan, spread, capRate,
-        budget, cashReserve, sensitivityYear, fundSource, unlockedCash
-    } = input;
+    const projectionData = input.projectionData;
+    const simulatedHibor = sanitize(input.simulatedHibor, 0, 100);
+    const bondPriceDrop = sanitize(input.bondPriceDrop, 0, 100);
+    const showGuaranteed = input.showGuaranteed;
+    const totalPremium = sanitize(input.totalPremium, 0);
+    const netBondPrincipal = sanitize(input.netBondPrincipal, 0);
+    const bondYield = sanitize(input.bondYield, 0, 100);
+    const bankLoan = sanitize(input.bankLoan, 0);
+    const spread = sanitize(input.spread, 0, 100);
+    const capRate = sanitize(input.capRate, 0, 100);
+    const budget = sanitize(input.budget, 0);
+    const cashReserve = sanitize(input.cashReserve, 0, budget);
+    const sensitivityYear = sanitize(input.sensitivityYear, 1, 30, 20);
+    const fundSource = input.fundSource;
+    const unlockedCash = sanitize(input.unlockedCash, 0);
 
     const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
 
@@ -383,9 +417,13 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     }
 
     // Break-even HIBOR
-    const policyGrowthY1 = (totalPremium * (factors[1] || 0)) - (totalPremium * (factors[0] || 0));
+    let totalGrowth = 0;
+    for (let i = 1; i <= 5; i++) {
+        totalGrowth += totalPremium * ((factors[i] || factors[30]) - (factors[i - 1] || factors[0]));
+    }
+    const avgAnnualPolicyGrowth = totalGrowth / 5;
     const annualBondIncome = stressedBondPrincipal * (bondYield / 100);
-    const totalAnnualIncome = annualBondIncome + policyGrowthY1;
+    const totalAnnualIncome = annualBondIncome + avgAnnualPolicyGrowth;
     const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
 
     let breakEvenHibor = 0;
@@ -417,7 +455,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
                 result = result - mtgBal;
             }
 
-            const profit = result - (fundSource === 'mortgage' ? 0 : budget);
+            const profit = result - yr0NetEquity;
             row.push(profit);
         }
         heatMapRows.push(row);
