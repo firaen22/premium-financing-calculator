@@ -81,8 +81,8 @@ export const FlowDiagram = React.memo(({
                         <rect x="0" y="0" width="250" height="120" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="2" />
                         <rect x="0" y="0" width="250" height="30" rx="8" fill="#c5a059" clipPath="inset(0 0 90 0)" />
                         <text x="125" y="20" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" letterSpacing="1">{labels.totalExposure}</text>
-                        <text x="125" y="75" textAnchor="middle" fill="#0f172a" fontSize="26" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
-                        <text x="125" y="100" textAnchor="middle" fill="#c5a059" fontSize="10" fontWeight="bold" style={{ textTransform: 'uppercase' }}>{labels.assetsPreserved}</text>
+                        <text x="125" y="65" textAnchor="middle" fill="#c5a059" fontSize="10" fontWeight="bold" style={{ textTransform: 'uppercase' }}>{labels.assetsPreserved}</text>
+                        <text x="125" y="100" textAnchor="middle" fill="#0f172a" fontSize="26" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>
                     </g>
 
                     {/* Leverage (Bottom Right) */}
