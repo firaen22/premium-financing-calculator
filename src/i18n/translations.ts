@@ -188,7 +188,7 @@ export const TRANSLATIONS = {
     presentedBy: "Presented By",
     strictlyPrivate: "Strictly Private",
     collection: "COLLECTION",
-    assetsPreserved: "ASSETS PRESERVED",
+    assetsPreserved: "Principal-Protected Policy",
 
     // Detailed Calculation Table
     item: "ITEM",
@@ -474,7 +474,7 @@ export const TRANSLATIONS = {
     presentedBy: "顧問",
     strictlyPrivate: "嚴格保密",
     collection: "系列",
-    assetsPreserved: "資產傳承",
+    assetsPreserved: "保本保單",
 
     // Exec Summary
     strategicOverviewSubtitle: "策略概覽與目標",
