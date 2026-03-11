@@ -40,7 +40,7 @@ export const FlowDiagram = React.memo(({
                     {/* Policy Equity to Total Exposure */}
                     <path d="M 350 210 L 350 255" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" strokeLinecap="round" strokeLinejoin="round" />
                     {/* Leverage to Total Exposure */}
-                    <path d="M 590 320 L 485 320" fill="none" stroke="#c5a059" strokeWidth="2" strokeDasharray="4 4" markerEnd="url(#arrow-gold)" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M 490 320 L 474 320" fill="none" stroke="#c5a059" strokeWidth="2" markerEnd="url(#arrow-gold)" strokeLinecap="round" strokeLinejoin="round" />
 
                     {/* Capital (Top Center) */}
                     <g filter="url(#shadow)" transform="translate(230, 0)">
