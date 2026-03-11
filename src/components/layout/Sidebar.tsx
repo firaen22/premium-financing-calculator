@@ -371,7 +371,7 @@ export const Sidebar = ({
                                     </div>
                                     {interestBasis === 'hibor' ? (
                                         <>
-                                            <InputField label={labels.hiborRate || '1M HIBOR'} value={hibor} onChange={setHibor} step={0.01} suffix="%" dark />
+                                            <InputField label={`${labels.hiborRate || '1M HIBOR'} (HKMA API)`} value={hibor} onChange={() => {}} step={0.01} suffix="%" disabled={true} dark />
                                             <InputField label={labels.spread || 'Spread'} value={spread} onChange={setSpread} step={0.1} suffix="%" dark />
                                         </>
                                     ) : (

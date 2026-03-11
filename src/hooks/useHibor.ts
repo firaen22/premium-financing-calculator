@@ -42,23 +42,32 @@ export const useHibor = (): HiborData => {
     const fetchHibor = useCallback(async (retryCount = 0) => {
         setData(prev => ({ ...prev, loading: true, error: null }));
         try {
-            const response = await fetch('/api/hibor');
+            const response = await fetch('https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?segment=1-month');
             if (!response.ok) {
-                throw new Error('Failed to fetch HIBOR data');
+                throw new Error('Failed to fetch HIBOR data from HKMA');
             }
-            const result = await response.json();
+            const dataObj = await response.json();
+            
+            if (!dataObj.result || !dataObj.result.records || dataObj.result.records.length === 0) {
+                throw new Error('Invalid HIBOR data format from HKMA');
+            }
+            
+            // The records are typically chronological, the first one is usually the most recent end_of_day but let's take the first one securely or rely on their sort
+            const latestRecord = dataObj.result.records[0];
+            const rate = latestRecord.ir_1m;
+            const date = latestRecord.end_of_day;
 
             const newData = {
-                rate: result.rate,
-                date: result.date,
+                rate,
+                date,
                 timestamp: Date.now()
             };
 
             localStorage.setItem(CACHE_KEY, JSON.stringify(newData));
 
             setData({
-                rate: result.rate,
-                date: result.date,
+                rate,
+                date,
                 loading: false,
                 error: null,
                 isStale: false,
