@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
     ChevronRight,
+    ChevronLeft,
     X,
     PieChart,
     TrendingUp,
@@ -87,6 +88,7 @@ interface SidebarProps {
     isGeneratingPDF: boolean;
     labels: any;
     addNotification: (notif: any) => void;
+    onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export const Sidebar = ({
@@ -148,10 +150,18 @@ export const Sidebar = ({
     onDownloadPDF,
     isGeneratingPDF,
     labels,
-    addNotification
+    addNotification,
+    onCollapsedChange
 }: SidebarProps) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isFullPayment, setIsFullPayment] = useState(existingMortgage === 0);
+
+    const handleCollapseToggle = () => {
+        const next = !isCollapsed;
+        setIsCollapsed(next);
+        onCollapsedChange?.(next);
+    };
 
     const menuItems = [
         { id: 'allocation', label: labels.allocationStructure, icon: PieChart },
@@ -193,21 +203,39 @@ export const Sidebar = ({
             />
 
             <aside
-                className={`fixed top-0 left-0 h-full w-72 bg-[#020617] text-white z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed top-0 left-0 h-full bg-[#020617] text-white z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isCollapsed ? 'w-16' : 'w-72'}`}
             >
-                <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-gradient-to-br from-[#c5a059] to-[#b45309] flex items-center justify-center shadow-lg shadow-orange-900/20">
+                <div className={`border-b border-slate-800 flex items-center ${isCollapsed ? 'justify-center p-3' : 'justify-between p-6'}`}>
+                    {!isCollapsed && (
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-gradient-to-br from-[#c5a059] to-[#b45309] flex items-center justify-center shadow-lg shadow-orange-900/20">
+                                <Landmark className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <div className="font-serif text-lg font-bold tracking-tight text-white">{labels.privateWealth}</div>
+                                <div className="text-[9px] uppercase tracking-[0.2em] text-slate-400">{labels.wealthManagement}</div>
+                            </div>
+                        </div>
+                    )}
+                    {isCollapsed && (
+                        <div className="w-8 h-8 rounded bg-gradient-to-br from-[#c5a059] to-[#b45309] flex items-center justify-center">
                             <Landmark className="w-5 h-5 text-white" />
                         </div>
-                        <div>
-                            <div className="font-serif text-lg font-bold tracking-tight text-white">{labels.privateWealth}</div>
-                            <div className="text-[9px] uppercase tracking-[0.2em] text-slate-400">{labels.wealthManagement}</div>
-                        </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                        {/* Desktop collapse toggle */}
+                        <button
+                            onClick={handleCollapseToggle}
+                            className="hidden lg:flex w-7 h-7 items-center justify-center rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                        </button>
+                        {/* Mobile close */}
+                        <button onClick={() => setIsOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                    <button onClick={() => setIsOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
-                        <X className="w-5 h-5" />
-                    </button>
                 </div>
 
                 <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
@@ -217,19 +245,20 @@ export const Sidebar = ({
                             <button
                                 key={item.id}
                                 onClick={() => onViewChange(item.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group ${isActive
+                                title={isCollapsed ? item.label : undefined}
+                                className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 group ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'} ${isActive
                                     ? 'bg-[#c5a059] text-white shadow-lg shadow-orange-900/20'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                                     }`}
                             >
-                                <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`} />
-                                {item.label}
-                                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
+                                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`} />
+                                {!isCollapsed && item.label}
+                                {!isCollapsed && isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
                             </button>
                         );
                     })}
 
-                    <div className="mt-8 px-4 space-y-6 bg-slate-900/50 py-6 rounded-xl border border-slate-800/50 mx-1">
+                    {!isCollapsed && <div className="mt-8 px-4 space-y-6 bg-slate-900/50 py-6 rounded-xl border border-slate-800/50 mx-1">
                         {activeView === 'marketRisk' ? (
                             <div className="space-y-6">
                                 <InputField
@@ -331,25 +360,26 @@ export const Sidebar = ({
                                 </div>
                             </div>
                         )}
-                    </div>
+                    </div>}
                 </nav>
 
-                <div className="p-6 border-t border-slate-800 bg-[#0f172a]/50">
+                <div className={`border-t border-slate-800 bg-[#0f172a]/50 ${isCollapsed ? 'p-3' : 'p-6'}`}>
                     <button
                         onClick={() => activeView === 'pdfPreview' ? onDownloadPDF() : onViewChange('pdfPreview')}
                         disabled={isGeneratingPDF}
-                        className="w-full flex items-center justify-center gap-3 py-4 px-4 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 disabled:opacity-50 active:scale-95"
+                        title={isCollapsed ? (activeView === 'pdfPreview' ? (lang === 'en' ? 'Download PDF' : '導出報告') : (lang === 'en' ? 'Generate Report' : '生成報告')) : undefined}
+                        className={`w-full flex items-center justify-center gap-3 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-xl font-bold uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 disabled:opacity-50 active:scale-95 ${isCollapsed ? 'py-3 px-2 text-xs' : 'py-4 px-4 text-sm'}`}
                     >
                         {isGeneratingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : activeView === 'pdfPreview' ? <Download className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
-                        {activeView === 'pdfPreview'
+                        {!isCollapsed && (activeView === 'pdfPreview'
                             ? (lang === 'en' ? 'Download PDF' : '導出報告')
-                            : (lang === 'en' ? 'Generate Report' : '生成報告')}
+                            : (lang === 'en' ? 'Generate Report' : '生成報告'))}
                     </button>
 
-                    <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono mt-4">
+                    {!isCollapsed && <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono mt-4">
                         <span>v3.0.0 (Refactored)</span>
                         {isGeneratingPDF && <span className="text-[#c5a059] animate-pulse">Processing...</span>}
-                    </div>
+                    </div>}
                 </div>
             </aside>
         </>

@@ -28,7 +28,11 @@ const s3 = new S3Client({
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
   },
-  forcePathStyle: true,
+  // Cloudflare R2 does not support x-amz-checksum-mode.
+  // Disabling checksum calculation/validation prevents the SDK from appending
+  // "x-amz-checksum-mode=ENABLED" to generated signed URLs, which causes R2 errors.
+  requestChecksumCalculation: 'when_required' as any,
+  responseChecksumValidation: 'when_required' as any,
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

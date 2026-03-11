@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, Suspense } from 'react';
+import React, { useRef, useEffect, useMemo, Suspense, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { TRANSLATIONS } from './i18n';
@@ -23,6 +23,7 @@ import {
 
 // Lazy-load heavy PDF components
 const PDFPreview = React.lazy(() => import('./views/PDFPreview').then(m => ({ default: m.PDFPreview })));
+const PDFProposal = React.lazy(() => import('./components/pdf/PDFProposal').then(m => ({ default: m.PDFProposal })));
 
 const App = () => {
     const state = useAppState();
@@ -51,6 +52,7 @@ const App = () => {
     } = useNotificationState(t);
 
     const pdfRef = useRef<HTMLDivElement>(null);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     // Sync live rate when it changes
     useEffect(() => {
@@ -118,21 +120,31 @@ const App = () => {
             });
 
             if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Premium_Financing_Proposal_${state.clientName}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
+                // API returns { url: signedUrl } — fetch the PDF from R2 and download
+                const data = await response.json();
+                if (data.url) {
+                    const pdfResponse = await fetch(data.url);
+                    if (!pdfResponse.ok) throw new Error(`Failed to fetch PDF from storage: ${pdfResponse.statusText}`);
+                    const blob = await pdfResponse.blob();
+                    const objectUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = objectUrl;
+                    a.download = `Premium_Financing_Proposal_${state.clientName}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(objectUrl);
+                    document.body.removeChild(a);
+                } else {
+                    throw new Error(data.error || 'No URL returned from server');
+                }
                 addNotification({
                     title: 'PDF Complete',
                     message: 'Professional report has been generated.',
                     type: 'success'
                 });
             } else {
-                throw new Error('Server-side PDF generation failed');
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Server error ${response.status}`);
             }
         } catch (error) {
             console.warn('Server PDF failed, falling back to client-side...', error);
@@ -337,9 +349,10 @@ const App = () => {
                     isGeneratingPDF={state.isGeneratingPDF}
                     labels={t}
                     addNotification={addNotification}
+                    onCollapsedChange={setIsSidebarCollapsed}
                 />
 
-                <main className="flex-1 lg:ml-72 min-h-screen">
+                <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'}`}>
                     <Header
                         onOpenMobileMenu={() => { }} // TODO: Implement mobile menu state
                         lang={state.lang}
@@ -359,36 +372,32 @@ const App = () => {
                 </main>
             </div>
 
+            {/* Hidden PDF capture container — only PDFProposal (no nav/UI chrome) */}
             <div ref={pdfRef} className="pdf-container">
                 <Suspense fallback={null}>
-                    <PDFPreview
-                        t={t}
+                    <PDFProposal
+                        projectionData={state.projection.projectionData}
                         lang={state.lang}
-                        clientName={state.clientName}
-                        setClientName={state.setClientName}
-                        representativeName={state.representativeName}
-                        setRepresentativeName={state.setRepresentativeName}
-                        onNavigate={() => { }}
-                        onDownloadPDF={() => { }}
-                        isGeneratingPDF={state.isGeneratingPDF}
+                        budget={state.budget}
                         totalPremium={state.projection.totalPremium}
                         bankLoan={state.projection.bankLoan}
-                        projectionData={state.projection.projectionData}
                         roi={state.projection.roi}
+                        netEquityAt30={state.projection.projectionData?.[state.projection.projectionData.length - 1]?.netEquity || 0}
                         propertyValue={state.propertyValue}
                         unlockedCash={state.unlockedCash}
                         hibor={state.hibor}
-                        effectiveMortgageRate={state.effectiveMortgageRate}
+                        currentMtgRate={state.effectiveMortgageRate}
                         cashReserve={state.cashReserve}
                         netBondPrincipal={state.projection.netBondPrincipal}
                         pfEquity={state.projection.pfEquity}
                         fundSource={state.fundSource}
+                        clientName={state.clientName}
+                        representativeName={state.representativeName}
                         sensitivityData={state.stressTest.sensitivityData}
                         spread={state.spread}
                         leverageLTV={state.leverageLTV}
                         bondYield={state.bondYield}
                         sensitivityYear={state.sensitivityYear}
-                        budget={state.budget}
                     />
                 </Suspense>
             </div>
