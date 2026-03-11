@@ -352,6 +352,36 @@ export const Sidebar = ({
                                     <InputField label={labels.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" dark />
                                 </div>
 
+                                {/* Premium Financing Loan Interest */}
+                                <div className="pt-4 border-t border-slate-800 space-y-4">
+                                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{labels.loanInterest || 'Loan Interest'}</div>
+                                    <div className="flex bg-slate-800/50 p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setInterestBasis('hibor')}
+                                            className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'hibor' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        >
+                                            HIBOR
+                                        </button>
+                                        <button
+                                            onClick={() => setInterestBasis('cof')}
+                                            className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'cof' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        >
+                                            COF
+                                        </button>
+                                    </div>
+                                    {interestBasis === 'hibor' ? (
+                                        <>
+                                            <InputField label={labels.hiborRate || '1M HIBOR'} value={hibor} onChange={setHibor} step={0.01} suffix="%" dark />
+                                            <InputField label={labels.spread || 'Spread'} value={spread} onChange={setSpread} step={0.1} suffix="%" dark />
+                                        </>
+                                    ) : (
+                                        <InputField label={labels.cofRate || 'COF Rate'} value={cofRate} onChange={setCofRate} step={0.01} suffix="%" dark />
+                                    )}
+                                    <InputField label={labels.capRate || 'Cap Rate'} value={capRate} onChange={setCapRate} step={0.1} suffix="%" dark />
+                                    <InputField label={labels.leverageLtv || 'Leverage LTV'} value={leverageLTV} onChange={setLeverageLTV} step={1} suffix="%" dark />
+                                    <InputField label={labels.handlingFee || 'Handling Fee'} value={handlingFee} onChange={setHandlingFee} step={0.1} suffix="%" dark />
+                                </div>
+
                                 <div className="pt-4 border-t border-slate-800 flex justify-between items-baseline">
                                     <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{labels.policyEquity}</span>
                                     <span className={`text-base font-serif ${pfEquity < 0 ? 'text-red-400' : 'text-[#c5a059]'}`}>
