@@ -278,6 +278,7 @@ const App = () => {
                     bondYield={state.bondYield}
                     sensitivityYear={state.sensitivityYear}
                     budget={state.budget}
+                    isSidebarCollapsed={isSidebarCollapsed}
                 />
                 </Suspense>;
             default:

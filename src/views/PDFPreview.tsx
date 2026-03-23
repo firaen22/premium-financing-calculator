@@ -32,6 +32,7 @@ interface PDFPreviewProps {
     bondYield: number;
     sensitivityYear: number;
     budget: number;
+    isSidebarCollapsed: boolean;
 }
 
 export const PDFPreview = ({
@@ -61,7 +62,8 @@ export const PDFPreview = ({
     leverageLTV,
     bondYield,
     sensitivityYear,
-    budget
+    budget,
+    isSidebarCollapsed
 }: PDFPreviewProps) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -141,13 +143,13 @@ export const PDFPreview = ({
             </div>
 
             {/* Desktop: side nav, Mobile: bottom horizontal bar */}
-            <div className="fixed z-50
-                bottom-4 left-4 right-4 lg:left-[310px] lg:right-auto
+            <div className={`fixed z-50
+                bottom-4 left-4 right-4 ${isSidebarCollapsed ? 'lg:left-[86px]' : 'lg:left-[310px]'} lg:right-auto
                 bg-white/30 backdrop-blur-2xl border border-white/40 rounded-2xl p-1.5
                 shadow-[0_20px_50px_rgba(0,0,0,0.15)]
                 flex lg:flex-col gap-1
                 overflow-x-auto lg:overflow-x-visible
-                transition-all group hover:bg-white/40 ring-1 ring-white/20">
+                transition-all duration-300 group hover:bg-white/40 ring-1 ring-white/20`}>
                 {[
                     { id: 1, label: t.reportTabs.cover, icon: '01' },
                     { id: 2, label: t.reportTabs.summary, icon: '02' },
