@@ -319,7 +319,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
 
     const final = data[30].netEquity;
     const totalGain = data[30].cumulativeNetGain;
-    const roiVal = (totalGain / budget) * 100;
+    const roiVal = budget > 0 ? (totalGain / budget) * 100 : 0;
 
     return {
         pfEquity: equity,
@@ -374,11 +374,12 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
 
+    const yr0Collateral = yr0Surrender + stressedBondPrincipal;
     data.push({
         year: 0,
         netEquity: yr0NetEquity,
         baselineNetEquity: baselineData?.[0]?.netEquity || 0,
-        ltv: (yr0Liabilities / (yr0Surrender + stressedBondPrincipal)) * 100
+        ltv: yr0Collateral > 0 ? (yr0Liabilities / yr0Collateral) * 100 : 0
     } as ProjectionData);
 
     let lowestEquity = yr0NetEquity;
