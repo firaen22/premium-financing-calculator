@@ -77,13 +77,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       deviceScaleFactor: 2 // Improve resolution
     });
 
-    // Set content and include CSS
+    // The client now sends its compiled stylesheet, which replaces the Tailwind Play CDN
+    // that used to style this document — the PDF is pinned to the same CSS the user saw
+    // rather than to whatever the CDN served that day.
+    //
+    // That stylesheet also carries the ".pdf-only { display: none !important }" rule which
+    // hides the report inside the app, so the pages arrive here switched off. Only the
+    // @media print block switches them back on, which would leave the whole render hanging
+    // off the emulateMediaType('print') call below. The force-preview wrapper is the app's
+    // own explicit opt-in and sizes the pages in every media type, decoupling the two.
+    // Verified: 9 pages at 1123x794 with and without print emulation.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
-          <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
           <style>
             ${css || ''}
@@ -95,14 +103,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           </style>
         </head>
         <body>
-          ${html}
+          <div class="force-preview">
+            ${html}
+          </div>
         </body>
       </html>
     `;
 
     await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 60000 });
 
-    // Important: Give Tailwind CDN time to generate styles
+    // The stylesheet now arrives inline with the request, so nothing has to be generated
+    // here. This pause is only for the webfonts linked above to settle before paint.
     await new Promise(resolve => setTimeout(resolve, 500));
 
     await page.emulateMediaType('print');

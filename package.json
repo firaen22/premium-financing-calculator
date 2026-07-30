@@ -3,15 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://firaen22.github.io/premium-financing-calculator/",
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "npx vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.987.0",
@@ -33,7 +30,6 @@
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.5.4",
-    "gh-pages": "^6.3.0",
     "postcss": "^8.5.25",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.8.2",

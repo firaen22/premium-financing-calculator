@@ -25,6 +25,27 @@ export type AppServices = {
 
 const AppServicesContext = createContext<AppServices | null>(null);
 
+/**
+ * Every style rule the page is currently using, as text, for the server PDF renderer.
+ *
+ * The renderer used to pull Tailwind from the Play CDN and this payload's `css` field was
+ * never sent, so the PDF was styled by whatever the CDN shipped that day rather than by
+ * the stylesheet this build compiled. Sending the real rules pins the PDF to the same CSS
+ * the user is looking at. Cross-origin sheets (Google Fonts) throw on `cssRules` access;
+ * they are skipped because the renderer links those fonts itself.
+ */
+const collectDocumentCss = (): string => {
+    const chunks: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+        try {
+            for (const rule of Array.from(sheet.cssRules)) chunks.push(rule.cssText);
+        } catch {
+            continue;
+        }
+    }
+    return chunks.join('\n');
+};
+
 export const AppServicesProvider = ({ children }: { children: React.ReactNode }) => {
     const state = useApp();
     const { rate: liveRate, date: liveDate, isStale, refresh: refreshHibor } = useHibor();
@@ -92,6 +113,7 @@ export const AppServicesProvider = ({ children }: { children: React.ReactNode })
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     html: pdfRef.current?.innerHTML,
+                    css: collectDocumentCss(),
                     clientName: state.clientName
                 }),
             });

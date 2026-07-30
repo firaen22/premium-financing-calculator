@@ -12,6 +12,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
+    // Vercel serves the app from the domain root, and /api/generate-pdf has to resolve as
+    // a sibling of it. The GitHub Pages workflow that would have needed a project-page
+    // subpath here was removed — Pages could not run the api/ functions anyway.
     base: '/',
     server: {
       port: 3000,
