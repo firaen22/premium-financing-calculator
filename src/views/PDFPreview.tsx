@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { FileText, Download, Loader2 } from 'lucide-react';
 import { PDFProposal } from '../components/pdf/PDFProposal';
 import { formatCurrency } from '../utils/calculations';
@@ -8,6 +8,16 @@ interface PDFPreviewProps {
     isSidebarCollapsed: boolean;
 }
 
+// The report is a fixed A4-landscape document (297mm / 210mm, i.e. 1123x794px at
+// 96dpi — the same pixel size the .force-preview CSS rule in index.html enforces on
+// every .pdf-only page) and PDFProposal renders PAGE_COUNT of them stacked vertically.
+// Below, "the report" always means that fixed-size stack.
+const PAGE_WIDTH_PX = 1123;
+const PAGE_HEIGHT_PX = 794;
+const PAGE_COUNT = 9;
+// Breathing room so the scaled page doesn't sit flush against the viewport edges.
+const PREVIEW_MARGIN_PX = 24;
+
 export const PDFPreview = ({
     isSidebarCollapsed
 }: PDFPreviewProps) => {
@@ -15,6 +25,40 @@ export const PDFPreview = ({
     const { totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity } = projection;
     const sensitivityData = useApp().stressTest.sensitivityData;
     const onDownloadPDF = useServices().onDownloadPDF;
+
+    // Fit the fixed 1123px-wide report to whatever width is actually available, instead
+    // of rendering it at full size inside a horizontal scroller. That scroller used to
+    // leave most of the page permanently unreachable on phones and tablets: centering a
+    // too-wide child pushes part of it into negative coordinates, and a horizontal
+    // scrollbar can only recover overflow on one side, never both.
+    const previewRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
+
+    useLayoutEffect(() => {
+        const el = previewRef.current;
+        if (!el) return;
+        const computeScale = () => {
+            const available = el.clientWidth - PREVIEW_MARGIN_PX * 2;
+            // Never scale UP: a spacious desktop viewport should show the report at its
+            // true printed size, not stretched past what will actually be on the page.
+            setScale(Math.min(1, available / PAGE_WIDTH_PX));
+        };
+        computeScale();
+        const observer = new ResizeObserver(computeScale);
+        observer.observe(el);
+        // Belt-and-braces alongside ResizeObserver: it fires for the element's own box
+        // changing, which covers a container resize, but window resize/orientationchange
+        // are cheap to also listen for directly given this is exactly the class of bug
+        // being fixed here.
+        window.addEventListener('resize', computeScale);
+        window.addEventListener('orientationchange', computeScale);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', computeScale);
+            window.removeEventListener('orientationchange', computeScale);
+        };
+    }, []);
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-lg border border-slate-200 shadow-sm sticky top-24 z-20 gap-4">
@@ -24,7 +68,7 @@ export const PDFPreview = ({
                     </div>
                     <div>
                         <h3 className="font-serif text-lg text-slate-900">{t.pdfPreview}</h3>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">A4 Landscape • 8-Page Professional Suite</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">A4 Landscape • {PAGE_COUNT}-Page Professional Suite</p>
                     </div>
                 </div>
 
@@ -139,9 +183,14 @@ export const PDFPreview = ({
                 ))}
             </div>
 
-            <div className="w-full flex flex-col items-center force-preview overflow-x-auto pt-4 pb-20">
-                <div className="min-w-[1123px]">
-                    <div className="transform origin-top flex flex-col items-center">
+            <div ref={previewRef} className="w-full flex flex-col items-center force-preview pt-4 pb-20">
+                {/* Sizer: reserves the SCALED footprint in normal flow, so centering acts
+                    on the visible size rather than the unscaled 1123px box. transform does
+                    not affect layout, so without this the flex parent would still center
+                    (and the page's own margin:auto would still act on) the full-size box —
+                    reintroducing the same negative-offset problem at a different step. */}
+                <div style={{ width: PAGE_WIDTH_PX * scale, height: PAGE_HEIGHT_PX * PAGE_COUNT * scale }}>
+                    <div style={{ width: PAGE_WIDTH_PX, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
                         <PDFProposal
                             projectionData={projectionData}
                             lang={lang}
