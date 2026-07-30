@@ -20,24 +20,16 @@ import {
 } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { formatCurrency } from '../utils/calculations';
+import { useApp } from '../state';
 
-interface ReturnStudioProps {
-    data: any[];
-    labels: any;
-    bondYield: number;
-    loanRate: number;
-    budget: number;
-    totalPremium: number;
-}
-
-export const ReturnStudio = ({
-    data,
-    labels,
-    bondYield,
-    loanRate,
-    budget,
-    totalPremium
-}: ReturnStudioProps) => {
+export const ReturnStudio = () => {
+    const { t: labels, bondYield, budget } = useApp();
+    const data = useApp().projection.projectionData;
+    const totalPremium = useApp().projection.totalPremium;
+    // The engine's own rate, not `hibor + spread`: that recomputation ignored both the
+    // COF basis and the cap, so this footnote contradicted the interest figure printed
+    // beside it whenever either applied.
+    const loanRate = useApp().projection.effectiveRate;
     const [selectedYear, setSelectedYear] = useState(1);
 
     const getCurrentYearData = (year: number) => {
@@ -70,7 +62,7 @@ export const ReturnStudio = ({
     if (!stats) return <div>No data available</div>;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
             <Card className="bg-[#020617] text-white border-slate-800">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
@@ -96,30 +88,30 @@ export const ReturnStudio = ({
             </Card>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-6 border border-slate-200 shadow-sm">
+                <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.openingEquity}</div>
                     <div className="text-xl md:text-2xl font-serif text-slate-900">{formatCurrency(stats.openingEquity)}</div>
                 </div>
-                <div className="bg-white p-6 border border-slate-200 shadow-sm">
+                <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.netGain}</div>
                     <div className={`text-xl md:text-2xl font-serif ${stats.netGain >= 0 ? 'text-[#059669]' : 'text-[#991b1b]'}`}>
                         {stats.netGain > 0 ? '+' : ''}{formatCurrency(stats.netGain)}
                     </div>
                 </div>
-                <div className="bg-white p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-[#c5a059]/10 rounded-bl-full -mr-8 -mt-8"></div>
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.closingEquity}</div>
                     <div className="text-xl md:text-2xl font-serif text-slate-900 relative z-10">{formatCurrency(stats.closingEquity)}</div>
                 </div>
-                <div className="bg-[#020617] p-6 border border-slate-900 shadow-sm text-white">
+                <div className="bg-[#020617] p-4 md:p-6 border border-slate-900 shadow-sm text-white">
                     <div className="text-[10px] font-bold text-[#c5a059] uppercase tracking-widest mb-2">{labels.annualRoC}</div>
                     <div className="text-xl md:text-2xl font-serif text-white">{stats.annualRoC.toFixed(2)}%</div>
                 </div>
             </div>
 
             <Card title={labels.attributionAnalysis} subtitle={labels.cumulativePerfPattern ? labels.cumulativePerfPattern.replace('{year}', selectedYear.toString()) : `Cumulative Performance to Year ${selectedYear}`}>
-                <div className="flex flex-col lg:flex-row gap-12 mt-4">
-                    <div className="flex-1 space-y-3">
+                <div className="flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-12 mt-4">
+                    <div className="flex-1 min-w-0 space-y-3">
                         <div className="relative pl-8 border-l-2 border-slate-100 pb-8">
                             <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center">
                                 <PlusCircle className="w-3 h-3 text-emerald-600" />
@@ -194,7 +186,7 @@ export const ReturnStudio = ({
                                                 <Home className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <div className="text-sm font-bold text-slate-700">{labels.mortgageInterest || "Mortgage Interest"}</div>
+                                                <div className="text-sm font-bold text-slate-700">{labels.mortgageInterest}</div>
                                                 <div className="text-[10px] text-slate-400 font-mono">Interest Portion</div>
                                             </div>
                                         </div>
@@ -208,7 +200,7 @@ export const ReturnStudio = ({
                             <div className="absolute -left-[9px] top-2 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-800 flex items-center justify-center">
                                 <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                             </div>
-                            <div className="flex items-center justify-between p-6 bg-[#020617] text-white rounded-lg shadow-lg">
+                            <div className="flex items-center justify-between p-4 md:p-6 bg-[#020617] text-white rounded-lg shadow-lg">
                                 <div>
                                     <div className="text-sm font-bold text-[#c5a059] uppercase tracking-wider mb-1">{labels.netEquity}</div>
                                     <div className="text-[10px] text-slate-400">{labels.netEquityDesc}</div>
@@ -220,7 +212,7 @@ export const ReturnStudio = ({
                         </div>
                     </div>
 
-                    <div className="lg:w-1/3 h-[300px] md:h-[400px]">
+                    <div className="lg:w-1/3 h-[240px] sm:h-[300px] md:h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={[

@@ -122,3 +122,6 @@ dist
 .vscode
 *.swp
 *.swo
+
+# Claude Code local settings
+.claude/

@@ -5,26 +5,20 @@ import { Card } from '../components/ui/Card';
 import { formatCurrency } from '../utils/calculations';
 import { THEME } from '../constants/theme';
 import { CustomLabel } from '../components/charts';
+import { useIsMdUp } from '../hooks/useMediaQuery';
+import { useApp, useServices } from '../state';
 
-interface HoldingsViewProps {
-    t: any;
-    projectionData: any[];
-    chartFilters: any;
-    setChartFilters: (filters: any) => void;
-    fundSource: 'cash' | 'mortgage';
-    handleExportCSV: () => void;
-}
+export const HoldingsView = () => {
+    const { t, chartFilters, setChartFilters, fundSource } = useApp();
+    const projectionData = useApp().projection.projectionData;
+    const handleExportCSV = useServices().onExportCSV;
+    // Below md the six end-of-series labels overlap each other (the cash / bond / loan
+    // series converge near the axis) and the 100px right margin they need costs 26% of a
+    // 390px viewport. The colour-coded filter pills above already identify each series.
+    const showEndLabels = useIsMdUp();
 
-export const HoldingsView = ({
-    t,
-    projectionData,
-    chartFilters,
-    setChartFilters,
-    fundSource,
-    handleExportCSV
-}: HoldingsViewProps) => {
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
             <Card title={t.projectedPerf} subtitle={t.horizon30y}>
                 <div className="flex flex-wrap gap-2 mb-4 mt-4 px-4 overflow-x-auto">
                     {[
@@ -50,9 +44,9 @@ export const HoldingsView = ({
                         </button>
                     ))}
                 </div>
-                <div className="h-[400px] w-full">
+                <div className="h-[260px] sm:h-[320px] md:h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={projectionData} margin={{ top: 10, right: 100, left: 0, bottom: 0 }}>
+                        <ComposedChart data={projectionData} margin={{ top: 10, right: showEndLabels ? 100 : 8, left: 0, bottom: 0 }}>
                             <defs>
                                 <linearGradient id="colorPolicy" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor={THEME.navy} stopOpacity={0.8} />
@@ -109,7 +103,7 @@ export const HoldingsView = ({
                                     stroke={THEME.gold}
                                     fill="url(#colorBond)"
                                     name={t.bond}
-                                    label={(props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} />}
+                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} /> : undefined}
                                 />
                             )}
                             {chartFilters.cashValue && (
@@ -120,7 +114,7 @@ export const HoldingsView = ({
                                     stroke={THEME.success}
                                     fill="url(#colorCash)"
                                     name={t.cash}
-                                    label={(props) => <CustomLabel {...props} name={t.cash} color={THEME.success} />}
+                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.cash} color={THEME.success} /> : undefined}
                                 />
                             )}
                             {chartFilters.bondInterest && (
@@ -131,7 +125,7 @@ export const HoldingsView = ({
                                     stroke={THEME.goldHighlight}
                                     fill="url(#colorBondInt)"
                                     name={t.bondInt}
-                                    label={(props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} />}
+                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} /> : undefined}
                                 />
                             )}
                             {chartFilters.policyValue && (
@@ -142,7 +136,7 @@ export const HoldingsView = ({
                                     stroke={THEME.navy}
                                     fill="url(#colorPolicy)"
                                     name={t.policy}
-                                    label={(props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} />}
+                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} /> : undefined}
                                 />
                             )}
                             {chartFilters.loan && (
@@ -154,7 +148,7 @@ export const HoldingsView = ({
                                     strokeDasharray="4 4"
                                     dot={false}
                                     name={t.loan}
-                                    label={(props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} />}
+                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} /> : undefined}
                                 />
                             )}
                             {fundSource === 'mortgage' && (
@@ -175,7 +169,7 @@ export const HoldingsView = ({
                                 strokeWidth={3}
                                 dot={false}
                                 name={t.netEquity}
-                                label={(props) => <CustomLabel {...props} name={t.netEquity} color="#020617" />}
+                                label={showEndLabels ? (props) => <CustomLabel {...props} name={t.netEquity} color={"#020617"} /> : undefined}
                             />
                         </ComposedChart>
                     </ResponsiveContainer>
@@ -189,7 +183,7 @@ export const HoldingsView = ({
                 action={
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#020617] transition-colors uppercase tracking-wider group"
+                        className="flex items-center gap-2 min-h-[44px] px-2 -mr-2 text-xs font-bold text-slate-500 hover:text-[#020617] transition-colors uppercase tracking-wider group"
                     >
                         <Download className="w-4 h-4 text-[#c5a059] group-hover:text-[#020617]" />
                         {t.exportData}

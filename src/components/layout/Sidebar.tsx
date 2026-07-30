@@ -21,141 +21,33 @@ import {
     MinusCircle,
     Globe
 } from 'lucide-react';
-import { Language } from '../../types';
 import { Card } from '../ui/Card';
 import { InputField } from '../ui/InputField';
 import { SelectField } from '../ui/SelectField';
 import { ToggleField } from '../ui/ToggleField';
 import { formatCurrency, formatPercent } from '../../utils/calculations';
+import { useApp, useServices } from '../../state';
 
 interface SidebarProps {
-    activeView: string;
-    onViewChange: (view: string) => void;
-    lang: Language;
-    fundSource: 'cash' | 'mortgage';
-    setFundSource: (source: 'cash' | 'mortgage') => void;
-    budget: number;
-    extraCash: number;
-    setExtraCash: (val: number) => void;
-    tempBudget: number;
-    setTempBudget: (val: number) => void;
-    setBudget: (val: number) => void;
-    cashReserve: number;
-    tempCashReserve: number;
-    setTempCashReserve: (val: number) => void;
-    setCashReserve: (val: number) => void;
-    bondAlloc: number;
-    setBondAlloc: (val: number) => void;
-    bondYield: number;
-    setBondYield: (val: number) => void;
-    hibor: number;
-    setHibor: (val: number) => void;
-    spread: number;
-    setSpread: (val: number) => void;
-    capRate: number;
-    setCapRate: (val: number) => void;
-    leverageLTV: number;
-    setLeverageLTV: (val: number) => void;
-    handlingFee: number;
-    setHandlingFee: (val: number) => void;
-    interestBasis: 'hibor' | 'cof';
-    setInterestBasis: (basis: 'hibor' | 'cof') => void;
-    cofRate: number;
-    setCofRate: (val: number) => void;
-    propertyValue: number;
-    setPropertyValue: (val: number) => void;
-    existingMortgage: number;
-    setExistingMortgage: (val: number) => void;
-    mortgageLtv: number;
-    setMortgageLtv: (val: number) => void;
-    primeRate: number;
-    setPrimeRate: (val: number) => void;
-    mortgageHSpread: number;
-    setMortgageHSpread: (val: number) => void;
-    mortgagePModifier: number;
-    setMortgagePModifier: (val: number) => void;
-    mortgageTenor: number;
-    setMortgageTenor: (val: number) => void;
-    simulatedHibor: number;
-    setSimulatedHibor: (val: number) => void;
-    bondPriceDrop: number;
-    setBondPriceDrop: (val: number) => void;
-    showGuaranteed: boolean;
-    setShowGuaranteed: (val: boolean) => void;
-    isStale: boolean;
-    refreshHibor: () => void;
-    onDownloadPDF: () => void;
-    isGeneratingPDF: boolean;
-    labels: any;
-    addNotification: (notif: any) => void;
     onCollapsedChange?: (collapsed: boolean) => void;
+    isMobileOpen: boolean;
+    onMobileClose: () => void;
 }
 
 export const Sidebar = ({
-    activeView,
-    onViewChange,
-    lang,
-    fundSource,
-    setFundSource,
-    budget,
-    extraCash,
-    setExtraCash,
-    tempBudget,
-    setTempBudget,
-    setBudget,
-    cashReserve,
-    tempCashReserve,
-    setTempCashReserve,
-    setCashReserve,
-    bondAlloc,
-    setBondAlloc,
-    bondYield,
-    setBondYield,
-    hibor,
-    setHibor,
-    spread,
-    setSpread,
-    capRate,
-    setCapRate,
-    leverageLTV,
-    setLeverageLTV,
-    handlingFee,
-    setHandlingFee,
-    interestBasis,
-    setInterestBasis,
-    cofRate,
-    setCofRate,
-    propertyValue,
-    setPropertyValue,
-    existingMortgage,
-    setExistingMortgage,
-    mortgageLtv,
-    setMortgageLtv,
-    primeRate,
-    setPrimeRate,
-    mortgageHSpread,
-    setMortgageHSpread,
-    mortgagePModifier,
-    setMortgagePModifier,
-    mortgageTenor,
-    setMortgageTenor,
-    simulatedHibor,
-    setSimulatedHibor,
-    bondPriceDrop,
-    setBondPriceDrop,
-    showGuaranteed,
-    setShowGuaranteed,
-    isStale,
-    refreshHibor,
-    onDownloadPDF,
-    isGeneratingPDF,
-    labels,
-    addNotification,
-    onCollapsedChange
+    onCollapsedChange,
+    isMobileOpen,
+    onMobileClose,
 }: SidebarProps) => {
-    const [isOpen, setIsOpen] = useState(false);
+    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, propertyValue, setPropertyValue, existingMortgage, setExistingMortgage, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, mortgageLtv, setMortgageLtv, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, mortgageTenor, setMortgageTenor } = useApp();
+    const { addNotification, onDownloadPDF } = useServices();
+    // pfEquity comes from the projection engine rather than being recomputed here. A local
+    // copy once used raw values while the engine clamps cashReserve to budget, so the two
+    // could disagree on screen.
+    const { pfEquity } = useApp().projection;
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isFullPayment, setIsFullPayment] = useState(existingMortgage === 0);
+    const [showRateAssumptions, setShowRateAssumptions] = useState(false);
 
     const handleCollapseToggle = () => {
         const next = !isCollapsed;
@@ -192,18 +84,15 @@ export const Sidebar = ({
         });
     };
 
-    const unlockedCash = Math.max(0, (propertyValue * (mortgageLtv / 100)) - existingMortgage);
-    const pfEquity = budget - cashReserve - bondAlloc;
-
     return (
         <>
             <div
-                className={`fixed inset-0 bg-slate-900/50 z-40 transition-opacity duration-300 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-                onClick={() => setIsOpen(false)}
+                className={`fixed inset-0 bg-slate-900/50 z-40 transition-opacity duration-300 lg:hidden ${isMobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={onMobileClose}
             />
 
             <aside
-                className={`fixed top-0 left-0 h-full bg-[#020617] text-white z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'} ${isCollapsed ? 'w-16' : 'w-72'}`}
+                className={`fixed top-0 left-0 h-[100dvh] bg-[#020617] text-white z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col w-72 sm:w-80 max-w-[85vw] ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} ${isCollapsed ? 'lg:w-16' : 'lg:w-72'}`}
             >
                 <div className={`border-b border-slate-800 flex items-center ${isCollapsed ? 'justify-center p-3' : 'justify-between p-6'}`}>
                     {!isCollapsed && (
@@ -213,7 +102,7 @@ export const Sidebar = ({
                             </div>
                             <div>
                                 <div className="font-serif text-lg font-bold tracking-tight text-white">{labels.privateWealth}</div>
-                                <div className="text-[9px] uppercase tracking-[0.2em] text-slate-400">{labels.wealthManagement}</div>
+                                <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{labels.wealthManagement}</div>
                             </div>
                         </div>
                     )}
@@ -232,7 +121,11 @@ export const Sidebar = ({
                             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                         </button>
                         {/* Mobile close */}
-                        <button onClick={() => setIsOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+                        <button
+                            onClick={onMobileClose}
+                            aria-label="Close menu"
+                            className="lg:hidden w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white -mr-2"
+                        >
                             <X className="w-5 h-5" />
                         </button>
                     </div>
@@ -244,9 +137,9 @@ export const Sidebar = ({
                         return (
                             <button
                                 key={item.id}
-                                onClick={() => onViewChange(item.id)}
+                                onClick={() => { onViewChange(item.id); onMobileClose(); }}
                                 title={isCollapsed ? item.label : undefined}
-                                className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 group ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'} ${isActive
+                                className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 group min-h-[48px] ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'} ${isActive
                                     ? 'bg-[#c5a059] text-white shadow-lg shadow-orange-900/20'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                                     }`}
@@ -290,13 +183,13 @@ export const Sidebar = ({
                                 <div className="flex bg-slate-800/50 p-1 rounded-lg">
                                     <button
                                         onClick={() => setFundSource('cash')}
-                                        className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'cash' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'cash' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                     >
                                         {labels.cashSource}
                                     </button>
                                     <button
                                         onClick={() => setFundSource('mortgage')}
-                                        className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'mortgage' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'mortgage' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                     >
                                         {labels.mortgageRefi}
                                     </button>
@@ -318,20 +211,36 @@ export const Sidebar = ({
                                         <div className="flex bg-slate-800/30 p-1 rounded-md mb-2">
                                             <button
                                                 onClick={() => { setIsFullPayment(true); setExistingMortgage(0); }}
-                                                className={`flex-1 py-1 text-[9px] font-bold uppercase rounded transition-all ${isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
+                                                className={`flex-1 py-2 min-h-[38px] text-[11px] font-bold uppercase rounded transition-all ${isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
                                             >
                                                 {labels.fullPayment}
                                             </button>
                                             <button
                                                 onClick={() => setIsFullPayment(false)}
-                                                className={`flex-1 py-1 text-[9px] font-bold uppercase rounded transition-all ${!isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
+                                                className={`flex-1 py-2 min-h-[38px] text-[11px] font-bold uppercase rounded transition-all ${!isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
                                             >
                                                 {labels.remortgage}
                                             </button>
                                         </div>
-                                        <InputField label={labels.propertyValue} value={propertyValue} onChange={setPropertyValue} dark />
+                                        <InputField label={labels.propVal} value={propertyValue} onChange={setPropertyValue} dark />
                                         {!isFullPayment && <InputField label={labels.existingLoan} value={existingMortgage} onChange={setExistingMortgage} dark />}
                                         <InputField label={labels.inputCash} value={extraCash} onChange={setExtraCash} dark />
+                                        <button
+                                            onClick={() => setShowRateAssumptions(v => !v)}
+                                            className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors py-1"
+                                        >
+                                            <span>{labels.rateAssumptions}</span>
+                                            <span>{showRateAssumptions ? '−' : '+'}</span>
+                                        </button>
+                                        {showRateAssumptions && (
+                                            <div className="space-y-4 pt-2">
+                                                <InputField label={labels.mortgageLtvLabel} value={mortgageLtv} onChange={setMortgageLtv} prefix="" step={5} suffix="%" dark />
+                                                <InputField label={labels.primeRateLabel} value={primeRate} onChange={setPrimeRate} prefix="" step={0.125} suffix="%" dark />
+                                                <InputField label={labels.hSpreadLabel} value={mortgageHSpread} onChange={setMortgageHSpread} prefix="" step={0.05} suffix="%" dark />
+                                                <InputField label={labels.pModifierLabel} value={mortgagePModifier} onChange={setMortgagePModifier} prefix="" step={0.05} suffix="%" dark />
+                                                <InputField label={labels.mortgageTenorLabel} value={mortgageTenor} onChange={setMortgageTenor} prefix="" step={5} suffix="YRS" dark />
+                                            </div>
+                                        )}
                                         <div className="bg-emerald-900/20 p-3 rounded border border-emerald-800/30 mb-2">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-emerald-500 uppercase">
                                                 <span>{labels.unlockedCapital}</span>
@@ -349,37 +258,45 @@ export const Sidebar = ({
 
                                 <div className="pt-4 border-t border-slate-800">
                                     <InputField label={labels.bondFund} value={bondAlloc} onChange={setBondAlloc} dark />
+                                    {/* The engine silently clamps bondAlloc to what the budget can fund
+                                        (calculations.ts). Without this the field kept showing the larger
+                                        entry while every projection ran on the smaller number. */}
+                                    {bondAlloc > Math.max(0, budget - cashReserve) && (
+                                        <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                                            {labels.bondFundCapped} {formatCurrency(Math.max(0, budget - cashReserve))}
+                                        </div>
+                                    )}
                                     <InputField label={labels.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" dark />
                                 </div>
 
                                 {/* Premium Financing Loan Interest */}
                                 <div className="pt-4 border-t border-slate-800 space-y-4">
-                                    <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{labels.loanInterest || 'Loan Interest'}</div>
+                                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{labels.loanInterest}</div>
                                     <div className="flex bg-slate-800/50 p-1 rounded-lg">
                                         <button
                                             onClick={() => setInterestBasis('hibor')}
-                                            className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'hibor' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                            className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'hibor' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                         >
                                             HIBOR
                                         </button>
                                         <button
                                             onClick={() => setInterestBasis('cof')}
-                                            className={`flex-1 py-1 text-[9px] font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'cof' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                            className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'cof' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                         >
                                             COF
                                         </button>
                                     </div>
                                     {interestBasis === 'hibor' ? (
                                         <>
-                                            <InputField label={`${labels.hiborRate || '1M HIBOR'} (HKMA API)`} value={hibor} onChange={() => {}} step={0.01} suffix="%" disabled={true} dark />
-                                            <InputField label={labels.spread || 'Spread'} value={spread} onChange={setSpread} step={0.1} suffix="%" dark />
+                                            <InputField label={`${labels.hiborRate} (HKMA API)`} value={hibor} onChange={() => {}} step={0.01} suffix="%" disabled={true} dark />
+                                            <InputField label={labels.spread} value={spread} onChange={setSpread} step={0.1} suffix="%" dark />
                                         </>
                                     ) : (
-                                        <InputField label={labels.cofRate || 'COF Rate'} value={cofRate} onChange={setCofRate} step={0.01} suffix="%" dark />
+                                        <InputField label={labels.cofRate} value={cofRate} onChange={setCofRate} step={0.01} suffix="%" dark />
                                     )}
-                                    <InputField label={labels.capRate || 'Cap Rate'} value={capRate} onChange={setCapRate} step={0.1} suffix="%" dark />
-                                    <InputField label={labels.leverageLtv || 'Leverage LTV'} value={leverageLTV} onChange={setLeverageLTV} step={1} suffix="%" dark />
-                                    <InputField label={labels.handlingFee || 'Handling Fee'} value={handlingFee} onChange={setHandlingFee} step={0.1} suffix="%" dark />
+                                    <InputField label={labels.capRate} value={capRate} onChange={setCapRate} step={0.1} suffix="%" dark />
+                                    <InputField label={labels.leverageLtv} value={leverageLTV} onChange={setLeverageLTV} step={1} suffix="%" dark />
+                                    <InputField label={labels.handlingFee} value={handlingFee} onChange={setHandlingFee} step={0.1} suffix="%" dark />
                                 </div>
 
                                 <div className="pt-4 border-t border-slate-800 flex justify-between items-baseline">

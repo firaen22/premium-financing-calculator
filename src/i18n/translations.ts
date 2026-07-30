@@ -30,11 +30,15 @@ export const TRANSLATIONS = {
     totalBudget: "Total Budget",
     cashReserve: "Cash Reserve",
     bondFund: "Bond Fund",
+    bondFundCapped: "Capped to available capital:",
     bondYield: "Bond Yield (%)",
     policyEquity: "Policy Equity",
     bankParams: "Bank Parameters",
     lendingTerms: "Lending Terms",
     spread: "Spread (%)",
+    // Label for the COF rate input. Distinct from `costOfFunding`, which labels the
+    // concept rather than the rate field.
+    cofRate: "COF Rate",
     intCap: "Int. Cap (%)",
     leverageLtv: "Leverage (LTV)",
     handlingFee: "Fund Handling Fee (%)",
@@ -142,11 +146,18 @@ export const TRANSLATIONS = {
     existingLoan: "Existing Mortgage",
     refiLtv: "Refi LTV (%)",
     unlockedCash: "Cash Out Amount",
+    rateAssumptions: "Rate Assumptions",
+    mortgageLtvLabel: "Mortgage LTV",
+    primeRateLabel: "Prime Rate (P)",
+    hSpreadLabel: "H Spread",
+    pModifierLabel: "P Discount",
+    mortgageTenorLabel: "Mortgage Tenor",
     mortgageRate: "Mortgage Rate (%)",
     tenor: "Tenor (Years)",
     applyCapital: "Use this Capital",
     monthlyMtg: "Monthly Mtg.",
     mtgCost: "Mortgage Cost",
+    mortgageInterest: "Mortgage Interest",
     unlockedCapital: "Unlocked Capital",
     mortgageBalance: "Mortgage Balance",
     primeRate: "Prime Rate (P)",
@@ -170,6 +181,7 @@ export const TRANSLATIONS = {
     netCarryNeutral: "Net Carry Neutral",
     netEquityAtYear: "Net Equity @ Year {year}",
     pdfPreview: "Report Review",
+    generatingPdf: "Generating PDF",
     strategyConcept: "Strategy Concept Diagram",
     executiveSummary: "Executive Summary",
     performanceStudio: "Performance Studio",
@@ -301,11 +313,13 @@ export const TRANSLATIONS = {
     totalBudget: "總預算",
     cashReserve: "現金儲備",
     bondFund: "債券基金",
+    bondFundCapped: "已限於可動用資金：",
     bondYield: "債券收益率 (%)",
     policyEquity: "保單首期",
     bankParams: "銀行參數",
     lendingTerms: "貸款條款",
     spread: "利差 (%)",
+    cofRate: "COF 利率",
     intCap: "利率上限 (%)",
     leverageLtv: "槓桿 (LTV)",
     handlingFee: "基金手續費 (%)",
@@ -317,7 +331,7 @@ export const TRANSLATIONS = {
     netEquityY30: "淨權益 (第30年)",
     roi: "投資回報率",
     monthlyCashflow: "現金流分析",
-    incomeVsCost: "",
+    incomeVsCost: "收入與成本分析（第一年）",
     bondIncome: "債券收入",
     loanInterest: "貸款利息",
     netMonthlyCashflow: "淨月度現金流",
@@ -412,11 +426,18 @@ export const TRANSLATIONS = {
     existingLoan: "現有按揭",
     refiLtv: "加按 LTV (%)",
     unlockedCash: "套現金額",
+    rateAssumptions: "利率假設",
+    mortgageLtvLabel: "按揭成數",
+    primeRateLabel: "最優惠利率 (P)",
+    hSpreadLabel: "H按息差",
+    pModifierLabel: "P按折讓",
+    mortgageTenorLabel: "按揭年期",
     mortgageRate: "按揭利率 (%)",
     tenor: "年期 (年)",
     applyCapital: "使用此資金",
     monthlyMtg: "月供款",
     mtgCost: "按揭成本",
+    mortgageInterest: "按揭利息",
     unlockedCapital: "套現資金",
     mortgageBalance: "按揭餘額",
     primeRate: "最優惠利率 (P)",
@@ -441,6 +462,7 @@ export const TRANSLATIONS = {
     netCarryNeutral: "息差平衡",
     netEquityAtYear: "第 {year} 年淨資產",
     pdfPreview: "審閱報告",
+    generatingPdf: "正在生成報告",
     strategyConcept: "方案概念圖",
     executiveSummary: "執行摘要",
     performanceStudio: "表現分析",
@@ -606,3 +628,14 @@ function convertTranslations(obj: any): any {
 
 (TRANSLATIONS as any).zh_cn = convertTranslations(TRANSLATIONS.zh_hk);
 
+
+export type Labels = typeof TRANSLATIONS["en"];
+
+// Compile-time parity gate for zh_hk. Consumers reach labels through `t: Labels` on the
+// context, but nothing forced zh_hk itself to be complete: `TRANSLATIONS[lang]` widens to
+// `any` (zh_cn is attached with a cast above, and the project does not compile with
+// `strict`), so a key dropped from zh_hk compiled clean and rendered `undefined` in both
+// Chinese locales. This assignment is the missing check — tsc fails if zh_hk drifts from
+// en. zh_cn needs no equivalent: it is derived key-for-key from zh_hk at module load.
+const _zhHkCoversEveryLabel: Labels = TRANSLATIONS.zh_hk;
+void _zhHkCoversEveryLabel;

@@ -7,49 +7,14 @@ import { FlowDiagram } from '../components/charts/FlowDiagram';
 import { formatCurrency, formatPercent } from '../utils/calculations';
 import { THEME } from '../constants/theme';
 import { Language } from '../types';
+import { useApp } from '../state';
 
-interface AllocationViewProps {
-    t: any;
-    totalPremium: number;
-    bankLoan: number;
-    effectiveRate: number;
-    finalNetEquity: number;
-    roi: number;
-    monthlyBondIncome: number;
-    monthlyLoanInterest: number;
-    fundSource: 'cash' | 'mortgage';
-    monthlyMortgagePmt: number;
-    monthlyNetCashflow: number;
-    budget: number;
-    cashReserve: number;
-    netBondPrincipal: number;
-    pfEquity: number;
-    lang: Language;
-    onNavigate: (view: string) => void;
-}
-
-export const AllocationView = ({
-    t,
-    totalPremium,
-    bankLoan,
-    effectiveRate,
-    finalNetEquity,
-    roi,
-    monthlyBondIncome,
-    monthlyLoanInterest,
-    fundSource,
-    monthlyMortgagePmt,
-    monthlyNetCashflow,
-    budget,
-    cashReserve,
-    netBondPrincipal,
-    pfEquity,
-    lang,
-    onNavigate
-}: AllocationViewProps) => {
+export const AllocationView = () => {
+    const { t, fundSource, budget, cashReserve, lang, setActiveView: onNavigate, projection } = useApp();
+    const { pfEquity, totalPremium, bankLoan, effectiveRate, finalNetEquity, roi, monthlyBondIncome, monthlyLoanInterest, monthlyNetCashflow, netBondPrincipal, monthlyMortgagePmt } = projection;
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                 <KPICard
                     label={t.totalPolicyValue}
                     value={formatCurrency(totalPremium)}
@@ -69,7 +34,7 @@ export const AllocationView = ({
             </div>
 
             <Card title={t.monthlyCashflow} subtitle={t.incomeVsCost}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
                     <div className="space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                             <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.bondIncome}</div>
@@ -102,7 +67,7 @@ export const AllocationView = ({
                         </div>
                     </div>
 
-                    <div className="h-48 w-full border-l border-slate-100 pl-8">
+                    <div className="h-48 w-full border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 layout="vertical"

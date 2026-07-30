@@ -4,51 +4,16 @@ import { Card } from '../components/ui/Card';
 import { InputField } from '../components/ui/InputField';
 import { SelectField } from '../components/ui/SelectField';
 import { ToggleField } from '../components/ui/ToggleField';
+import { useApp, useServices } from '../state';
 
-interface SystemConfigViewProps {
-    t: any;
-    dataSource: 'live' | 'cached' | 'fallback' | 'manual';
-    setDataSource: (source: 'live' | 'manual') => void;
-    isFetchingRates: boolean;
-    lastRateUpdate: Date | null;
-    batchStatus: 'idle' | 'running' | 'success';
-    batchLogs: string[];
-    batchProgress: number;
-    runBatch: () => void;
-    globalMinSpread: number;
-    setGlobalMinSpread: (val: number) => void;
-    globalMaxLTV: number;
-    setGlobalMaxLTV: (val: number) => void;
-    regulatoryMode: string;
-    setRegulatoryMode: (val: string) => void;
-    autoHedging: boolean;
-    setAutoHedging: (val: boolean) => void;
-}
-
-export const SystemConfigView = ({
-    t,
-    dataSource,
-    setDataSource,
-    isFetchingRates,
-    lastRateUpdate,
-    batchStatus,
-    batchLogs,
-    batchProgress,
-    runBatch,
-    globalMinSpread,
-    setGlobalMinSpread,
-    globalMaxLTV,
-    setGlobalMaxLTV,
-    regulatoryMode,
-    setRegulatoryMode,
-    autoHedging,
-    setAutoHedging
-}: SystemConfigViewProps) => {
+export const SystemConfigView = () => {
+    const { t, dataSource, setDataSource, isFetchingRates, lastRateUpdate, globalMinSpread, setGlobalMinSpread, globalMaxLTV, setGlobalMaxLTV, regulatoryMode, setRegulatoryMode, autoHedging, setAutoHedging } = useApp();
+    const { batchStatus, batchLogs, batchProgress, runBatch } = useServices();
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
             <Card title={t.dataFeeds} subtitle="Market Data Integration">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="p-4 md:p-6 bg-slate-50 border border-slate-200 rounded-lg">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <Server className="w-5 h-5 text-slate-600" />
@@ -75,7 +40,7 @@ export const SystemConfigView = ({
                                         <LinkIcon className="w-3 h-3" />
                                         <span className="font-bold">{t.sourceUrl}</span>
                                     </div>
-                                    <a href="https://api.hkma.gov.hk" target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#c5a059] hover:underline truncate max-w-[150px]">
+                                    <a href="https://api.hkma.gov.hk" target="_blank" rel="noopener noreferrer" className="text-xs text-[#c5a059] hover:underline truncate max-w-[150px] inline-flex items-center min-h-[44px] lg:min-h-0">
                                         api.hkma.gov.hk
                                     </a>
                                 </div>
@@ -102,7 +67,7 @@ export const SystemConfigView = ({
                     </div>
 
                     <div className="flex flex-col gap-6">
-                        <div className="p-6 bg-slate-50 border border-slate-200 rounded-lg flex-1">
+                        <div className="p-4 md:p-6 bg-slate-50 border border-slate-200 rounded-lg flex-1">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <Server className="w-5 h-5 text-slate-600" />
@@ -137,7 +102,7 @@ export const SystemConfigView = ({
                             <button
                                 onClick={runBatch}
                                 disabled={batchStatus === 'running'}
-                                className={`w-full py-2 px-4 rounded text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${batchStatus === 'running'
+                                className={`w-full min-h-[44px] py-2 px-4 rounded text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${batchStatus === 'running'
                                     ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                     : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-[#c5a059] hover:text-[#c5a059]'
                                     }`}

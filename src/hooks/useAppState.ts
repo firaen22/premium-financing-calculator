@@ -1,44 +1,52 @@
 import { useState, useMemo } from 'react';
-import { calculateProjection, calculateStressTest, SimulationInput, SimulationOutput, StressTestOutput } from '../utils/calculations';
+import {
+    calculateProjection, calculateStressTest, calculatePMT,
+    deriveUnlockedCash, deriveEffectiveMortgageRate
+} from '../utils/calculations';
+import { DEFAULT_INPUTS } from '../constants/defaults';
 import { Language } from '../types';
 
 export const useAppState = () => {
     const [activeView, setActiveView] = useState('allocation');
     const [lang, setLang] = useState<Language>('en');
 
-    // Financial State
-    const [budget, setBudget] = useState(1000000);
-    const [extraCash, setExtraCash] = useState(0);
-    const [cashReserve, setCashReserve] = useState(200000);
-    const [bondAlloc, setBondAlloc] = useState(3000000);
-    const [bondYield, setBondYield] = useState(5.5);
-    const [hibor, setHibor] = useState(4.15);
-    const [spread, setSpread] = useState(1.3);
-    const [capRate, setCapRate] = useState(9.0);
-    const [leverageLTV, setLeverageLTV] = useState(90);
-    const [handlingFee, setHandlingFee] = useState(1.0);
-    const [simulatedHibor, setSimulatedHibor] = useState(4.5);
-    const [bondPriceDrop, setBondPriceDrop] = useState(10);
+    // Financial State — initial values come from DEFAULT_INPUTS so the golden projection
+    // test binds to the same numbers the app opens with. See src/constants/defaults.ts
+    // for the budget >= cashReserve + bondAlloc invariant.
+    const [budget, setBudget] = useState(DEFAULT_INPUTS.budget);
+    const [extraCash, setExtraCash] = useState(DEFAULT_INPUTS.extraCash);
+    const [cashReserve, setCashReserve] = useState(DEFAULT_INPUTS.cashReserve);
+    const [bondAlloc, setBondAlloc] = useState(DEFAULT_INPUTS.bondAlloc);
+    const [bondYield, setBondYield] = useState(DEFAULT_INPUTS.bondYield);
+    const [hibor, setHibor] = useState(DEFAULT_INPUTS.hibor);
+    const [spread, setSpread] = useState(DEFAULT_INPUTS.spread);
+    const [capRate, setCapRate] = useState(DEFAULT_INPUTS.capRate);
+    const [leverageLTV, setLeverageLTV] = useState(DEFAULT_INPUTS.leverageLTV);
+    const [handlingFee, setHandlingFee] = useState(DEFAULT_INPUTS.handlingFee);
+    const [simulatedHibor, setSimulatedHibor] = useState(DEFAULT_INPUTS.simulatedHibor);
+    const [bondPriceDrop, setBondPriceDrop] = useState(DEFAULT_INPUTS.bondPriceDrop);
     const [showGuaranteed, setShowGuaranteed] = useState(false);
-    const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>('cash');
-    const [tempBudget, setTempBudget] = useState(1000000);
-    const [tempCashReserve, setTempCashReserve] = useState(200000);
-    const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>('hibor');
-    const [cofRate, setCofRate] = useState(5.0);
+    const [fundSource, setFundSource] = useState<'cash' | 'mortgage'>(DEFAULT_INPUTS.fundSource);
+    // tempBudget/tempCashReserve are the pending edits behind the Apply button, so they
+    // must start equal to the live values or the first Apply silently reverts them.
+    const [tempBudget, setTempBudget] = useState(DEFAULT_INPUTS.budget);
+    const [tempCashReserve, setTempCashReserve] = useState(DEFAULT_INPUTS.cashReserve);
+    const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>(DEFAULT_INPUTS.interestBasis);
+    const [cofRate, setCofRate] = useState(DEFAULT_INPUTS.cofRate);
     const [clientName, setClientName] = useState('Estate of Mr. H.N.W.');
     const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
     // Mortgage Refi State
-    const [propertyValue, setPropertyValue] = useState(15000000);
-    const [existingMortgage, setExistingMortgage] = useState(6000000);
-    const [mortgageLtv, setMortgageLtv] = useState(70);
-    const [primeRate, setPrimeRate] = useState(5.5);
-    const [mortgageHSpread, setMortgageHSpread] = useState(1.3);
-    const [mortgagePModifier, setMortgagePModifier] = useState(1.75);
-    const [mortgageTenor, setMortgageTenor] = useState(30);
+    const [propertyValue, setPropertyValue] = useState(DEFAULT_INPUTS.propertyValue);
+    const [existingMortgage, setExistingMortgage] = useState(DEFAULT_INPUTS.existingMortgage);
+    const [mortgageLtv, setMortgageLtv] = useState(DEFAULT_INPUTS.mortgageLtv);
+    const [primeRate, setPrimeRate] = useState(DEFAULT_INPUTS.primeRate);
+    const [mortgageHSpread, setMortgageHSpread] = useState(DEFAULT_INPUTS.mortgageHSpread);
+    const [mortgagePModifier, setMortgagePModifier] = useState(DEFAULT_INPUTS.mortgagePModifier);
+    const [mortgageTenor, setMortgageTenor] = useState(DEFAULT_INPUTS.mortgageTenor);
 
     // Market Risk & Sensitivity
-    const [sensitivityYear, setSensitivityYear] = useState(15);
+    const [sensitivityYear, setSensitivityYear] = useState(DEFAULT_INPUTS.sensitivityYear);
 
     // System Configuration State
     const [globalMinSpread, setGlobalMinSpread] = useState(1.0);
@@ -48,12 +56,10 @@ export const useAppState = () => {
 
     // PDF Generation State
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-    const [isFullPayment, setIsFullPayment] = useState(false);
 
     // HIBOR Caching State
     const [lastRateUpdate, setLastRateUpdate] = useState<Date | null>(null);
     const [isFetchingRates, setIsFetchingRates] = useState(false);
-    const [fetchError, setFetchError] = useState<string | null>(null);
     const [dataSource, setDataSource] = useState<'live' | 'cached' | 'fallback' | 'manual'>('live');
 
     // Chart Filters State
@@ -65,15 +71,11 @@ export const useAppState = () => {
         loan: true
     });
 
-    const unlockedCash = Math.max(0, (propertyValue * (mortgageLtv / 100)) - existingMortgage);
-    const effectiveMortgageRate = Math.min(hibor + mortgageHSpread, primeRate - mortgagePModifier);
-
-    const calculatePMT = (rate: number, nper: number, pv: number) => {
-        if (rate === 0) return pv / nper;
-        const r = rate / 100 / 12;
-        const n = nper * 12;
-        return (pv * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    };
+    // Both derivations are bounded at the source in calculations.ts, where they are also
+    // unit-tested against the full propertyValue x mortgageLtv overflow surface.
+    const unlockedCash = deriveUnlockedCash(propertyValue, mortgageLtv, existingMortgage);
+    const effectiveMortgageRate = deriveEffectiveMortgageRate(
+        hibor, mortgageHSpread, primeRate, mortgagePModifier);
 
     const monthlyMortgagePmt = calculatePMT(effectiveMortgageRate, mortgageTenor, unlockedCash);
 
@@ -89,9 +91,9 @@ export const useAppState = () => {
         return calculateStressTest({
             projectionData: projection.projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
             totalPremium: projection.totalPremium, netBondPrincipal: projection.netBondPrincipal, bondYield, bankLoan: projection.bankLoan, spread, capRate,
-            budget, cashReserve, sensitivityYear, fundSource, unlockedCash
+            budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor
         });
-    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash]);
+    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor]);
 
     return {
         activeView, setActiveView,
@@ -129,10 +131,8 @@ export const useAppState = () => {
         regulatoryMode, setRegulatoryMode,
         autoHedging, setAutoHedging,
         isGeneratingPDF, setIsGeneratingPDF,
-        isFullPayment, setIsFullPayment,
         lastRateUpdate, setLastRateUpdate,
         isFetchingRates, setIsFetchingRates,
-        fetchError, setFetchError,
         dataSource, setDataSource,
         chartFilters, setChartFilters,
         unlockedCash,

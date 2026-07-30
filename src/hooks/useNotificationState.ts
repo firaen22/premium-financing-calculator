@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Labels } from '../i18n';
 
 export interface Notification {
     id: number;
@@ -8,7 +9,7 @@ export interface Notification {
     type: 'info' | 'warning' | 'success';
 }
 
-export const useNotificationState = (t: any) => {
+export const useNotificationState = (t: Labels) => {
     const [notifications, setNotifications] = useState<Notification[]>([
         { id: 1, title: t.systemReady, message: 'Ledger synchronization complete.', time: '2m ago', type: 'success' },
         { id: 2, title: t.complianceAlert, message: 'Client risk profile review due.', time: '1h ago', type: 'warning' }

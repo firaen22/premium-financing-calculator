@@ -1,288 +1,51 @@
-import React, { useRef, useEffect, useMemo, Suspense, useState } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { TRANSLATIONS } from './i18n';
-import {
-    Sidebar,
-    Header,
-    PrintStyles
-} from './components/layout';
-import {
-    AllocationView,
-    HoldingsView,
-    MarketRiskView,
-    ReturnStudio,
-    SystemConfigView,
-} from './views';
-import {
-    useAppState,
-    useHibor,
-    useBatchProcess,
-    useNotificationState
-} from './hooks';
+import React, { useEffect, Suspense, useState } from 'react';
+import { Sidebar, Header, PrintStyles } from './components/layout';
+import { SystemConfigView } from './views';
+import { AppStateProvider, AppServicesProvider, useApp, useServices } from './state';
 
 // Lazy-load heavy PDF components
 const PDFPreview = React.lazy(() => import('./views/PDFPreview').then(m => ({ default: m.PDFPreview })));
 const PDFProposal = React.lazy(() => import('./components/pdf/PDFProposal').then(m => ({ default: m.PDFProposal })));
 
-const App = () => {
-    const state = useAppState();
-    const {
-        rate: liveRate,
-        date: liveDate,
-        isStale,
-        refresh: refreshHibor
-    } = useHibor();
+// Lazy-load the four recharts-backed views: recharts alone is ~1MB of the former 1.33MB
+// main chunk, and only these four (plus PDFProposal, already lazy above) import it.
+// SystemConfigView does not import recharts and stays in the main chunk.
+const AllocationView = React.lazy(() => import('./views/AllocationView').then(m => ({ default: m.AllocationView })));
+const HoldingsView = React.lazy(() => import('./views/HoldingsView').then(m => ({ default: m.HoldingsView })));
+const MarketRiskView = React.lazy(() => import('./views/MarketRiskView').then(m => ({ default: m.MarketRiskView })));
+const ReturnStudio = React.lazy(() => import('./views/ReturnStudio').then(m => ({ default: m.ReturnStudio })));
 
-    const {
-        batchStatus,
-        batchLogs,
-        batchProgress,
-        runBatch
-    } = useBatchProcess();
-
-    const t = useMemo(() => TRANSLATIONS[state.lang], [state.lang]);
-    const {
-        notifications,
-        showNotifications,
-        setShowNotifications,
-        unreadCount,
-        setUnreadCount,
-        addNotification
-    } = useNotificationState(t);
-
-    const pdfRef = useRef<HTMLDivElement>(null);
+const AppShell = () => {
+    const state = useApp();
+    const { pdfRef } = useServices();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    // Owned here, not inside Sidebar: the opener lives in Header, so the state has to
+    // sit above both. Below lg the sidebar is the ONLY route to every input and to all
+    // six views, so an unreachable opener locks the whole app out on phones/tablets.
+    const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-    // Sync live rate when it changes
+    // Lock background scroll while the mobile drawer is open, and close it on Escape.
     useEffect(() => {
-        if (liveRate && state.dataSource === 'live') {
-            state.setHibor(liveRate);
-            state.setLastRateUpdate(new Date(liveDate));
-        }
-    }, [liveRate, liveDate, state.dataSource]);
-
-    const handleExportCSV = () => {
-        const headers = ['Year', 'Bond Interest', 'Cash Value', 'Bond Principal', 'Policy Value', 'Loan', 'Mortgage Balance', 'Mortgage Principal Repaid', 'Net Equity'];
-        const projData = state.projection.projectionData;
-        const initialMtgBalance = projData[0]?.mortgageBalance || 0;
-        const csvContent = [
-            headers.join(','),
-            ...projData.map(row => {
-                const mortgagePrincipalRepaid = Math.max(0, initialMtgBalance - (row.mortgageBalance || 0));
-                return [
-                    row.year,
-                    row.cumulativeBondInterest,
-                    row.cashValue,
-                    row.bondPrincipal,
-                    row.surrenderValue,
-                    row.loan,
-                    row.mortgageBalance || 0,
-                    mortgagePrincipalRepaid,
-                    row.netEquity
-                ].join(',');
-            })
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `projection_${state.clientName.replace(/\s+/g, '_')}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        addNotification({
-            title: 'Export Success',
-            message: 'Projection data exported to CSV.',
-            type: 'success'
-        });
-    };
-
-    const handleDownloadPDF = async () => {
-        state.setIsGeneratingPDF(true);
-        addNotification({
-            title: t.generatingPdf,
-            message: 'Preparing high-resolution document...',
-            type: 'info'
-        });
-
-        try {
-            const response = await fetch('/api/generate-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    html: pdfRef.current?.innerHTML,
-                    clientName: state.clientName
-                }),
-            });
-
-            if (response.ok) {
-                // API returns { url: signedUrl } — fetch the PDF from R2 and download
-                const data = await response.json();
-                if (data.url) {
-                    const pdfResponse = await fetch(data.url);
-                    if (!pdfResponse.ok) throw new Error(`Failed to fetch PDF from storage: ${pdfResponse.statusText}`);
-                    const blob = await pdfResponse.blob();
-                    const objectUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = objectUrl;
-                    a.download = `Premium_Financing_Proposal_${state.clientName}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(objectUrl);
-                    document.body.removeChild(a);
-                } else {
-                    throw new Error(data.error || 'No URL returned from server');
-                }
-                addNotification({
-                    title: 'PDF Complete',
-                    message: 'Professional report has been generated.',
-                    type: 'success'
-                });
-            } else {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || `Server error ${response.status}`);
-            }
-        } catch (error) {
-            console.warn('Server PDF failed, falling back to client-side...', error);
-
-            try {
-                const element = pdfRef.current;
-                if (!element) return;
-
-                const pdf = new jsPDF('l', 'mm', 'a4');
-                const pages = element.querySelectorAll('.page-break');
-
-                for (let i = 0; i < pages.length; i++) {
-                    const page = pages[i] as HTMLElement;
-                    const canvas = await html2canvas(page, {
-                        scale: 2,
-                        useCORS: true,
-                        logging: false,
-                        windowWidth: 1123,
-                        windowHeight: 794
-                    });
-
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    if (i > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
-                }
-
-                pdf.save(`Proposal_${state.clientName}.pdf`);
-                addNotification({
-                    title: 'PDF Complete',
-                    message: 'Client-side report generated (fallback).',
-                    type: 'success'
-                });
-            } catch (fallbackError) {
-                console.error('Client-side PDF also failed:', fallbackError);
-                window.print();
-            }
-        } finally {
-            state.setIsGeneratingPDF(false);
-        }
-    };
+        if (!isMobileNavOpen) return;
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMobileNavOpen(false); };
+        window.addEventListener('keydown', onKey);
+        return () => {
+            document.body.style.overflow = prevOverflow;
+            window.removeEventListener('keydown', onKey);
+        };
+    }, [isMobileNavOpen]);
 
     const renderContent = () => {
         switch (state.activeView) {
-            case 'allocation':
-                return <AllocationView
-                    t={t}
-                    {...state.projection}
-                    budget={state.budget}
-                    cashReserve={state.cashReserve}
-                    netBondPrincipal={state.projection.netBondPrincipal}
-                    pfEquity={state.projection.pfEquity}
-                    lang={state.lang}
-                    fundSource={state.fundSource}
-                    onNavigate={state.setActiveView}
-                />;
-            case 'holdings':
-                return <HoldingsView
-                    t={t}
-                    projectionData={state.projection.projectionData}
-                    chartFilters={state.chartFilters}
-                    setChartFilters={state.setChartFilters}
-                    fundSource={state.fundSource}
-                    handleExportCSV={handleExportCSV}
-                />;
-            case 'marketRisk':
-                return <MarketRiskView
-                    t={t}
-                    {...state.stressTest}
-                    stressedProjection={state.stressTest.stressedProjection}
-                    sensitivityYear={state.sensitivityYear}
-                    setSensitivityYear={state.setSensitivityYear}
-                    lang={state.lang}
-                    onNavigate={state.setActiveView}
-                />;
-            case 'returnStudio':
-                return <ReturnStudio
-                    labels={t}
-                    data={state.projection.projectionData}
-                    bondYield={state.bondYield}
-                    loanRate={state.hibor + state.spread}
-                    budget={state.budget}
-                    totalPremium={state.projection.totalPremium}
-                />;
-            case 'systemConfig':
-                return <SystemConfigView
-                    t={t}
-                    dataSource={state.dataSource}
-                    setDataSource={state.setDataSource}
-                    isFetchingRates={state.isFetchingRates}
-                    lastRateUpdate={state.lastRateUpdate}
-                    batchStatus={batchStatus}
-                    batchLogs={batchLogs}
-                    batchProgress={batchProgress}
-                    runBatch={runBatch}
-                    globalMinSpread={state.globalMinSpread}
-                    setGlobalMinSpread={state.setGlobalMinSpread}
-                    globalMaxLTV={state.globalMaxLTV}
-                    setGlobalMaxLTV={state.setGlobalMaxLTV}
-                    regulatoryMode={state.regulatoryMode}
-                    setRegulatoryMode={state.setRegulatoryMode}
-                    autoHedging={state.autoHedging}
-                    setAutoHedging={state.setAutoHedging}
-                />;
-            case 'pdfPreview':
-                return <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading report preview...</div>}>
-                    <PDFPreview
-                    t={t}
-                    lang={state.lang}
-                    clientName={state.clientName}
-                    setClientName={state.setClientName}
-                    representativeName={state.representativeName}
-                    setRepresentativeName={state.setRepresentativeName}
-                    onNavigate={state.setActiveView}
-                    onDownloadPDF={handleDownloadPDF}
-                    isGeneratingPDF={state.isGeneratingPDF}
-                    totalPremium={state.projection.totalPremium}
-                    bankLoan={state.projection.bankLoan}
-                    projectionData={state.projection.projectionData}
-                    roi={state.projection.roi}
-                    propertyValue={state.propertyValue}
-                    unlockedCash={state.unlockedCash}
-                    hibor={state.hibor}
-                    effectiveMortgageRate={state.effectiveMortgageRate}
-                    cashReserve={state.cashReserve}
-                    netBondPrincipal={state.projection.netBondPrincipal}
-                    pfEquity={state.projection.pfEquity}
-                    fundSource={state.fundSource}
-                    sensitivityData={state.stressTest.sensitivityData}
-                    spread={state.spread}
-                    leverageLTV={state.leverageLTV}
-                    bondYield={state.bondYield}
-                    sensitivityYear={state.sensitivityYear}
-                    budget={state.budget}
-                    isSidebarCollapsed={isSidebarCollapsed}
-                />
-                </Suspense>;
-            default:
-                return null;
+            case 'allocation': return <AllocationView />;
+            case 'holdings': return <HoldingsView />;
+            case 'marketRisk': return <MarketRiskView />;
+            case 'returnStudio': return <ReturnStudio />;
+            case 'systemConfig': return <SystemConfigView />;
+            case 'pdfPreview': return <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading report preview...</div>}><PDFPreview isSidebarCollapsed={isSidebarCollapsed} /></Suspense>;
+            default: return null;
         }
     };
 
@@ -290,85 +53,19 @@ const App = () => {
         <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 selection:bg-[#c5a059]/30">
             <PrintStyles />
             <div className="flex">
-                <Sidebar
-                    activeView={state.activeView}
-                    onViewChange={state.setActiveView}
-                    lang={state.lang}
-                    fundSource={state.fundSource}
-                    setFundSource={state.setFundSource}
-                    budget={state.budget}
-                    extraCash={state.extraCash}
-                    setExtraCash={state.setExtraCash}
-                    tempBudget={state.tempBudget}
-                    setTempBudget={state.setTempBudget}
-                    setBudget={state.setBudget}
-                    cashReserve={state.cashReserve}
-                    tempCashReserve={state.tempCashReserve}
-                    setTempCashReserve={state.setTempCashReserve}
-                    setCashReserve={state.setCashReserve}
-                    bondAlloc={state.bondAlloc}
-                    setBondAlloc={state.setBondAlloc}
-                    bondYield={state.bondYield}
-                    setBondYield={state.setBondYield}
-                    hibor={state.hibor}
-                    setHibor={state.setHibor}
-                    spread={state.spread}
-                    setSpread={state.setSpread}
-                    capRate={state.capRate}
-                    setCapRate={state.setCapRate}
-                    leverageLTV={state.leverageLTV}
-                    setLeverageLTV={state.setLeverageLTV}
-                    handlingFee={state.handlingFee}
-                    setHandlingFee={state.setHandlingFee}
-                    interestBasis={state.interestBasis}
-                    setInterestBasis={state.setInterestBasis}
-                    cofRate={state.cofRate}
-                    setCofRate={state.setCofRate}
-                    propertyValue={state.propertyValue}
-                    setPropertyValue={state.setPropertyValue}
-                    existingMortgage={state.existingMortgage}
-                    setExistingMortgage={state.setExistingMortgage}
-                    mortgageLtv={state.mortgageLtv}
-                    setMortgageLtv={state.setMortgageLtv}
-                    primeRate={state.primeRate}
-                    setPrimeRate={state.setPrimeRate}
-                    mortgageHSpread={state.mortgageHSpread}
-                    setMortgageHSpread={state.setMortgageHSpread}
-                    mortgagePModifier={state.mortgagePModifier}
-                    setMortgagePModifier={state.setMortgagePModifier}
-                    mortgageTenor={state.mortgageTenor}
-                    setMortgageTenor={state.setMortgageTenor}
-                    simulatedHibor={state.simulatedHibor}
-                    setSimulatedHibor={state.setSimulatedHibor}
-                    bondPriceDrop={state.bondPriceDrop}
-                    setBondPriceDrop={state.setBondPriceDrop}
-                    showGuaranteed={state.showGuaranteed}
-                    setShowGuaranteed={state.setShowGuaranteed}
-                    isStale={isStale}
-                    refreshHibor={refreshHibor}
-                    onDownloadPDF={handleDownloadPDF}
-                    isGeneratingPDF={state.isGeneratingPDF}
-                    labels={t}
-                    addNotification={addNotification}
-                    onCollapsedChange={setIsSidebarCollapsed}
-                />
+                <Sidebar onCollapsedChange={setIsSidebarCollapsed} isMobileOpen={isMobileNavOpen} onMobileClose={() => setIsMobileNavOpen(false)} />
 
-                <main className={`flex-1 min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'}`}>
-                    <Header
-                        onOpenMobileMenu={() => { }} // TODO: Implement mobile menu state
-                        lang={state.lang}
-                        onLanguageChange={state.setLang}
-                        hibor={state.hibor}
-                        unreadCount={unreadCount}
-                        showNotifications={showNotifications}
-                        setShowNotifications={setShowNotifications}
-                        notifications={notifications}
-                        setUnreadCount={setUnreadCount}
-                        labels={t}
-                    />
-
+                {/* min-w-0 is load-bearing: a flex child defaults to min-width:auto, so
+                    without it `main` cannot shrink below its widest content and every
+                    `overflow-x-auto` wrapper inside (ledger table, sensitivity heatmap,
+                    A4 report preview) widens the whole page instead of scrolling
+                    internally. Measured at 360px: Holdings 900px, Report Review 1155px. */}
+                <main className={`flex-1 min-w-0 overflow-x-hidden min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'}`}>
+                    <Header onOpenMobileMenu={() => setIsMobileNavOpen(true)} />
                     <div className="p-4 md:p-10 max-w-7xl mx-auto no-print">
-                        {renderContent()}
+                        <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading...</div>}>
+                            {renderContent()}
+                        </Suspense>
                     </div>
                 </main>
             </div>
@@ -399,11 +96,21 @@ const App = () => {
                         leverageLTV={state.leverageLTV}
                         bondYield={state.bondYield}
                         sensitivityYear={state.sensitivityYear}
+                        interestBasis={state.interestBasis}
+                        loanRate={state.projection.effectiveRate}
                     />
                 </Suspense>
             </div>
         </div>
     );
 };
+
+const App = () => (
+    <AppStateProvider>
+        <AppServicesProvider>
+            <AppShell />
+        </AppServicesProvider>
+    </AppStateProvider>
+);
 
 export default App;

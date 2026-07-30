@@ -7,31 +7,14 @@ import { Heatmap } from '../components/charts/Heatmap';
 import { formatCurrency, formatPercent } from '../utils/calculations';
 import { THEME } from '../constants/theme';
 import { Language } from '../types';
+import { useApp } from '../state';
 
-interface MarketRiskViewProps {
-    t: any;
-    stressStats: any;
-    stressedProjection: any[];
-    sensitivityYear: number;
-    setSensitivityYear: (year: number) => void;
-    sensitivityData: any;
-    lang: Language;
-    onNavigate: (view: string) => void;
-}
-
-export const MarketRiskView = ({
-    t,
-    stressStats,
-    stressedProjection,
-    sensitivityYear,
-    setSensitivityYear,
-    sensitivityData,
-    lang,
-    onNavigate
-}: MarketRiskViewProps) => {
+export const MarketRiskView = () => {
+    const { t, sensitivityYear, setSensitivityYear, lang, setActiveView: onNavigate, stressTest } = useApp();
+    const { stressStats, stressedProjection, sensitivityData } = stressTest;
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <KPICard
                     label={t.lowestNetEquity}
                     value={formatCurrency(stressStats.lowestEquity)}
@@ -46,7 +29,7 @@ export const MarketRiskView = ({
             </div>
 
             <Card title={t.netWorthComparison} subtitle={`${t.baseline} vs ${t.stressed}`}>
-                <div className="h-[350px] w-full mt-4">
+                <div className="h-[240px] sm:h-[300px] md:h-[350px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={stressedProjection} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <defs>
@@ -80,7 +63,7 @@ export const MarketRiskView = ({
                         <select
                             value={sensitivityYear}
                             onChange={(e) => setSensitivityYear(Number(e.target.value))}
-                            className="bg-slate-100 border-none text-xs font-bold text-slate-700 rounded py-1 pl-2 pr-2 cursor-pointer focus:ring-1 focus:ring-[#c5a059] outline-none"
+                            className="bg-slate-100 border-none text-base lg:text-xs font-bold text-slate-700 rounded min-h-[44px] lg:min-h-0 py-1 pl-3 pr-3 cursor-pointer focus:ring-1 focus:ring-[#c5a059] outline-none"
                         >
                             {[10, 15, 20, 25, 30].map(y => (
                                 <option key={y} value={y}>Year {y}</option>

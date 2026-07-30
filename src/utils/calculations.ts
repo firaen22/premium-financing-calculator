@@ -111,6 +111,11 @@ export interface StressTestInput {
     sensitivityYear: number;
     fundSource: 'cash' | 'mortgage';
     unlockedCash: number; // Needed for Year 0 mortgage check
+    // The stressed loan rate must be built on the SAME basis the baseline used,
+    // otherwise the stressed projection is not comparable to baselineNetEquity.
+    interestBasis: 'hibor' | 'cof';
+    cofRate: number;
+    hibor: number; // current HIBOR — the shock is (simulatedHibor - hibor)
 }
 
 export interface StressTestOutput {
@@ -132,11 +137,69 @@ export const sanitize = (val: number, min = 0, max = Infinity, fallback = 0) => 
     return Math.max(min, Math.min(max, val));
 };
 
+// Upper bound for any monetary input. A finite-but-astronomical entry (the number
+// field accepts up to Number.MAX_VALUE) stays finite on its own, but overflows to
+// Infinity once compounded over 30 years — which then renders as "$∞"/"NaN". This
+// ceiling is orders of magnitude above any real premium-financing case.
+export const MAX_MONEY = 1e15;
+
+// Reported LTV when a loan is outstanding against fully impaired collateral. The true
+// ratio is unbounded, but the LTV chart needs a finite number, and any value this far
+// above a margin-call threshold reads unambiguously as "collateral gone".
+export const LTV_IMPAIRED = 9999;
+
+// Standard amortizing payment. Lives here rather than inside useAppState because it is
+// pure arithmetic with no React dependency — being trapped in the hook is the only
+// reason its divide-by-zero went unnoticed.
+export const calculatePMT = (rate: number, nper: number, pv: number) => {
+    // A cleared tenor field arrives as 0; without this guard nper=0 divides by zero
+    // and yields Infinity (pv > 0) or NaN (pv === 0), which then renders in the UI.
+    // The isFinite checks make the function total regardless of what reaches it.
+    if (!isFinite(nper) || !isFinite(pv) || !isFinite(rate)) return 0;
+    if (nper <= 0 || pv <= 0) return 0;
+    // nper is in YEARS but the payment is monthly, so the interest-free case has to
+    // divide by months, not years. `pv / nper` returned an annual figure that every
+    // caller then treated as monthly — a 12x overstatement. Reachable from the UI:
+    // primeRate <= mortgagePModifier drives effectiveMortgageRate to 0.
+    if (rate === 0) return pv / (nper * 12);
+    const r = rate / 100 / 12;
+    const n = nper * 12;
+    const growth = Math.pow(1 + r, n);
+    if (!isFinite(growth) || growth === 1) return pv / (nper * 12);
+    return (pv * r * growth) / (growth - 1);
+};
+
+// The two derivations below were inline in useAppState. They are extracted for the same
+// reason as calculatePMT — pure arithmetic — plus one specific to them: the hook-chain
+// test needs to drive the REAL derivation. A test that re-implemented these would pass
+// happily while the hook itself regressed. Behaviour is identical to the inline versions.
+
+// propertyValue and mortgageLtv are both free numeric fields, so their product can reach
+// Infinity (e.g. 1e308 x 1e10). Unbounded, that fed calculatePMT and surfaced as an
+// "Infinity" monthly payment in the UI.
+export const deriveUnlockedCash = (
+    propertyValue: number, mortgageLtv: number, existingMortgage: number
+) => sanitize(
+    Math.max(0, (propertyValue * (mortgageLtv / 100)) - existingMortgage),
+    0, MAX_MONEY
+);
+
+// calculateProjection sanitizes the rate to 0..100 internally, so an unclamped value here
+// would be displayed in the UI while the engine used a different number. A negative
+// P-minus rate (primeRate < mortgagePModifier) is the reachable case.
+export const deriveEffectiveMortgageRate = (
+    hibor: number, mortgageHSpread: number, primeRate: number, mortgagePModifier: number
+) => Math.max(0, Math.min(100,
+    Math.min(hibor + mortgageHSpread, primeRate - mortgagePModifier)));
+
 // Core Calculation Logic
 export const calculateProjection = (input: SimulationInput): SimulationOutput => {
-    const budget = sanitize(input.budget, 0);
+    const budget = sanitize(input.budget, 0, MAX_MONEY);
     const cashReserve = sanitize(input.cashReserve, 0, budget);
-    const bondAlloc = sanitize(input.bondAlloc, 0);
+    // Bonds can only be bought with money the budget actually contains. Uncapped, an
+    // over-allocation counted as a Year-0 asset while funding no policy and drawing no
+    // loan, so unfunded money showed up as net equity.
+    const bondAlloc = sanitize(input.bondAlloc, 0, Math.max(0, budget - cashReserve));
     const bondYield = sanitize(input.bondYield, 0, 100);
     const hibor = sanitize(input.hibor, 0, 100);
     const cofRate = sanitize(input.cofRate, 0, 100);
@@ -146,9 +209,9 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const capRate = sanitize(input.capRate, 0, 100);
     const handlingFee = sanitize(input.handlingFee, 0, 100);
     const fundSource = input.fundSource;
-    const unlockedCash = sanitize(input.unlockedCash, 0);
+    const unlockedCash = sanitize(input.unlockedCash, 0, MAX_MONEY);
     const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
-    const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0);
+    const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0, MAX_MONEY);
     const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
 
     const equity = budget - cashReserve - bondAlloc;
@@ -161,10 +224,13 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     let tPremium = 0;
     const denominator = 1 - (ltvDecimal * initialCSVFactor);
     if (denominator > 0 && equity > 0) {
-        tPremium = equity / denominator;
+        tPremium = sanitize(equity / denominator, 0, MAX_MONEY);
     }
 
-    const loan = Math.max(0, tPremium - equity);
+    // The premium equation (loan = tPremium - equity) only holds once a policy is
+    // actually funded. With equity <= 0 no policy is purchased (tPremium = 0), so
+    // tPremium - equity would report a phantom loan equal to the equity shortfall.
+    const loan = tPremium > 0 ? Math.max(0, tPremium - equity) : 0;
 
     // Effective Rate Logic
     const baseRate = interestBasis === 'hibor' ? hibor : cofRate;
@@ -205,7 +271,10 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
                 if (balance < 0) balance = 0;
                 mortgageSchedule.push({ balance: balance, annualPmt: actualPmt, cumInterest: cumInterest, annualInterest: interestPart });
             } else {
-                mortgageSchedule.push({ balance: 0, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
+                // Carry whatever principal is still outstanding. Hardcoding 0 here made an
+                // under-amortised balance vanish the year after the tenor ended, which
+                // showed as a one-year jump in net equity equal to the unpaid principal.
+                mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
             }
         }
     }
@@ -343,25 +412,36 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const simulatedHibor = sanitize(input.simulatedHibor, 0, 100);
     const bondPriceDrop = sanitize(input.bondPriceDrop, 0, 100);
     const showGuaranteed = input.showGuaranteed;
-    const totalPremium = sanitize(input.totalPremium, 0);
-    const netBondPrincipal = sanitize(input.netBondPrincipal, 0);
+    const totalPremium = sanitize(input.totalPremium, 0, MAX_MONEY);
+    const netBondPrincipal = sanitize(input.netBondPrincipal, 0, MAX_MONEY);
     const bondYield = sanitize(input.bondYield, 0, 100);
-    const bankLoan = sanitize(input.bankLoan, 0);
+    const bankLoan = sanitize(input.bankLoan, 0, MAX_MONEY);
     const spread = sanitize(input.spread, 0, 100);
     const capRate = sanitize(input.capRate, 0, 100);
-    const budget = sanitize(input.budget, 0);
+    const budget = sanitize(input.budget, 0, MAX_MONEY);
     const cashReserve = sanitize(input.cashReserve, 0, budget);
     const sensitivityYear = sanitize(input.sensitivityYear, 1, 30, 20);
     const fundSource = input.fundSource;
-    const unlockedCash = sanitize(input.unlockedCash, 0);
+    const unlockedCash = sanitize(input.unlockedCash, 0, MAX_MONEY);
+    const interestBasis = input.interestBasis;
+    const cofRate = sanitize(input.cofRate, 0, 100);
+    const hibor = sanitize(input.hibor, 0, 100);
 
     const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
 
     // 1. Bond Shock
     const stressedBondPrincipal = netBondPrincipal * (1 - bondPriceDrop / 100);
 
-    // 2. Simulated HIBOR Rate
-    const stressedRate = Math.min(simulatedHibor + spread, capRate);
+    // 2. Stressed loan rate — apply the rate shock to whichever base the baseline
+    //    priced off. On a COF facility a HIBOR move does not reprice the loan
+    //    directly, so the shock carries across as a delta. With a zero shock this
+    //    reproduces the baseline effective rate exactly, which is what makes
+    //    stressedProjection comparable to baselineNetEquity.
+    const rateShock = simulatedHibor - hibor;
+    const stressedBase = interestBasis === 'hibor'
+        ? simulatedHibor
+        : Math.max(0, cofRate + rateShock);
+    const stressedRate = Math.min(stressedBase + spread, capRate);
 
     const data: ProjectionData[] = [];
     const baselineData = projectionData;
@@ -379,7 +459,9 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         year: 0,
         netEquity: yr0NetEquity,
         baselineNetEquity: baselineData?.[0]?.netEquity || 0,
-        ltv: yr0Collateral > 0 ? (yr0Liabilities / yr0Collateral) * 100 : 0
+        ltv: yr0Collateral > 0
+            ? (yr0Liabilities / yr0Collateral) * 100
+            : (yr0Liabilities > 0 ? LTV_IMPAIRED : 0)
     } as ProjectionData);
 
     let lowestEquity = yr0NetEquity;
@@ -404,8 +486,12 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
 
         if (netEquity < lowestEquity) lowestEquity = netEquity;
 
+        // A wiped-out collateral base with a live loan is the margin-call case the chart
+        // exists to show; reporting 0% there rendered the worst outcome as the safest.
         const collateralValue = surrenderValue + bondFundNetValue;
-        const ltv = collateralValue > 0 ? (currentLiabilities / collateralValue) * 100 : 0;
+        const ltv = collateralValue > 0
+            ? (currentLiabilities / collateralValue) * 100
+            : (currentLiabilities > 0 ? LTV_IMPAIRED : 0);
 
         data.push({
             year: yr,
@@ -427,9 +513,22 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const totalAnnualIncome = annualBondIncome + avgAnnualPolicyGrowth;
     const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
 
+    // The loan rate that would exactly consume all income. Break-even is then the HIBOR
+    // that produces that rate on whichever basis the facility prices off.
     let breakEvenHibor = 0;
     if (bankLoan > 0) {
-        breakEvenHibor = (((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100) - spread;
+        const breakEvenRate = ((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100;
+        if (breakEvenRate > capRate) {
+            // The cap binds before break-even is reachable, so no HIBOR level produces a
+            // loss. Reported as 100 — the same "never breaks even" sentinel used below.
+            breakEvenHibor = 100;
+        } else if (interestBasis === 'hibor') {
+            breakEvenHibor = breakEvenRate - spread;
+        } else {
+            // On COF the loan reprices by the HIBOR delta, not by HIBOR itself:
+            // rate = cofRate + (H - hibor) + spread.
+            breakEvenHibor = breakEvenRate - spread - cofRate + hibor;
+        }
     } else {
         breakEvenHibor = 100;
     }
@@ -442,7 +541,12 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     for (const yieldVal of yLabels) {
         const row: number[] = [];
         for (const hiborVal of xLabels) {
-            const rate = Math.min(hiborVal + spread, capRate);
+            // Price each column off the facility's own basis. Always using hiborVal
+            // understated interest on a COF facility by the COF-to-HIBOR gap.
+            const columnBase = interestBasis === 'hibor'
+                ? hiborVal
+                : Math.max(0, cofRate + (hiborVal - hibor));
+            const rate = Math.min(columnBase + spread, capRate);
             const yr = sensitivityYear;
 
             const surr = totalPremium * (factors[yr] || 0);

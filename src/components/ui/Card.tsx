@@ -12,6 +12,8 @@ export const Card = ({
     defaultCollapsed = false
 }: {
     children?: React.ReactNode;
+    // Must be a static literal at every call site — the build-time Tailwind scanner
+    // cannot follow a computed string through this prop.
     className?: string,
     title?: React.ReactNode,
     subtitle?: string,
@@ -25,7 +27,7 @@ export const Card = ({
     return (
         <div className={`bg-white shadow-sm border border-slate-200/60 ${goldAccent ? 'border-t-2 border-t-[#c5a059]' : ''} ${className}`}>
             {(title || action || collapsible) && (
-                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
+                <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 border-b border-slate-100 flex items-center justify-between bg-white">
                     <div className="flex-1">
                         {title && <h3 className="text-lg font-serif font-medium text-slate-900 tracking-tight">{title}</h3>}
                         {subtitle && <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-medium">{subtitle}</p>}
@@ -35,7 +37,7 @@ export const Card = ({
                         {collapsible && (
                             <button
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="p-1 hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#c5a059] transition-colors focus:outline-none"
+                                className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 rounded-full text-slate-400 hover:text-[#c5a059] transition-colors focus:outline-none flex-shrink-0"
                                 aria-label={isCollapsed ? "Expand" : "Collapse"}
                             >
                                 <ChevronRight className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? 'rotate-0' : 'rotate-90'}`} />
@@ -45,7 +47,7 @@ export const Card = ({
                 </div>
             )}
             {!isCollapsed && (
-                <div className="p-8">
+                <div className="p-4 sm:p-6 md:p-8">
                     {children}
                 </div>
             )}

@@ -2,54 +2,45 @@ import React from 'react';
 import { Menu, Globe, Bell } from 'lucide-react';
 import { Language } from '../../types';
 import { formatPercent } from '../../utils/calculations';
+import { useApp, useServices } from '../../state';
 
 interface HeaderProps {
     onOpenMobileMenu: () => void;
-    lang: Language;
-    onLanguageChange: (lang: Language) => void;
-    hibor: number;
-    unreadCount: number;
-    showNotifications: boolean;
-    setShowNotifications: (show: boolean) => void;
-    notifications: any[];
-    setUnreadCount: (count: number) => void;
-    labels: any;
 }
 
 export const Header = ({
-    onOpenMobileMenu,
-    lang,
-    onLanguageChange,
-    hibor,
-    unreadCount,
-    showNotifications,
-    setShowNotifications,
-    notifications,
-    setUnreadCount,
-    labels
+    onOpenMobileMenu
 }: HeaderProps) => {
+    const { t: labels, lang, setLang: onLanguageChange, hibor } = useApp();
+    const { unreadCount, showNotifications, setShowNotifications, notifications, setUnreadCount } = useServices();
     return (
         <header className="bg-white sticky top-0 z-30 px-4 md:px-10 py-4 md:py-5 flex items-center justify-between border-b border-slate-200 no-print">
             <div className="flex items-center gap-4">
                 <button
                     onClick={onOpenMobileMenu}
-                    className="lg:hidden text-slate-500 hover:text-[#020617] transition-colors"
+                    className="lg:hidden w-11 h-11 -ml-2 flex items-center justify-center text-slate-500 hover:text-[#020617] transition-colors"
                     aria-label="Open menu"
                 >
                     <Menu className="w-6 h-6" />
                 </button>
 
-                <div>
-                    <h1 className="text-xl md:text-2xl font-serif text-[#020617]">{labels.financingProposal}</h1>
+                <div className="min-w-0">
+                    <h1 className="text-base sm:text-xl md:text-2xl font-serif text-[#020617] truncate">{labels.financingProposal}</h1>
                 </div>
             </div>
-            <div className="flex items-center gap-6">
-                <div className="hidden sm:flex items-center space-x-2 mr-2">
-                    <Globe className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center gap-2 sm:gap-4 md:gap-6 flex-shrink-0">
+                {/* Language: must stay reachable on phones — the sidebar has no language control */}
+                <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-slate-400 hidden sm:block" />
                     <select
                         value={lang}
                         onChange={(e) => onLanguageChange(e.target.value as Language)}
-                        className="bg-transparent text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none cursor-pointer hover:text-[#020617]"
+                        aria-label="Language"
+                        // 16px + 44px tall on every TOUCH width, which includes tablet
+                        // portrait at 768px — iOS Safari zooms the page when a focused
+                        // control's font-size is under 16px. Only the lg+ (desktop,
+                        // pointer) layout drops to the compact treatment.
+                        className="bg-transparent text-base lg:text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none cursor-pointer hover:text-[#020617] min-h-[44px] lg:min-h-0"
                     >
                         <option value="en">English</option>
                         <option value="zh_hk">繁體中文</option>
@@ -57,14 +48,15 @@ export const Header = ({
                     </select>
                 </div>
 
-                <div className="flex flex-col items-end hidden sm:flex">
+                <div className="hidden sm:flex flex-col items-end">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{labels.hiborRate}</span>
                     <span className="text-lg font-serif font-bold text-[#020617]">{formatPercent(hibor)}</span>
                 </div>
                 <div className="relative">
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
-                        className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] cursor-pointer transition-colors relative"
+                        aria-label="Notifications"
+                        className="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] cursor-pointer transition-colors relative"
                     >
                         <Bell className="w-4 h-4 text-slate-400" />
                         {unreadCount > 0 && (
@@ -73,14 +65,14 @@ export const Header = ({
                     </button>
 
                     {showNotifications && (
-                        <div className="absolute right-0 top-12 w-80 bg-white shadow-xl border border-slate-100 rounded-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white shadow-xl border border-slate-100 rounded-lg z-50 overflow-hidden">
                             <div className="bg-[#f8fafc] px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.notifications}</span>
                                 <button onClick={() => setUnreadCount(0)} className="text-[10px] text-[#c5a059] font-bold hover:text-[#b45309]">{labels.markRead}</button>
                             </div>
                             <div className="max-h-[300px] overflow-y-auto">
                                 {notifications.map((n) => (
-                                    <div key={n.id} className="p-4 border-b border-slate-5 :hover:bg-slate-50 transition-colors">
+                                    <div key={n.id} className="p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                         <div className="flex justify-between items-start mb-1">
                                             <span className={`text-[10px] font-bold uppercase tracking-wider ${n.type === 'success' ? 'text-emerald-600' :
                                                 n.type === 'warning' ? 'text-orange-600' : 'text-blue-600'

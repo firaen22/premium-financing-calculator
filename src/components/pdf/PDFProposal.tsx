@@ -26,7 +26,8 @@ export const PDFProposal = ({
     projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
     propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve,
     netBondPrincipal, pfEquity, fundSource, clientName, representativeName,
-    sensitivityData, spread, leverageLTV, bondYield, sensitivityYear
+    sensitivityData, spread, leverageLTV, bondYield, sensitivityYear,
+    interestBasis, loanRate
 }: any) => {
     if (!projectionData || projectionData.length < 31) return null;
     const isZh = lang !== 'en';
@@ -160,7 +161,8 @@ export const PDFProposal = ({
                                 yieldFundNet: t.yieldFundNet,
                                 policyEquityCaps: t.policyEquityCaps,
                                 leverage: t.leverage,
-                                totalExposure: t.totalExposure
+                                totalExposure: t.totalExposure,
+                                assetsPreserved: t.assetsPreserved
                             }}
                             sourceType={fundSource}
                         />
@@ -268,7 +270,12 @@ export const PDFProposal = ({
                             </div>
                             <div className="flex justify-between text-xs pb-2 border-b border-white">
                                 <span className="text-slate-500">{t.interestCalcBasis}</span>
-                                <span className="font-mono text-slate-900 font-bold">{t.hiborRate.replace('一個月 ', '')} + {spread}%</span>
+                                {/* The basis is a client-facing rate disclosure, so it has to name the
+                                    basis actually in use and end at the rate the engine actually charged
+                                    — this line hard-coded HIBOR and omitted the cap. */}
+                                <span className="font-mono text-slate-900 font-bold">
+                                    {interestBasis === 'cof' ? t.cofRate : t.hiborRate.replace('一個月 ', '')} + {spread}% = {(loanRate || 0).toFixed(2)}%
+                                </span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-500">{t.financingLtv}</span>

@@ -2,69 +2,19 @@ import React from 'react';
 import { FileText, Download, Loader2 } from 'lucide-react';
 import { PDFProposal } from '../components/pdf/PDFProposal';
 import { formatCurrency } from '../utils/calculations';
-import { Language } from '../types';
+import { useApp, useServices } from '../state';
 
 interface PDFPreviewProps {
-    t: any;
-    lang: Language;
-    clientName: string;
-    setClientName: (name: string) => void;
-    representativeName: string;
-    setRepresentativeName: (name: string) => void;
-    onNavigate: (view: string) => void;
-    onDownloadPDF: () => void;
-    isGeneratingPDF: boolean;
-    totalPremium: number;
-    bankLoan: number;
-    projectionData: any[];
-    roi: number;
-    propertyValue: number;
-    unlockedCash: number;
-    hibor: number;
-    effectiveMortgageRate: number;
-    cashReserve: number;
-    netBondPrincipal: number;
-    pfEquity: number;
-    fundSource: 'cash' | 'mortgage';
-    sensitivityData: any;
-    spread: number;
-    leverageLTV: number;
-    bondYield: number;
-    sensitivityYear: number;
-    budget: number;
     isSidebarCollapsed: boolean;
 }
 
 export const PDFPreview = ({
-    t,
-    lang,
-    clientName,
-    setClientName,
-    representativeName,
-    setRepresentativeName,
-    onNavigate,
-    onDownloadPDF,
-    isGeneratingPDF,
-    totalPremium,
-    bankLoan,
-    projectionData,
-    roi,
-    propertyValue,
-    unlockedCash,
-    hibor,
-    effectiveMortgageRate,
-    cashReserve,
-    netBondPrincipal,
-    pfEquity,
-    fundSource,
-    sensitivityData,
-    spread,
-    leverageLTV,
-    bondYield,
-    sensitivityYear,
-    budget,
     isSidebarCollapsed
 }: PDFPreviewProps) => {
+    const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, propertyValue, unlockedCash, hibor, effectiveMortgageRate, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, budget, projection } = useApp();
+    const { totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity } = projection;
+    const sensitivityData = useApp().stressTest.sensitivityData;
+    const onDownloadPDF = useServices().onDownloadPDF;
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-lg border border-slate-200 shadow-sm sticky top-24 z-20 gap-4">
@@ -108,14 +58,14 @@ export const PDFPreview = ({
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
                         onClick={() => onNavigate('allocation')}
-                        className="flex-1 md:flex-none py-2.5 px-6 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+                        className="flex-1 md:flex-none min-h-[44px] py-2.5 px-6 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
                     >
                         {lang === 'en' ? 'Back' : '返回'}
                     </button>
                     <button
                         onClick={onDownloadPDF}
                         disabled={isGeneratingPDF}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 py-2.5 px-8 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50"
+                        className="flex-1 md:flex-none min-h-[44px] flex items-center justify-center gap-2 py-2.5 px-8 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-orange-900/20 disabled:opacity-50"
                     >
                         {isGeneratingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                         {lang === 'en' ? 'Generate PDF' : '生成報告'}

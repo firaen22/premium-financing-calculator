@@ -2,6 +2,23 @@ import React from 'react';
 import { Home, Briefcase } from 'lucide-react';
 import { formatCurrency } from '../../utils/calculations';
 
+/**
+ * Exactly the label keys this diagram renders — deliberately narrower than the full
+ * `Labels` dictionary, because PDFProposal builds a small object by hand rather than
+ * passing `t` wholesale. Typing it as `Labels` would reject that valid caller; typing it
+ * as `any` let PDFProposal ship without `assetsPreserved`, which rendered blank in the
+ * generated client PDF.
+ */
+export interface FlowDiagramLabels {
+    capital: string;
+    liquidity: string;
+    yieldFundNet: string;
+    policyEquityCaps: string;
+    leverage: string;
+    totalExposure: string;
+    assetsPreserved: string;
+}
+
 export const FlowDiagram = React.memo(({
     budget,
     cash,
@@ -12,7 +29,7 @@ export const FlowDiagram = React.memo(({
     labels,
     sourceType
 }: {
-    budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: any, sourceType: 'cash' | 'mortgage'
+    budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
 }) => {
     return (
         <div className="w-full h-full flex justify-center py-4" style={{ minHeight: '400px' }}>

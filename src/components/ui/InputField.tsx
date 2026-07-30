@@ -1,5 +1,20 @@
 import React from 'react';
 
+interface InputFieldProps {
+    label: string;
+    /** Always numeric — every call site passes a money amount or a rate. */
+    value: number;
+    onChange: (val: number) => void;
+    type?: string;
+    /** Rendered before the value; pass "" to suppress the default "$". */
+    prefix?: string;
+    step?: number;
+    suffix?: string;
+    disabled?: boolean;
+    /** Dark sidebar treatment rather than the light card treatment. */
+    dark?: boolean;
+}
+
 export const InputField = ({
     label,
     value,
@@ -10,15 +25,20 @@ export const InputField = ({
     suffix = "",
     disabled = false,
     dark = false
-}: any) => {
+}: InputFieldProps) => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (val === "") {
             onChange(0);
             return;
         }
-        const num = parseFloat(val);
-        if (!isNaN(num)) onChange(num);
+        // Number(), not parseFloat(): parseFloat("1e") is 1 and parseFloat("0x10") is 0,
+        // so a half-typed exponent would commit a number the user never entered. Number()
+        // returns NaN for those and the finite check then rejects them. Belt-and-braces —
+        // a type="number" input already reports "" for input it cannot parse (measured in
+        // Chrome: "0.", "-", "1e", "1.2.3", "Infinity", "0x10" all report as "").
+        const num = Number(val);
+        if (Number.isFinite(num)) onChange(num);
     };
 
     return (
@@ -30,7 +50,14 @@ export const InputField = ({
                 {prefix && <span className="absolute left-0 bottom-3 text-slate-400 font-serif text-base md:text-lg">{prefix}</span>}
                 <input
                     type={type}
-                    value={value === 0 ? "" : value}
+                    // Was `value === 0 ? "" : value`, which caused both known warts. A real
+                    // 0 rendered as an empty field, indistinguishable from "not set"; and
+                    // typing "0.5" cleared the field after the "0" — because "0" commits 0,
+                    // which then rendered as "". Showing the value plainly fixes both. It
+                    // also lets the trailing "." of "0." survive: the browser reports "" for
+                    // it so the committed value stays 0, the controlled value is therefore
+                    // unchanged, and React leaves the DOM node's text alone.
+                    value={value}
                     onChange={handleChange}
                     step={step}
                     disabled={disabled}
