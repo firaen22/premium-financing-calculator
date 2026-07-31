@@ -10,7 +10,7 @@ import {
     runSimulate,
     validateSimulateRequest,
     type PlainObject,
-} from '../src/utils/engineApi';
+} from '../src/utils/engineApi.js';
 
 // `type` is the literal 'text', not string: the SDK's content type is a discriminated
 // union, so a widened string is not assignable to it.

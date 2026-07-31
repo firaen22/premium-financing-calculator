@@ -5,8 +5,8 @@ import {
     type SimulationInput,
     type SimulationOutput,
     type StressTestOutput,
-} from './calculations';
-import { DEFAULT_INPUTS } from '../constants/defaults';
+} from './calculations.js';
+import { DEFAULT_INPUTS } from '../constants/defaults.js';
 
 export type Severity = 'blocker' | 'warning' | 'note';
 

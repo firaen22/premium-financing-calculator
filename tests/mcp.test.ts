@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_INPUTS } from '../src/constants/defaults';
 import { calculateProjection, calculateStressTest, type SimulationInput, type StressTestInput } from '../src/utils/calculations';
 import { INPUT_RANGES, STRESS_RANGES, runSimulate } from '../src/utils/engineApi';
-import handler, { TOOL_HANDLERS, TOOL_SCHEMAS } from './mcp';
+import handler, { TOOL_HANDLERS, TOOL_SCHEMAS } from '../api/mcp';
 
 const validInput = (): SimulationInput => ({
     budget: DEFAULT_INPUTS.budget, cashReserve: DEFAULT_INPUTS.cashReserve, bondAlloc: DEFAULT_INPUTS.bondAlloc,

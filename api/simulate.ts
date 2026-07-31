@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { validateSimulateRequest, runSimulate, type PlainObject, type ValidationField } from '../src/utils/engineApi';
+import { validateSimulateRequest, runSimulate, type PlainObject, type ValidationField } from '../src/utils/engineApi.js';
 
 const MAX_PAYLOAD_BYTES = 100 * 1024;
 
