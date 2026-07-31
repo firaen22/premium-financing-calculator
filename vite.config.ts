@@ -41,7 +41,9 @@ export default defineConfig(({ mode }) => {
     test: {
       // The engine under test is pure arithmetic — no DOM, so no jsdom dependency.
       environment: 'node',
-      include: ['src/**/*.test.ts'],
+      // api/ is included as well as src/: the serverless handlers are tested against the
+      // same engine, and a src-only glob silently skips them rather than failing.
+      include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
     }
   };
 });

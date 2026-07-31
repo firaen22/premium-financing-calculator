@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import { Sidebar, Header, PrintStyles } from './components/layout';
-import { AdvisoryBanner, RiskAcknowledgement } from './components/ui';
+import { AdvisoryBanner, GuidePanel, RiskAcknowledgement } from './components/ui';
 import { SystemConfigView } from './views';
 import { AppStateProvider, AppServicesProvider, useApp, useServices } from './state';
 
@@ -76,6 +76,7 @@ const AppShell = () => {
                     <div className="p-4 md:p-10 max-w-7xl mx-auto no-print">
                         {/* Above the view, not inside one: the findings describe the whole
                             proposal, and the advisor can be on any view when they break it. */}
+                        <GuidePanel />
                         <AdvisoryBanner findings={state.advisories} t={state.t} />
                         <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading...</div>}>
                             {renderContent()}

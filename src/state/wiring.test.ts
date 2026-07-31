@@ -53,6 +53,7 @@ const COMPONENTS = [
     'views/ReturnStudio.tsx',
     'views/SystemConfigView.tsx',
     'views/PDFPreview.tsx',
+    'components/ui/GuidePanel.tsx',
     'App.tsx',
 ];
 
