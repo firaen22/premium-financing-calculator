@@ -53,6 +53,11 @@ if (!baseUrl) {
         if (response.status !== 405) throw new Error(`expected 405, got ${response.status}`);
     });
 
+    await check('GET /api/chat → 405', async () => {
+        const { response } = await jsonRequest('/api/chat', { method: 'GET' });
+        if (response.status !== 405) throw new Error(`expected 405, got ${response.status}`);
+    });
+
     await check('POST /api/simulate valid input → 200', async () => {
         const { response, body } = await jsonRequest('/api/simulate', {
             method: 'POST',

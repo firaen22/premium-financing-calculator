@@ -3,14 +3,13 @@ import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 // defineConfig comes from vitest/config (a superset of vite's) so the `test` block
 // below type-checks without splitting into a second config file — the dev server,
-// build and tests then share one set of aliases. loadEnv must still come from vite:
-// vitest/config re-exports defineConfig but not loadEnv.
+// build and tests then share one set of aliases.
 import { defineConfig } from 'vitest/config';
-import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+// No `define` block: secrets must never be inlined into the client bundle. The chat
+// assistant's key is read server-side in api/chat.ts instead.
+export default defineConfig(() => {
   return {
     // Vercel serves the app from the domain root, and /api/generate-pdf has to resolve as
     // a sibling of it. The GitHub Pages workflow that would have needed a project-page
@@ -25,10 +24,6 @@ export default defineConfig(({ mode }) => {
       postcss: {
         plugins: [tailwindcss(), autoprefixer()],
       },
-    },
-    define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
     },
     resolve: {
       alias: {

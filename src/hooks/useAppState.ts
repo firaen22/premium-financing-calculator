@@ -165,6 +165,7 @@ export const useAppState = () => {
         unlockedCash,
         effectiveMortgageRate,
         monthlyMortgagePmt,
+        simulationInput,
         projection,
         stressTest,
         advisories,
