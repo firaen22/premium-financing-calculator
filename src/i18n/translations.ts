@@ -282,6 +282,46 @@ export const TRANSLATIONS = {
     disclaimer4: "In the event of a cross-border solicitation (specifically for Mainland China residents), please note that this proposal is for informational use only and any transaction must be completed in accordance with the regulatory requirements of Hong Kong and the PRC. No solicitation of insurance business is intended within the mainland territory.",
     clientSignature: "Client Signature",
     advisorSignature: "Advisor Signature",
+
+    // Deterministic assumption checker (src/utils/advisories.ts). Generic templates cover
+    // the validation/plausibility findings; a1-a11 are the specific structural rules.
+    advisory: {
+        genericInvalid: "{field}: value is missing or invalid — treated as unset.",
+        genericEnumInvalid: "{field}: unexpected option — using a safe default.",
+        genericOutputInvalid: "The projection produced an invalid number. Do not use this proposal.",
+        genericOutOfRange: "{field} of {value} is outside what a bank would offer ({bound}).",
+        genericImplausible: "{field} of {value} is outside the usual range ({bound}).",
+        // Unit for tenor-style fields, which are neither money nor a rate. Without it the
+        // banner reads "Mortgage Tenor of 80 (≤50)" — a bare count whose unit the reader
+        // has to infer. Locale-keyed rather than a literal, so it doesn't repeat the
+        // untranslated-label problem in Chinese sentences.
+        unitYears: "years",
+        riskTitle: "Issues found in this proposal",
+        riskIntro: "These were flagged as blocking. You can still export — confirm you have reviewed them.",
+        riskCancel: "Go back and edit",
+        riskAccept: "Export anyway",
+        a1: "Cash reserve + bond allocation is {shortfall} over budget — no policy is funded.",
+        a3: "Budget of {budget} funds no policy (total premium: {totalPremium}).",
+        // No literal "%" after a rate placeholder anywhere in this block: the banner formats
+        // rate values through formatPercent(), which already appends one. See the %%-regression
+        // assertion in advisories.probe.test.ts.
+        a4: "Cap rate {capRate} is at or below the current cost ({basisRate} + {spread} spread) — it isn't reducing the rate, and HK bank caps typically run 2-3 years, not the 30 modelled here.",
+        a5: "Cost-of-funds basis is still at its default {cofRate} while HIBOR was changed to {hibor} — check the basis matches.",
+        a6: "Mortgage funding selected but released equity is {unlockedCash} — there is nothing to fund the policy with.",
+        a7: "Net cashflow in year 1 is negative ({monthlyNetCashflow}/month).",
+        a8: "Negative cashflow ({monthlyNetCashflow}/month) exceeds the {cashReserve} cash reserve within a year.",
+        a9: "Net equity turns negative at year {year} ({netEquity}) and never recovers by year 30 (final: {finalNetEquity}).",
+        a9b: "Net equity runs negative from year {fromYear} to year {untilYear} (worst point: {worstNetEquity}) before recovering.",
+        a10: "Net equity never grows above its starting value ({initialNetEquity} → {finalNetEquity}).",
+        a11: "The stress scenario triggers a margin call at year {year}.",
+        a11WithLtv: "The stress scenario triggers a margin call at year {year} (LTV {ltv}).",
+        blockersLabel: "Blockers",
+        warningsLabel: "Warnings",
+        notesLabel: "Notes",
+        showDetails: "Show details",
+        hideDetails: "Hide details",
+        allClear: "No assumption issues found.",
+    },
   },
   zh_hk: {
     // ... existing translations ...
@@ -564,6 +604,37 @@ export const TRANSLATIONS = {
     disclaimer4: "如涉及跨境招攬（特別是針對中國內地居民），請注意本建議書僅供參考，任何交易必須符合香港及中國內地的監管要求。無意在內地境內招攬保險業務。",
     clientSignature: "客戶簽署",
     advisorSignature: "顧問簽署",
+
+    advisory: {
+        genericInvalid: "{field}：數值缺失或無效 — 已視為未設定。",
+        genericEnumInvalid: "{field}：選項不符預期 — 已使用安全預設值。",
+        genericOutputInvalid: "計算結果無效，請勿使用此建議書。",
+        genericOutOfRange: "{field}為 {value}，超出銀行一般可提供的範圍（{bound}）。",
+        genericImplausible: "{field}為 {value}，超出一般常見範圍（{bound}）。",
+        unitYears: "年",
+        riskTitle: "此建議書發現問題",
+        riskIntro: "以下項目被標示為阻擋級別。你仍可匯出 — 請確認已檢視相關內容。",
+        riskCancel: "返回修改",
+        riskAccept: "仍然匯出",
+        a1: "現金儲備加債券配置超出預算 {shortfall} — 未能為保單提供資金。",
+        a3: "預算 {budget} 未能為任何保單提供資金（總保費：{totalPremium}）。",
+        a4: "封頂利率 {capRate} 已低於或等於現時成本（{basisRate} + 利差 {spread}）— 封頂並無實際降低利率，而香港銀行的封頂通常只維持 2 至 3 年，並非此處模擬的 30 年。",
+        a5: "資金成本基準仍為預設值 {cofRate}，但 HIBOR 已改為 {hibor} — 請檢查基準是否一致。",
+        a6: "已選擇按揭融資，但套現金額為 {unlockedCash} — 沒有資金可為保單提供支持。",
+        a7: "第一年淨現金流為負（每月 {monthlyNetCashflow}）。",
+        a8: "負現金流（每月 {monthlyNetCashflow}）在一年內超出 {cashReserve} 的現金儲備。",
+        a9: "淨資產於第 {year} 年轉為負數（{netEquity}），並於第 30 年仍未回復（最終：{finalNetEquity}）。",
+        a9b: "淨資產由第 {fromYear} 年至第 {untilYear} 年為負數（最低點：{worstNetEquity}），其後回復。",
+        a10: "淨資產從未超過其起始值（{initialNetEquity} → {finalNetEquity}）。",
+        a11: "壓力測試情境於第 {year} 年觸發追收保證金。",
+        a11WithLtv: "壓力測試情境於第 {year} 年觸發追收保證金（LTV {ltv}）。",
+        blockersLabel: "重大問題",
+        warningsLabel: "警告",
+        notesLabel: "備註",
+        showDetails: "顯示詳情",
+        hideDetails: "隱藏詳情",
+        allClear: "未發現假設問題。",
+    },
   },
 };
 

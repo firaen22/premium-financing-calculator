@@ -3,3 +3,5 @@ export { InputField } from './InputField';
 export { SelectField } from './SelectField';
 export { ToggleField } from './ToggleField';
 export { KPICard } from './KPICard';
+export { AdvisoryBanner } from './AdvisoryBanner';
+export { RiskAcknowledgement } from './RiskAcknowledgement';
