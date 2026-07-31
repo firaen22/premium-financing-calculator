@@ -6,8 +6,8 @@ import {
     type SimulationOutput,
     type StressTestInput,
     type StressTestOutput,
-} from './calculations';
-import { checkAssumptions, type Finding } from './advisories';
+} from './calculations.js';
+import { checkAssumptions, type Finding } from './advisories.js';
 
 export type PlainObject = Record<string, unknown>;
 export type ValidationField = { field: string; reason: string };

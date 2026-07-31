@@ -2,6 +2,9 @@
     "functions": {
         "api/generate-pdf.ts": {
             "maxDuration": 60
+        },
+        "api/mcp.ts": {
+            "includeFiles": "public/llms.txt"
         }
     }
 }

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { describe, expect, it } from 'vitest';
-import handler from './simulate';
+import handler from '../api/simulate';
 import { DEFAULT_INPUTS } from '../src/constants/defaults';
 import {
     calculateProjection,

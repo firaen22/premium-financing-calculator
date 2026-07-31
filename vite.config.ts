@@ -41,9 +41,9 @@ export default defineConfig(({ mode }) => {
     test: {
       // The engine under test is pure arithmetic — no DOM, so no jsdom dependency.
       environment: 'node',
-      // api/ is included as well as src/: the serverless handlers are tested against the
-      // same engine, and a src-only glob silently skips them rather than failing.
-      include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
+      // tests/ is included as well as src/: API tests live outside api/ so Vercel does not
+      // deploy them as public serverless endpoints, and a src-only glob skips them.
+      include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     }
   };
 });
