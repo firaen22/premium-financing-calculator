@@ -136,6 +136,7 @@ export const SystemConfigView = () => {
                         value={globalMinSpread}
                         onChange={setGlobalMinSpread}
                         step={0.05}
+                        prefix=""
                         suffix="%"
                     />
                     <InputField
@@ -143,6 +144,7 @@ export const SystemConfigView = () => {
                         value={globalMaxLTV}
                         onChange={setGlobalMaxLTV}
                         step={1}
+                        prefix=""
                         suffix="%"
                     />
                 </div>

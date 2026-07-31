@@ -92,7 +92,7 @@ export const Sidebar = ({
             />
 
             <aside
-                className={`fixed top-0 left-0 h-[100dvh] bg-[#020617] text-white z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col w-72 sm:w-80 max-w-[85vw] ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'} ${isCollapsed ? 'lg:w-16' : 'lg:w-72'}`}
+                className={`fixed top-0 left-0 h-[100dvh] bg-[#020617] text-white z-50 transform transition-all duration-300 ease-in-out lg:translate-x-0 border-r border-slate-800 flex flex-col w-72 sm:w-80 max-w-[85vw] ${isMobileOpen ? 'translate-x-0 visible' : '-translate-x-full invisible'} lg:visible ${isCollapsed ? 'lg:w-16' : 'lg:w-72'}`}
             >
                 <div className={`border-b border-slate-800 flex items-center ${isCollapsed ? 'justify-center p-3' : 'justify-between p-6'}`}>
                     {!isCollapsed && (
