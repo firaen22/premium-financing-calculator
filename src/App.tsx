@@ -1,5 +1,6 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import { Sidebar, Header, PrintStyles } from './components/layout';
+import { AdvisoryBanner, RiskAcknowledgement } from './components/ui';
 import { SystemConfigView } from './views';
 import { AppStateProvider, AppServicesProvider, useApp, useServices } from './state';
 
@@ -17,7 +18,8 @@ const ReturnStudio = React.lazy(() => import('./views/ReturnStudio').then(m => (
 
 const AppShell = () => {
     const state = useApp();
-    const { pdfRef } = useServices();
+    const services = useServices();
+    const { pdfRef } = services;
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     // Owned here, not inside Sidebar: the opener lives in Header, so the state has to
     // sit above both. Below lg the sidebar is the ONLY route to every input and to all
@@ -72,12 +74,24 @@ const AppShell = () => {
                 <main className={`flex-1 min-w-0 overflow-x-hidden min-h-screen transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-16' : 'lg:ml-72'}`}>
                     <Header onOpenMobileMenu={() => setIsMobileNavOpen(true)} />
                     <div className="p-4 md:p-10 max-w-7xl mx-auto no-print">
+                        {/* Above the view, not inside one: the findings describe the whole
+                            proposal, and the advisor can be on any view when they break it. */}
+                        <AdvisoryBanner findings={state.advisories} t={state.t} />
                         <Suspense fallback={<div className="flex items-center justify-center py-20 text-slate-400">Loading...</div>}>
                             {renderContent()}
                         </Suspense>
                     </div>
                 </main>
             </div>
+
+            {/* Outside <main> and outside the print tree: it gates the export, so it must never
+                appear in the exported document it is gating. */}
+            <RiskAcknowledgement
+                findings={services.pendingRiskFindings}
+                t={state.t}
+                onAccept={services.acceptRisk}
+                onCancel={services.dismissRisk}
+            />
 
             {/* Hidden PDF capture container — only PDFProposal (no nav/UI chrome) */}
             <div ref={pdfRef} className="pdf-container">

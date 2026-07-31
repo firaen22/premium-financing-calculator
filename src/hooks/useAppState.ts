@@ -3,6 +3,7 @@ import {
     calculateProjection, calculateStressTest, calculatePMT,
     deriveUnlockedCash, deriveEffectiveMortgageRate
 } from '../utils/calculations';
+import { checkAssumptions } from '../utils/advisories';
 import { DEFAULT_INPUTS } from '../constants/defaults';
 import { Language } from '../types';
 
@@ -79,13 +80,17 @@ export const useAppState = () => {
 
     const monthlyMortgagePmt = calculatePMT(effectiveMortgageRate, mortgageTenor, unlockedCash);
 
+    // Built once and reused for both the engine and the assumption checker below, so the
+    // two never drift out of sync on which fields make up a SimulationInput.
+    const simulationInput = useMemo(() => ({
+        budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
+        leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
+        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor
+    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor]);
+
     const projection = useMemo(() => {
-        return calculateProjection({
-            budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
-            leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
-            effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor
-        });
-    }, [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor]);
+        return calculateProjection(simulationInput);
+    }, [simulationInput]);
 
     const stressTest = useMemo(() => {
         return calculateStressTest({
@@ -94,6 +99,13 @@ export const useAppState = () => {
             budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor
         });
     }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor]);
+
+    // Deterministic, no-LLM assumption checker (src/utils/advisories.ts). Display-only —
+    // does not gate PDF export.
+    const advisories = useMemo(
+        () => checkAssumptions(simulationInput, projection, stressTest),
+        [simulationInput, projection, stressTest]
+    );
 
     return {
         activeView, setActiveView,
@@ -139,6 +151,7 @@ export const useAppState = () => {
         effectiveMortgageRate,
         monthlyMortgagePmt,
         projection,
-        stressTest
+        stressTest,
+        advisories
     };
 };

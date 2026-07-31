@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useApp } from './AppStateContext';
 import { useHibor, useBatchProcess, useNotificationState, type Notification } from '../hooks';
+import type { Finding } from '../utils/advisories';
 
 export type AppServices = {
     isStale: boolean;
@@ -21,7 +22,22 @@ export type AppServices = {
     pdfRef: React.RefObject<HTMLDivElement>;
     onDownloadPDF: () => Promise<void>;
     onExportCSV: () => void;
+    /** Blockers awaiting acknowledgement, or [] when the export is not gated right now. */
+    pendingRiskFindings: Finding[];
+    /** Advisor accepted the risk for the current blocker set; runs the export they asked for. */
+    acceptRisk: () => void;
+    dismissRisk: () => void;
 };
+
+/**
+ * Identity of a blocker set, used to decide whether an earlier acknowledgement still applies.
+ *
+ * Keyed by the rule ids, not by a boolean: an advisor who accepts "ends underwater" and then
+ * edits the proposal into a different failure must be shown the new one. Sorted so ordering
+ * changes in the checker cannot silently invalidate a live acknowledgement.
+ */
+const riskKey = (findings: Finding[]): string =>
+    findings.map(f => f.id).sort().join('|');
 
 const AppServicesContext = createContext<AppServices | null>(null);
 
@@ -52,6 +68,10 @@ export const AppServicesProvider = ({ children }: { children: React.ReactNode })
     const { batchStatus, batchLogs, batchProgress, runBatch } = useBatchProcess();
     const { notifications, showNotifications, setShowNotifications, unreadCount, setUnreadCount, addNotification } = useNotificationState(state.t);
     const pdfRef = useRef<HTMLDivElement>(null);
+    const [pendingRiskFindings, setPendingRiskFindings] = useState<Finding[]>([]);
+    // A ref, not state: acknowledging must not re-render the tree mid-export, and it is read
+    // only at the moment an export is requested.
+    const acknowledgedRisk = useRef<string | null>(null);
 
     useEffect(() => {
         if (liveRate && state.dataSource === 'live') {
@@ -99,7 +119,26 @@ export const AppServicesProvider = ({ children }: { children: React.ReactNode })
         });
     };
 
+    const blockers = state.advisories.filter((f: Finding) => f.severity === 'blocker');
+
+    // Warn-and-proceed, not block-and-refuse. The advisor is the licensed party; the tool's job
+    // is to make sure a blocking issue was seen, not to decide the export for them.
     const onDownloadPDF = async () => {
+        if (blockers.length > 0 && acknowledgedRisk.current !== riskKey(blockers)) {
+            setPendingRiskFindings(blockers);
+            return;
+        }
+        await runDownloadPDF();
+    };
+
+    const acceptRisk = () => {
+        acknowledgedRisk.current = riskKey(pendingRiskFindings);
+        setPendingRiskFindings([]);
+        void runDownloadPDF();
+    };
+    const dismissRisk = () => setPendingRiskFindings([]);
+
+    const runDownloadPDF = async () => {
         state.setIsGeneratingPDF(true);
         addNotification({
             title: state.t.generatingPdf,
@@ -185,7 +224,7 @@ export const AppServicesProvider = ({ children }: { children: React.ReactNode })
         }
     };
 
-    return <AppServicesContext.Provider value={{ isStale, refreshHibor, notifications, showNotifications, setShowNotifications, unreadCount, setUnreadCount, addNotification, batchStatus, batchLogs, batchProgress, runBatch, pdfRef, onDownloadPDF, onExportCSV }}>{children}</AppServicesContext.Provider>;
+    return <AppServicesContext.Provider value={{ isStale, refreshHibor, notifications, showNotifications, setShowNotifications, unreadCount, setUnreadCount, addNotification, batchStatus, batchLogs, batchProgress, runBatch, pdfRef, onDownloadPDF, onExportCSV, pendingRiskFindings, acceptRisk, dismissRisk }}>{children}</AppServicesContext.Provider>;
 };
 
 export const useServices = (): AppServices => {
