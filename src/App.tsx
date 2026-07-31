@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, useState } from 'react';
 import { Sidebar, Header, PrintStyles } from './components/layout';
-import { AdvisoryBanner, GuidePanel, RiskAcknowledgement } from './components/ui';
+import { AdvisoryBanner, ChatWidget, GuidePanel, RiskAcknowledgement } from './components/ui';
 import { SystemConfigView } from './views';
 import { AppStateProvider, AppServicesProvider, useApp, useServices } from './state';
 
@@ -93,6 +93,7 @@ const AppShell = () => {
                 onAccept={services.acceptRisk}
                 onCancel={services.dismissRisk}
             />
+            <ChatWidget />
 
             {/* Hidden PDF capture container — only PDFProposal (no nav/UI chrome) */}
             <div ref={pdfRef} className="pdf-container">

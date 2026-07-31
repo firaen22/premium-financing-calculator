@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const relativeImport = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?)['"](\.{1,2}\/[^'"]+)['"]/g;
 
-const graphEntries = ['api/simulate.ts', 'api/mcp.ts'];
+const graphEntries = ['api/simulate.ts', 'api/mcp.ts', 'api/chat.ts'];
 
 const targetFor = (file: string, specifier: string): string => {
     const resolved = resolve(dirname(file), specifier);

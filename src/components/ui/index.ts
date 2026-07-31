@@ -5,4 +5,5 @@ export { ToggleField } from './ToggleField';
 export { KPICard } from './KPICard';
 export { AdvisoryBanner } from './AdvisoryBanner';
 export { GuidePanel } from './GuidePanel';
+export { ChatWidget } from './ChatWidget';
 export { RiskAcknowledgement } from './RiskAcknowledgement';

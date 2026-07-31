@@ -54,6 +54,7 @@ const COMPONENTS = [
     'views/SystemConfigView.tsx',
     'views/PDFPreview.tsx',
     'components/ui/GuidePanel.tsx',
+    'components/ui/ChatWidget.tsx',
     'App.tsx',
 ];
 

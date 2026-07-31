@@ -5,6 +5,9 @@
         },
         "api/mcp.ts": {
             "includeFiles": "public/llms.txt"
+        },
+        "api/chat.ts": {
+            "maxDuration": 30
         }
     }
 }
