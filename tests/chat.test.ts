@@ -216,7 +216,7 @@ describe('/api/chat', () => {
         expect(stress?.function.parameters.properties.sensitivityYear).toMatchObject({ type: 'integer' });
     });
 
-    it('executes run_simulation locally and feeds the full result back to Groq', async () => {
+    it('executes run_simulation locally and feeds the result back to Groq', async () => {
         process.env.GROQ_API_KEY = 'test-key';
         const args = JSON.stringify(baseInput());
         fetchMock
@@ -231,6 +231,30 @@ describe('/api/chat', () => {
         expect(response.statusCode).toBe(200);
         expect(bodyOf(response).reply).toBe('Round-tripped engine answer.');
         expect(bodyOf(response).toolCalls?.map(tool => tool.name)).toEqual(['run_simulation']);
+    });
+
+    // Groq rejected the verbatim result with HTTP 413 and rate-limited on the token
+    // count, so the projection that re-enters the conversation is compacted. The
+    // budget is what keeps a future field addition from silently reopening that.
+    it('compacts the projection it feeds back and keeps the figures an answer cites', async () => {
+        process.env.GROQ_API_KEY = 'test-key';
+        const args = JSON.stringify(baseInput());
+        let toolContent = '';
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'call-1', type: 'function', function: { name: 'run_simulation', arguments: args } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'Answered.' });
+            });
+        expect((await call(validBody())).statusCode).toBe(200);
+        // Per-year figures a question like "net equity at year 10" needs are still there.
+        expect(toolContent).toContain('netEquity');
+        expect(toolContent).toContain('year');
+        // Display-only duplicates of numbers already present are not.
+        expect(toolContent).not.toContain('formattedNetEquity');
+        expect(toolContent).not.toContain('formattedLoan');
+        expect(toolContent.length).toBeLessThan(9000);
     });
 
     it('feeds tool validation failures back instead of returning 500', async () => {

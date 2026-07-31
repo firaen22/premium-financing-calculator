@@ -249,6 +249,40 @@ const executeTool = (name: string, args: PlainObject): SimulateResult | Validati
     return `Unknown tool: ${name}`;
 };
 
+// A projection is 31 rows of 23 fields — about 16 KB of JSON. Sending that verbatim
+// alongside the tool schemas pushed a single Groq request past its payload limit
+// (HTTP 413) and burned through the per-minute token budget (429), so a tool result
+// is compacted to the fields an answer actually cites before it re-enters the
+// conversation. formattedNetEquity and formattedLoan are dropped as display-only
+// duplicates of netEquity and loan, and figures are rounded to whole HKD: the engine
+// keeps the full-precision values, and the model only ever reads them back out.
+const PROJECTION_FIELDS = [
+    'year', 'netEquity', 'loan', 'totalAssets', 'surrenderValue',
+    'cumulativeInterest', 'annualNetGain',
+] as const;
+
+const compactRow = (row: unknown): unknown => {
+    if (!isPlainObject(row)) return row;
+    const compacted: PlainObject = {};
+    for (const field of PROJECTION_FIELDS) {
+        const value = row[field];
+        if (typeof value === 'number') compacted[field] = Math.round(value);
+    }
+    return compacted;
+};
+
+// Applies to whichever branches carry a projection (output, and stress when a stress
+// test ran); anything else — findings, scalars, error strings — passes through as-is.
+const compactBranch = (branch: unknown): unknown => {
+    if (!isPlainObject(branch) || !Array.isArray(branch.projectionData)) return branch;
+    return { ...branch, projectionData: branch.projectionData.map(compactRow) };
+};
+
+const compactToolResult = (result: unknown): unknown => {
+    if (!isPlainObject(result)) return result;
+    return { ...result, output: compactBranch(result.output), stress: compactBranch(result.stress) };
+};
+
 const languageName = (lang: ChatLang): string => {
     if (lang === 'zh_hk') return 'Traditional Chinese';
     if (lang === 'zh_cn') return 'Simplified Chinese';
@@ -411,7 +445,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // claim engine provenance for a number the engine never produced.
                     if (rejected.length === 0) toolCalls.push(toolCallInfo(name, parsed.args));
                 }
-                history.push({ role: 'tool', tool_call_id: call.id, content: typeof result === 'string' ? result : JSON.stringify(result) });
+                history.push({ role: 'tool', tool_call_id: call.id, content: typeof result === 'string' ? result : JSON.stringify(compactToolResult(result)) });
             }
 
             rounds += 1;
