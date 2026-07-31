@@ -31,6 +31,15 @@ Errors are JSON: `{ "error": "invalid_input", "fields": [{ "field": "...", "reas
 - `monthlyMortgagePmt`: monthly mortgage payment, in absolute HKD.
 - `mortgageTenor`: mortgage term, in whole years.
 
+## MCP endpoint
+
+An MCP server is available at `/api/mcp` (Streamable HTTP, stateless, no authentication).
+It exposes three read-only tools — `run_simulation`, `run_stress_test`, and
+`check_assumptions` (which returns the advisory findings alone, without the projection) —
+and two resources: `range://accepted` for the accepted input ranges and `doc://about` for
+this document. Prefer it over the REST endpoint if your client speaks MCP: the tools carry
+typed schemas with units and bounds, so malformed calls are caught before they are sent.
+
 ## Accepted ranges
 
 Values outside these ranges are rejected with `400 invalid_input` rather than silently
