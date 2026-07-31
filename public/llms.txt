@@ -1,0 +1,49 @@
+# HK Premium-Financing Illustration Calculator
+
+## What this tool is
+
+This tool produces an illustrative Hong Kong premium-financing calculation from user-supplied assumptions. It is **not financial advice, not a quote, and not a product recommendation**. It does not assess suitability or replace a licensed adviser.
+
+## POST /api/simulate
+
+Send JSON with `input` containing every `SimulationInput` field. Optionally include `stress` with `simulatedHibor`, `bondPriceDrop`, `showGuaranteed`, and `sensitivityYear`.
+
+The successful response is `{ output, stress, findings, meta }`. `output` is the engine projection, `stress` is either a stress result or `null`, `findings` is always an advisory array, and `meta` contains `engineVersion` and an ISO UTC `generatedAt` timestamp.
+
+Errors are JSON: `{ "error": "invalid_input", "fields": [{ "field": "...", "reason": "..." }] }`, or `{ "error": "payload_too_large" }`, `{ "error": "method_not_allowed", "allowed": ["POST", "OPTIONS"] }`, or `{ "error": "engine_error" }`.
+
+## Field glossary
+
+- `budget`: total budget, in absolute HKD.
+- `cashReserve`: cash retained, in absolute HKD.
+- `bondAlloc`: amount allocated to the bond, in absolute HKD.
+- `bondYield`: assumed annual bond yield, as a percent.
+- `hibor`: current HIBOR assumption, as a percent.
+- `cofRate`: cost-of-funds assumption, as a percent.
+- `interestBasis`: interest basis, either `hibor` or `cof`.
+- `spread`: financing spread above the selected basis, as a percent.
+- `leverageLTV`: premium-financing loan-to-value ratio, as a percent.
+- `capRate`: maximum financing rate, as a percent.
+- `handlingFee`: one-off bond handling fee, as a percent.
+- `fundSource`: funding source, either `cash` or `mortgage`.
+- `unlockedCash`: cash unlocked by refinancing, in absolute HKD.
+- `effectiveMortgageRate`: effective mortgage rate, as a percent.
+- `monthlyMortgagePmt`: monthly mortgage payment, in absolute HKD.
+- `mortgageTenor`: mortgage term, in whole years.
+
+## Accepted ranges
+
+Values outside these ranges are rejected with `400 invalid_input` rather than silently
+clamped, so a `200` response always reflects exactly the numbers that were sent.
+
+- Percent fields (`bondYield`, `hibor`, `cofRate`, `spread`, `leverageLTV`, `capRate`, `handlingFee`, `effectiveMortgageRate`): `0` to `100`.
+- HKD fields (`budget`, `cashReserve`, `bondAlloc`, `unlockedCash`, `monthlyMortgagePmt`): `0` to `1e15`.
+- `mortgageTenor`: whole years, `0` to `50`. A `0` tenor means no mortgage.
+- `stress.simulatedHibor` and `stress.bondPriceDrop`: `0` to `100`. `stress.sensitivityYear`: whole years, `1` to `30`.
+- When `fundSource` is `mortgage` and `mortgageTenor` is above `0`, `monthlyMortgagePmt` must be above `0`.
+
+## Advisory model
+
+Findings are classified as `blocker`, `warning`, or `note`. Blockers gate PDF export. Warnings and notes provide context for review and do not by themselves make an illustration unsuitable.
+
+All figures are illustrative and depend on assumptions that may not be guaranteed. Actual rates, costs, policy values, returns, financing terms, and outcomes can differ materially.
