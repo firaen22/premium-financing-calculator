@@ -74,7 +74,7 @@ export const PDFPreview = ({
 
                 <div className="flex-1 flex flex-col sm:flex-row gap-4 px-4 w-full md:w-auto">
                     <div className="flex-1">
-                        <label className="block text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">
+                        <label className="block text-[9px] uppercase font-bold text-slate-500 tracking-widest mb-1">
                             {lang === 'en' ? 'Client Name' : '客戶姓名'}
                         </label>
                         <input
@@ -86,7 +86,7 @@ export const PDFPreview = ({
                         />
                     </div>
                     <div className="flex-1">
-                        <label className="block text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">
+                        <label className="block text-[9px] uppercase font-bold text-slate-500 tracking-widest mb-1">
                             {lang === 'en' ? 'Representative' : '代表姓名'}
                         </label>
                         <input
@@ -119,19 +119,19 @@ export const PDFPreview = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in slide-in-from-top-4 duration-500">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.totalPolicyValue}</div>
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">{t.totalPolicyValue}</div>
                     <div className="text-lg font-serif font-bold text-slate-900">{formatCurrency(totalPremium)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.lendingFacility}</div>
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">{t.lendingFacility}</div>
                     <div className="text-lg font-serif font-bold text-slate-900">{formatCurrency(bankLoan)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.netEquityY30}</div>
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">{t.netEquityY30}</div>
                     <div className="text-lg font-serif font-bold text-[#c5a059]">{formatCurrency(projectionData?.[30]?.netEquity || 0)}</div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">{t.projectedRoi}</div>
+                    <div className="text-[10px] uppercase font-bold text-slate-500 tracking-widest mb-1">{t.projectedRoi}</div>
                     <div className="text-lg font-serif font-bold text-emerald-600">{roi.toFixed(1)}%</div>
                 </div>
             </div>

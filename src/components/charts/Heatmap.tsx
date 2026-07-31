@@ -2,6 +2,10 @@ import React from 'react';
 import { formatCurrency } from '../../utils/calculations';
 
 export const Heatmap = React.memo(({ xLabels, yLabels, data }: { xLabels: number[], yLabels: number[], data: number[][] }) => {
+    // Normalise the colour scale to this grid's own largest magnitude. The old fixed
+    // 2,000,000 cap saturated every cell in a typical projection (values run 1.6M-4.8M),
+    // so the whole heatmap rendered as one flat green and communicated nothing.
+    const maxAbs = Math.max(1, ...data.flat().map(Math.abs));
     return (
         <div className="w-full overflow-x-auto">
             <div className="min-w-[400px]">
@@ -24,8 +28,7 @@ export const Heatmap = React.memo(({ xLabels, yLabels, data }: { xLabels: number
                         {/* Cells */}
                         {data[i].map((val, j) => {
                             const isPositive = val > 0;
-                            // Calculate opacity based on magnitude relative to max (clamped)
-                            const opacity = Math.min(Math.abs(val) / 2000000, 1) * 0.8 + 0.1;
+                            const opacity = (Math.abs(val) / maxAbs) * 0.8 + 0.1;
                             const bgColor = isPositive
                                 ? `rgba(5, 150, 105, ${opacity})` // emerald
                                 : `rgba(220, 38, 38, ${opacity})`; // red

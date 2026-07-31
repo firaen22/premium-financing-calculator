@@ -21,10 +21,12 @@ export const MarketRiskView = () => {
                     subtext={t.projectedMinimum}
                     alert={stressStats.lowestEquity < 0}
                 />
+                {/* 100 is the engine's "never breaks even" sentinel (calculations.ts) —
+                    rendering it as a literal 100.00% reads as an anomaly, not a safety. */}
                 <KPICard
                     label={t.breakEvenHibor}
-                    value={formatPercent(stressStats.breakEvenHibor)}
-                    subtext={t.netCarryNeutral}
+                    value={stressStats.breakEvenHibor >= 100 ? t.breakEvenNever : formatPercent(stressStats.breakEvenHibor)}
+                    subtext={stressStats.breakEvenHibor >= 100 ? t.breakEvenNeverSub : t.netCarryNeutral}
                 />
             </div>
 
@@ -43,7 +45,7 @@ export const MarketRiskView = () => {
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                            <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                            <XAxis dataKey="year" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} label={{ value: t.year, position: 'insideBottomRight', offset: -2, fontSize: 10, fill: '#64748b' }} />
                             <YAxis stroke="#94a3b8" fontSize={10} tickFormatter={(val) => `$${val / 1000000}M`} tickLine={false} axisLine={false} />
                             <Tooltip formatter={(val: number) => formatCurrency(val)} />
                             <Legend />
@@ -59,11 +61,11 @@ export const MarketRiskView = () => {
                 subtitle={`${t.netEquityAtYear.replace('{year}', String(sensitivityYear))} (${t.stressed})`}
                 action={
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">{t.analysisYear}:</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden sm:inline">{t.analysisYear}:</span>
                         <select
                             value={sensitivityYear}
                             onChange={(e) => setSensitivityYear(Number(e.target.value))}
-                            className="bg-slate-100 border-none text-base lg:text-xs font-bold text-slate-700 rounded min-h-[44px] lg:min-h-0 py-1 pl-3 pr-3 cursor-pointer focus:ring-1 focus:ring-[#c5a059] outline-none"
+                            className="bg-slate-100 border-none text-base lg:text-xs font-bold text-slate-700 rounded min-h-[44px] lg:min-h-0 py-1 pl-3 pr-3 cursor-pointer focus:ring-2 focus:ring-[#c5a059] outline-none"
                         >
                             {[10, 15, 20, 25, 30].map(y => (
                                 <option key={y} value={y}>Year {y}</option>
@@ -93,14 +95,14 @@ export const MarketRiskView = () => {
             <div className="flex justify-center pt-4 pb-12">
                 <button
                     onClick={() => onNavigate('pdfPreview')}
-                    className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95"
+                    className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] focus-visible:ring-offset-2"
                 >
                     <div className="flex flex-col items-start text-left">
                         <span className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold mb-1">{lang === 'en' ? 'Analysis Complete' : '分析完成'}</span>
                         <span className="text-base font-bold">{lang === 'en' ? 'Review Final Report' : '審閱最終報告'}</span>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                        <ChevronRight className="w-6 h-6 text-white" />
+                        <ChevronRight className="w-6 h-6 text-[#020617]" />
                     </div>
                 </button>
             </div>

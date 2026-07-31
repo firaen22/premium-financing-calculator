@@ -164,7 +164,7 @@ const GeminiAnalysis: React.FC<GeminiAnalysisProps> = ({
                                     Save
                                 </button>
                             </div>
-                            <p className="text-[9px] text-slate-400 mt-1">Key is stored locally in your browser.</p>
+                            <p className="text-[9px] text-slate-500 mt-1">Key is stored locally in your browser.</p>
                         </div>
                     )}
 
