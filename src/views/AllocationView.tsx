@@ -37,14 +37,14 @@ export const AllocationView = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
                     <div className="space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.bondIncome}</div>
+                            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t.bondIncome}</div>
                             <div className="text-xl font-serif text-[#059669] flex items-center">
                                 <PlusCircle className="w-4 h-4 mr-2" />
                                 {formatCurrency(monthlyBondIncome)}
                             </div>
                         </div>
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.loanInterest}</div>
+                            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t.loanInterest}</div>
                             <div className="text-xl font-serif text-[#991b1b] flex items-center">
                                 <MinusCircle className="w-4 h-4 mr-2" />
                                 {formatCurrency(monthlyLoanInterest)}
@@ -52,7 +52,7 @@ export const AllocationView = () => {
                         </div>
                         {fundSource === 'mortgage' && (
                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                                <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t.mtgCost}</div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t.mtgCost}</div>
                                 <div className="text-xl font-serif text-orange-700 flex items-center">
                                     <Home className="w-4 h-4 mr-2" />
                                     {formatCurrency(monthlyMortgagePmt)}
@@ -60,7 +60,7 @@ export const AllocationView = () => {
                             </div>
                         )}
                         <div className="pt-4">
-                            <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">{t.netMonthlyCashflow}</div>
+                            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">{t.netMonthlyCashflow}</div>
                             <div className={`text-3xl font-serif font-medium ${monthlyNetCashflow >= 0 ? 'text-slate-900' : 'text-[#991b1b]'}`}>
                                 {monthlyNetCashflow >= 0 ? '+' : ''}{formatCurrency(monthlyNetCashflow)}
                             </div>
@@ -122,14 +122,14 @@ export const AllocationView = () => {
             <div className="flex justify-center pt-8 pb-12">
                 <button
                     onClick={() => onNavigate('pdfPreview')}
-                    className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95"
+                    className="flex items-center gap-4 px-10 py-5 bg-slate-900 text-white rounded-2xl shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all group scale-100 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] focus-visible:ring-offset-2"
                 >
                     <div className="flex flex-col items-start text-left">
                         <span className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold mb-1">{lang === 'en' ? 'Configuration Complete' : '配置完成'}</span>
                         <span className="text-base font-bold">{lang === 'en' ? 'Review & Download Report' : '預覽並導出報告'}</span>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-[#c5a059] flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                        <ChevronRight className="w-6 h-6 text-white" />
+                        <ChevronRight className="w-6 h-6 text-[#020617]" />
                     </div>
                 </button>
             </div>

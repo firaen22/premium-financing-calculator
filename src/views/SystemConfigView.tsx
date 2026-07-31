@@ -172,7 +172,7 @@ export const SystemConfigView = () => {
                     />
                 </div>
                 <div className="border-t border-slate-100 pt-6">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Disclaimer Preview</h4>
+                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Disclaimer Preview</h4>
                     <div className="p-4 bg-slate-50 border border-slate-200 rounded text-[10px] text-slate-500 font-mono leading-relaxed">
                         {regulatoryMode === 'hkma'
                             ? "This document is for High Net Worth Individuals only. The risks of borrowing to finance the purchase of an insurance policy are significant. If the value of your policy falls below a certain level, you may be called upon to pay margin."

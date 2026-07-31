@@ -18,7 +18,7 @@ export const Header = ({
             <div className="flex items-center gap-4">
                 <button
                     onClick={onOpenMobileMenu}
-                    className="lg:hidden w-11 h-11 -ml-2 flex items-center justify-center text-slate-500 hover:text-[#020617] transition-colors"
+                    className="lg:hidden w-11 h-11 -ml-2 flex items-center justify-center text-slate-500 hover:text-[#020617] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
                     aria-label="Open menu"
                 >
                     <Menu className="w-6 h-6" />
@@ -40,7 +40,7 @@ export const Header = ({
                         // portrait at 768px — iOS Safari zooms the page when a focused
                         // control's font-size is under 16px. Only the lg+ (desktop,
                         // pointer) layout drops to the compact treatment.
-                        className="bg-transparent text-base lg:text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none cursor-pointer hover:text-[#020617] min-h-[44px] lg:min-h-0"
+                        className="bg-transparent text-base lg:text-xs font-bold text-slate-600 uppercase tracking-wide focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded cursor-pointer hover:text-[#020617] min-h-[44px] lg:min-h-0"
                     >
                         <option value="en">English</option>
                         <option value="zh_hk">繁體中文</option>
@@ -56,7 +56,7 @@ export const Header = ({
                     <button
                         onClick={() => setShowNotifications(!showNotifications)}
                         aria-label="Notifications"
-                        className="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] cursor-pointer transition-colors relative"
+                        className="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center hover:border-[#c5a059] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] cursor-pointer transition-colors relative"
                     >
                         <Bell className="w-4 h-4 text-slate-400" />
                         {unreadCount > 0 && (
@@ -68,7 +68,7 @@ export const Header = ({
                         <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white shadow-xl border border-slate-100 rounded-lg z-50 overflow-hidden">
                             <div className="bg-[#f8fafc] px-4 py-3 border-b border-slate-100 flex justify-between items-center">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.notifications}</span>
-                                <button onClick={() => setUnreadCount(0)} className="text-[10px] text-[#c5a059] font-bold hover:text-[#b45309]">{labels.markRead}</button>
+                                <button onClick={() => setUnreadCount(0)} className="min-h-[44px] px-2 -my-2 text-[10px] text-[#b45309] font-bold hover:text-[#9a3412] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded">{labels.markRead}</button>
                             </div>
                             <div className="max-h-[300px] overflow-y-auto">
                                 {notifications.map((n) => (

@@ -76,7 +76,7 @@ export const ReturnStudio = () => {
                             max="30"
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#c5a059]"
+                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#c5a059] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617]"
                         />
                         <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-2 uppercase">
                             <span>Year 1</span>
@@ -89,18 +89,18 @@ export const ReturnStudio = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.openingEquity}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{labels.openingEquity}</div>
                     <div className="text-xl md:text-2xl font-serif text-slate-900">{formatCurrency(stats.openingEquity)}</div>
                 </div>
                 <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.netGain}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{labels.netGain}</div>
                     <div className={`text-xl md:text-2xl font-serif ${stats.netGain >= 0 ? 'text-[#059669]' : 'text-[#991b1b]'}`}>
                         {stats.netGain > 0 ? '+' : ''}{formatCurrency(stats.netGain)}
                     </div>
                 </div>
                 <div className="bg-white p-4 md:p-6 border border-slate-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-16 h-16 bg-[#c5a059]/10 rounded-bl-full -mr-8 -mt-8"></div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{labels.closingEquity}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{labels.closingEquity}</div>
                     <div className="text-xl md:text-2xl font-serif text-slate-900 relative z-10">{formatCurrency(stats.closingEquity)}</div>
                 </div>
                 <div className="bg-[#020617] p-4 md:p-6 border border-slate-900 shadow-sm text-white">
@@ -116,7 +116,7 @@ export const ReturnStudio = () => {
                             <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center">
                                 <PlusCircle className="w-3 h-3 text-emerald-600" />
                             </div>
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.totalInflow}</h4>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">{labels.totalInflow}</h4>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
                                     <div className="flex items-center gap-3">
@@ -125,19 +125,22 @@ export const ReturnStudio = () => {
                                         </div>
                                         <div>
                                             <div className="text-sm font-bold text-slate-700">{labels.bondIncome}</div>
-                                            <div className="text-[10px] text-slate-400 font-mono">{labels.yieldLabel}: {bondYield.toFixed(2)}%</div>
+                                            <div className="text-[10px] text-slate-500 font-mono">{labels.yieldLabel}: {bondYield.toFixed(2)}%</div>
                                         </div>
                                     </div>
                                     <div className="font-serif text-emerald-700 font-medium">{formatCurrency(stats.bondIncome)}</div>
                                 </div>
-                                <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                                {/* Early years the surrender value sits below premiums paid, so this
+                                    line can be negative — style the whole row to match its sign
+                                    instead of presenting a loss inside an emerald "inflow" card. */}
+                                <div className={`flex items-center justify-between p-4 border rounded-lg ${stats.policyGrowth >= 0 ? 'bg-emerald-50/50 border-emerald-100' : 'bg-red-50/50 border-red-100'}`}>
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
+                                        <div className={`p-2 bg-white rounded shadow-sm ${stats.policyGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                             <Shield className="w-5 h-5" />
                                         </div>
                                         <div>
                                             <div className="text-sm font-bold text-slate-700">{labels.policyGrowth}</div>
-                                            <div className="text-[10px] text-slate-400 font-mono">{labels.organicGrowth}</div>
+                                            <div className="text-[10px] text-slate-500 font-mono">{labels.organicGrowth}</div>
                                         </div>
                                     </div>
                                     <div className={`font-serif font-medium ${stats.policyGrowth >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
@@ -152,7 +155,7 @@ export const ReturnStudio = () => {
                                             </div>
                                             <div>
                                                 <div className="text-sm font-bold text-slate-700">{labels.mtgRepaid}</div>
-                                                <div className="text-[10px] text-slate-400 font-mono">Liability Reduction</div>
+                                                <div className="text-[10px] text-slate-500 font-mono">Liability Reduction</div>
                                             </div>
                                         </div>
                                         <div className="font-serif text-emerald-700 font-medium">+{formatCurrency(stats.mortgagePrincipalRepaid)}</div>
@@ -165,7 +168,7 @@ export const ReturnStudio = () => {
                             <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-red-100 border-2 border-red-500 flex items-center justify-center">
                                 <MinusCircle className="w-3 h-3 text-red-600" />
                             </div>
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{labels.costOfFunding}</h4>
+                            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">{labels.costOfFunding}</h4>
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
                                     <div className="flex items-center gap-3">
@@ -174,7 +177,7 @@ export const ReturnStudio = () => {
                                         </div>
                                         <div>
                                             <div className="text-sm font-bold text-slate-700">{labels.pfInterest}</div>
-                                            <div className="text-[10px] text-slate-400 font-mono">Rate: {loanRate.toFixed(2)}%</div>
+                                            <div className="text-[10px] text-slate-500 font-mono">Rate: {loanRate.toFixed(2)}%</div>
                                         </div>
                                     </div>
                                     <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.loanInterest)}</div>
@@ -187,7 +190,7 @@ export const ReturnStudio = () => {
                                             </div>
                                             <div>
                                                 <div className="text-sm font-bold text-slate-700">{labels.mortgageInterest}</div>
-                                                <div className="text-[10px] text-slate-400 font-mono">Interest Portion</div>
+                                                <div className="text-[10px] text-slate-500 font-mono">Interest Portion</div>
                                             </div>
                                         </div>
                                         <div className="font-serif text-orange-700 font-medium">-{formatCurrency(stats.mortgageInterest)}</div>
@@ -241,7 +244,7 @@ export const ReturnStudio = () => {
                                     formatter={(val: number) => formatCurrency(val)}
                                     cursor={{ fill: 'transparent' }}
                                 />
-                                <ReferenceLine y={0} stroke="#000" />
+                                <ReferenceLine y={0} stroke="#94a3b8" />
                                 <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                                     <Cell fill="#cbd5e1" />
                                     <Cell fill="#059669" />
@@ -252,7 +255,7 @@ export const ReturnStudio = () => {
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
-                        <div className="text-center text-[10px] text-slate-400 mt-2 italic">
+                        <div className="text-center text-[10px] text-slate-500 mt-2 italic">
                             {labels.equityWalkFooter}
                         </div>
                     </div>

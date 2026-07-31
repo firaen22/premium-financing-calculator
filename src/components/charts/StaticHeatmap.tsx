@@ -4,6 +4,9 @@ import { formatCurrency } from '../../utils/calculations';
 
 export const StaticHeatmap = React.memo(({ xLabels, yLabels, data, lang }: { xLabels: number[], yLabels: number[], data: number[][], lang: string }) => {
     const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
+    // Same normalisation as Heatmap.tsx: scale to the grid's own max so the PDF's
+    // cells actually differentiate instead of all saturating past a fixed 2M cap.
+    const maxAbs = Math.max(1, ...data.flat().map(Math.abs));
     return (
         <div className="w-full">
             <div className="w-full">
@@ -26,7 +29,7 @@ export const StaticHeatmap = React.memo(({ xLabels, yLabels, data, lang }: { xLa
                         {/* Cells */}
                         {data[i].map((val, j) => {
                             const isPositive = val > 0;
-                            const opacity = Math.min(Math.abs(val) / 2000000, 1) * 0.8 + 0.1;
+                            const opacity = (Math.abs(val) / maxAbs) * 0.8 + 0.1;
                             const bgColor = isPositive
                                 ? `rgba(16, 185, 129, ${opacity})`
                                 : `rgba(239, 68, 68, ${opacity})`;

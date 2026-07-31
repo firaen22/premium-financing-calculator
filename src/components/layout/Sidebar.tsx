@@ -115,7 +115,7 @@ export const Sidebar = ({
                         {/* Desktop collapse toggle */}
                         <button
                             onClick={handleCollapseToggle}
-                            className="hidden lg:flex w-7 h-7 items-center justify-center rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                            className="hidden lg:flex w-7 h-7 items-center justify-center rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]"
                             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         >
                             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -124,7 +124,7 @@ export const Sidebar = ({
                         <button
                             onClick={onMobileClose}
                             aria-label="Close menu"
-                            className="lg:hidden w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white -mr-2"
+                            className="lg:hidden w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white -mr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -139,14 +139,16 @@ export const Sidebar = ({
                                 key={item.id}
                                 onClick={() => { onViewChange(item.id); onMobileClose(); }}
                                 title={isCollapsed ? item.label : undefined}
-                                className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 group min-h-[48px] ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'} ${isActive
-                                    ? 'bg-[#c5a059] text-white shadow-lg shadow-orange-900/20'
+                                // Navy-on-gold, not white-on-gold: white on #c5a059 is 2.46:1,
+                                // navy #020617 on it is 8.2:1 (WCAG AA needs 4.5:1 at this size).
+                                className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 group min-h-[48px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617] ${isCollapsed ? 'justify-center px-2 py-3' : 'px-4 py-3'} ${isActive
+                                    ? 'bg-[#c5a059] text-[#020617] font-bold shadow-lg shadow-orange-900/20'
                                     : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
                                     }`}
                             >
-                                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`} />
+                                <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#020617]' : 'text-slate-500 group-hover:text-white'}`} />
                                 {!isCollapsed && item.label}
-                                {!isCollapsed && isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
+                                {!isCollapsed && isActive && <ChevronRight className="w-4 h-4 ml-auto text-[#020617]/70" />}
                             </button>
                         );
                     })}
@@ -158,24 +160,29 @@ export const Sidebar = ({
                                     label={labels.simulatedHibor}
                                     value={simulatedHibor}
                                     onChange={setSimulatedHibor}
+                                    prefix=""
                                     step={0.1}
                                     suffix="%"
+                                    dark
                                 />
                                 <InputField
                                     label={labels.bondPriceDrop}
                                     value={bondPriceDrop}
                                     onChange={setBondPriceDrop}
+                                    prefix=""
                                     step={5}
                                     suffix="%"
+                                    dark
                                 />
                                 <ToggleField
                                     label={labels.showGuaranteed}
                                     checked={showGuaranteed}
                                     onChange={setShowGuaranteed}
+                                    dark
                                 />
                             </div>
                         ) : activeView === 'systemConfig' ? (
-                            <div className="p-4 text-center text-[10px] text-slate-500 uppercase tracking-widest font-bold border border-slate-800 rounded">
+                            <div className="p-4 text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold border border-slate-800 rounded">
                                 System Mode Active
                             </div>
                         ) : (
@@ -183,13 +190,13 @@ export const Sidebar = ({
                                 <div className="flex bg-slate-800/50 p-1 rounded-lg">
                                     <button
                                         onClick={() => setFundSource('cash')}
-                                        className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'cash' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        className={`min-w-0 flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${fundSource === 'cash' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                     >
                                         {labels.cashSource}
                                     </button>
                                     <button
                                         onClick={() => setFundSource('mortgage')}
-                                        className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${fundSource === 'mortgage' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                        className={`min-w-0 flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${fundSource === 'mortgage' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                     >
                                         {labels.mortgageRefi}
                                     </button>
@@ -201,7 +208,7 @@ export const Sidebar = ({
                                         <InputField label={labels.cashReserve} value={tempCashReserve} onChange={setTempCashReserve} dark />
                                         <button
                                             onClick={handleApplyCash}
-                                            className="w-full py-2 bg-[#c5a059] hover:bg-[#b45309] text-white text-[10px] font-bold uppercase tracking-widest rounded transition-colors"
+                                            className="w-full min-h-[44px] py-2 bg-[#c5a059] hover:bg-[#e4c685] text-[#020617] text-[10px] font-bold uppercase tracking-widest rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         >
                                             {labels.applyCapital}
                                         </button>
@@ -211,13 +218,13 @@ export const Sidebar = ({
                                         <div className="flex bg-slate-800/30 p-1 rounded-md mb-2">
                                             <button
                                                 onClick={() => { setIsFullPayment(true); setExistingMortgage(0); }}
-                                                className={`flex-1 py-2 min-h-[38px] text-[11px] font-bold uppercase rounded transition-all ${isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
+                                                className={`min-w-0 flex-1 py-2 min-h-[44px] text-[11px] font-bold uppercase rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
                                             >
                                                 {labels.fullPayment}
                                             </button>
                                             <button
                                                 onClick={() => setIsFullPayment(false)}
-                                                className={`flex-1 py-2 min-h-[38px] text-[11px] font-bold uppercase rounded transition-all ${!isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
+                                                className={`min-w-0 flex-1 py-2 min-h-[44px] text-[11px] font-bold uppercase rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${!isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
                                             >
                                                 {labels.remortgage}
                                             </button>
@@ -227,7 +234,8 @@ export const Sidebar = ({
                                         <InputField label={labels.inputCash} value={extraCash} onChange={setExtraCash} dark />
                                         <button
                                             onClick={() => setShowRateAssumptions(v => !v)}
-                                            className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors py-1"
+                                            aria-expanded={showRateAssumptions}
+                                            className="w-full flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-200 transition-colors min-h-[44px] py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
                                         >
                                             <span>{labels.rateAssumptions}</span>
                                             <span>{showRateAssumptions ? '−' : '+'}</span>
@@ -249,7 +257,7 @@ export const Sidebar = ({
                                         </div>
                                         <button
                                             onClick={handleApplyCapital}
-                                            className="w-full py-2 bg-[#c5a059] hover:bg-[#b45309] text-white text-[10px] font-bold uppercase tracking-widest rounded transition-colors"
+                                            className="w-full min-h-[44px] py-2 bg-[#c5a059] hover:bg-[#e4c685] text-[#020617] text-[10px] font-bold uppercase tracking-widest rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         >
                                             {labels.applyCapital}
                                         </button>
@@ -275,32 +283,32 @@ export const Sidebar = ({
                                     <div className="flex bg-slate-800/50 p-1 rounded-lg">
                                         <button
                                             onClick={() => setInterestBasis('hibor')}
-                                            className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'hibor' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                            className={`min-w-0 flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${interestBasis === 'hibor' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                         >
                                             HIBOR
                                         </button>
                                         <button
                                             onClick={() => setInterestBasis('cof')}
-                                            className={`flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all ${interestBasis === 'cof' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
+                                            className={`min-w-0 flex-1 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${interestBasis === 'cof' ? 'bg-white text-slate-900' : 'text-slate-400'}`}
                                         >
                                             COF
                                         </button>
                                     </div>
                                     {interestBasis === 'hibor' ? (
                                         <>
-                                            <InputField label={`${labels.hiborRate} (HKMA API)`} value={hibor} onChange={() => {}} step={0.01} suffix="%" disabled={true} dark />
-                                            <InputField label={labels.spread} value={spread} onChange={setSpread} step={0.1} suffix="%" dark />
+                                            <InputField label={`${labels.hiborRate} (HKMA API)`} value={hibor} onChange={() => {}} prefix="" step={0.01} suffix="%" disabled={true} dark />
+                                            <InputField label={labels.spread} value={spread} onChange={setSpread} prefix="" step={0.1} suffix="%" dark />
                                         </>
                                     ) : (
-                                        <InputField label={labels.cofRate} value={cofRate} onChange={setCofRate} step={0.01} suffix="%" dark />
+                                        <InputField label={labels.cofRate} value={cofRate} onChange={setCofRate} prefix="" step={0.01} suffix="%" dark />
                                     )}
-                                    <InputField label={labels.capRate} value={capRate} onChange={setCapRate} step={0.1} suffix="%" dark />
-                                    <InputField label={labels.leverageLtv} value={leverageLTV} onChange={setLeverageLTV} step={1} suffix="%" dark />
-                                    <InputField label={labels.handlingFee} value={handlingFee} onChange={setHandlingFee} step={0.1} suffix="%" dark />
+                                    <InputField label={labels.capRate} value={capRate} onChange={setCapRate} prefix="" step={0.1} suffix="%" dark />
+                                    <InputField label={labels.leverageLtv} value={leverageLTV} onChange={setLeverageLTV} prefix="" step={1} suffix="%" dark />
+                                    <InputField label={labels.handlingFee} value={handlingFee} onChange={setHandlingFee} prefix="" step={0.1} suffix="%" dark />
                                 </div>
 
                                 <div className="pt-4 border-t border-slate-800 flex justify-between items-baseline">
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{labels.policyEquity}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{labels.policyEquity}</span>
                                     <span className={`text-base font-serif ${pfEquity < 0 ? 'text-red-400' : 'text-[#c5a059]'}`}>
                                         {formatCurrency(pfEquity)}
                                     </span>
@@ -315,7 +323,7 @@ export const Sidebar = ({
                         onClick={() => activeView === 'pdfPreview' ? onDownloadPDF() : onViewChange('pdfPreview')}
                         disabled={isGeneratingPDF}
                         title={isCollapsed ? (activeView === 'pdfPreview' ? (lang === 'en' ? 'Download PDF' : '導出報告') : (lang === 'en' ? 'Generate Report' : '生成報告')) : undefined}
-                        className={`w-full flex items-center justify-center gap-3 bg-[#c5a059] hover:bg-[#b45309] text-white rounded-xl font-bold uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 disabled:opacity-50 active:scale-95 ${isCollapsed ? 'py-3 px-2 text-xs' : 'py-4 px-4 text-sm'}`}
+                        className={`w-full flex items-center justify-center gap-3 bg-[#c5a059] hover:bg-[#e4c685] text-[#020617] rounded-xl font-bold uppercase tracking-widest transition-all shadow-xl shadow-orange-900/40 disabled:opacity-50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${isCollapsed ? 'py-3 px-2 text-xs' : 'py-4 px-4 text-sm'}`}
                     >
                         {isGeneratingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : activeView === 'pdfPreview' ? <Download className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                         {!isCollapsed && (activeView === 'pdfPreview'
@@ -323,7 +331,7 @@ export const Sidebar = ({
                             : (lang === 'en' ? 'Generate Report' : '生成報告'))}
                     </button>
 
-                    {!isCollapsed && <div className="flex items-center justify-between text-[9px] text-slate-600 font-mono mt-4">
+                    {!isCollapsed && <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono mt-4">
                         <span>v3.0.0 (Refactored)</span>
                         {isGeneratingPDF && <span className="text-[#c5a059] animate-pulse">Processing...</span>}
                     </div>}

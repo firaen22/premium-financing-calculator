@@ -25,15 +25,24 @@ const AppShell = () => {
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
     // Lock background scroll while the mobile drawer is open, and close it on Escape.
+    // Also move keyboard focus into the drawer on open and back to the opener on close —
+    // without this a keyboard user's focus stays stranded behind the overlay. NOT done
+    // with `inert`: the same <aside> is the permanently-visible sidebar at lg+, so
+    // marking it inert while "closed" would disable the whole desktop sidebar.
     useEffect(() => {
         if (!isMobileNavOpen) return;
+        const opener = document.activeElement as HTMLElement | null;
         const prevOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        // The drawer only renders its close button below lg, so this is a no-op on desktop.
+        const closeBtn = document.querySelector<HTMLElement>('aside button[aria-label="Close menu"]');
+        closeBtn?.focus();
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMobileNavOpen(false); };
         window.addEventListener('keydown', onKey);
         return () => {
             document.body.style.overflow = prevOverflow;
             window.removeEventListener('keydown', onKey);
+            opener?.focus?.();
         };
     }, [isMobileNavOpen]);
 
