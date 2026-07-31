@@ -17,6 +17,7 @@ export interface FlowDiagramLabels {
     leverage: string;
     totalExposure: string;
     assetsPreserved: string;
+    oneOffDeduction: string;
 }
 
 export const FlowDiagram = React.memo(({
@@ -31,6 +32,11 @@ export const FlowDiagram = React.memo(({
 }: {
     budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
 }) => {
+    // budget === cash + bondAlloc + equity by definition (calculations.ts), and `bond` here is
+    // netBondPrincipal (bondAlloc net of the one-off handling fee), so this difference is exactly
+    // that fee — not an approximation. Only surface it when it would round to a visible dollar.
+    const oneOffFee = Math.max(0, budget - cash - bond - equity);
+    const showFee = oneOffFee > 0.5;
     return (
         <div className="w-full h-full flex justify-center py-4" style={{ minHeight: '400px' }}>
             <svg viewBox="0 0 700 400" className="w-full h-full max-w-[800px]" preserveAspectRatio="xMidYMid meet" style={{ overflow: 'visible' }}>
@@ -57,7 +63,7 @@ export const FlowDiagram = React.memo(({
                     {/* Policy Equity to Total Exposure */}
                     <path d="M 350 210 L 350 255" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" strokeLinecap="round" strokeLinejoin="round" />
                     {/* Leverage to Total Exposure */}
-                    <path d="M 490 320 L 474 320" fill="none" stroke="#c5a059" strokeWidth="2" markerEnd="url(#arrow-gold)" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M 490 320 L 474 320" fill="none" stroke="#cbd5e1" strokeWidth="1.5" markerEnd="url(#arrow)" strokeLinecap="round" strokeLinejoin="round" />
 
                     {/* Capital (Top Center) */}
                     <g filter="url(#shadow)" transform="translate(230, 0)">
@@ -77,6 +83,14 @@ export const FlowDiagram = React.memo(({
                         <rect x="0" y="0" width="220" height="70" rx="6" fill="#f0f9ff" stroke="#e0f2fe" strokeWidth="1" />
                         <text x="20" y="25" fill="#0284c7" fontSize="10" fontWeight="bold" letterSpacing="1">{labels.yieldFundNet}</text>
                         <text x="20" y="52" fill="#075985" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(bond)}</text>
+                        {/* "(NET)" in the label above only implies a deduction happened; without
+                            this, Capital's three allocations visibly fail to sum back to Capital
+                            (by exactly this fee) with no explanation on the page. */}
+                        {showFee && (
+                            <text x="20" y="64" fill="#64748b" fontSize="8" fontWeight="500">
+                                − {formatCurrency(oneOffFee)} {labels.oneOffDeduction}
+                            </text>
+                        )}
                     </g>
 
                     {/* Policy Equity (Center) */}
@@ -96,7 +110,11 @@ export const FlowDiagram = React.memo(({
                     {/* Total Exposure (Bottom Center) */}
                     <g filter="url(#shadow)" transform="translate(225, 260)">
                         <rect x="0" y="0" width="250" height="120" rx="8" fill="#ffffff" stroke="#c5a059" strokeWidth="2" />
-                        <rect x="0" y="0" width="250" height="30" rx="8" fill="#c5a059" clipPath="inset(0 0 90 0)" />
+                        {/* Header band: clip-path only carves the top 30px of a shape it's applied
+                            to, so this rect must span the FULL card height (120) — clipping a
+                            rect already sized to 30 leaves nothing visible (inset bottom 90 on a
+                            30-tall box is negative). */}
+                        <rect x="0" y="0" width="250" height="120" rx="8" fill="#c5a059" clipPath="inset(0 0 90 0)" />
                         <text x="125" y="20" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" letterSpacing="1">{labels.totalExposure}</text>
                         <text x="125" y="65" textAnchor="middle" fill="#c5a059" fontSize="10" fontWeight="bold" style={{ textTransform: 'uppercase' }}>{labels.assetsPreserved}</text>
                         <text x="125" y="100" textAnchor="middle" fill="#0f172a" fontSize="26" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(premium)}</text>

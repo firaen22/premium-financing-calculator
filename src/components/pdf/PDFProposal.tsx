@@ -162,7 +162,8 @@ export const PDFProposal = ({
                                 policyEquityCaps: t.policyEquityCaps,
                                 leverage: t.leverage,
                                 totalExposure: t.totalExposure,
-                                assetsPreserved: t.assetsPreserved
+                                assetsPreserved: t.assetsPreserved,
+                                oneOffDeduction: t.oneOffDeduction
                             }}
                             sourceType={fundSource}
                         />
