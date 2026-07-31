@@ -1,10 +1,10 @@
 import React from 'react';
 import { Download } from 'lucide-react';
-import { ResponsiveContainer, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line } from 'recharts';
+import { ResponsiveContainer, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line, Customized } from 'recharts';
 import { Card } from '../components/ui/Card';
 import { formatCurrency } from '../utils/calculations';
 import { THEME } from '../constants/theme';
-import { CustomLabel } from '../components/charts';
+import { EndLabels } from '../components/charts/EndLabels';
 import { useIsMdUp } from '../hooks/useMediaQuery';
 import { useApp, useServices } from '../state';
 
@@ -16,6 +16,14 @@ export const HoldingsView = () => {
     // series converge near the axis) and the 100px right margin they need costs 26% of a
     // 390px viewport. The colour-coded filter pills above already identify each series.
     const showEndLabels = useIsMdUp();
+    const END_LABEL_SERIES = [
+        { dataKey: 'bondPrincipal', name: t.bond, color: THEME.gold },
+        { dataKey: 'cashValue', name: t.cash, color: THEME.success },
+        { dataKey: 'cumulativeBondInterest', name: t.bondInt, color: THEME.goldHighlight },
+        { dataKey: 'surrenderValue', name: t.policy, color: THEME.navy },
+        { dataKey: 'loan', name: t.loan, color: THEME.danger },
+        { dataKey: 'netEquity', name: t.netEquity, color: '#020617' },
+    ];
 
     return (
         <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -103,7 +111,6 @@ export const HoldingsView = () => {
                                     stroke={THEME.gold}
                                     fill="url(#colorBond)"
                                     name={t.bond}
-                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.bond} color={THEME.gold} /> : undefined}
                                 />
                             )}
                             {chartFilters.cashValue && (
@@ -114,7 +121,6 @@ export const HoldingsView = () => {
                                     stroke={THEME.success}
                                     fill="url(#colorCash)"
                                     name={t.cash}
-                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.cash} color={THEME.success} /> : undefined}
                                 />
                             )}
                             {chartFilters.bondInterest && (
@@ -125,7 +131,6 @@ export const HoldingsView = () => {
                                     stroke={THEME.goldHighlight}
                                     fill="url(#colorBondInt)"
                                     name={t.bondInt}
-                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.bondInt} color={THEME.goldHighlight} /> : undefined}
                                 />
                             )}
                             {chartFilters.policyValue && (
@@ -136,7 +141,6 @@ export const HoldingsView = () => {
                                     stroke={THEME.navy}
                                     fill="url(#colorPolicy)"
                                     name={t.policy}
-                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.policy} color={THEME.navy} /> : undefined}
                                 />
                             )}
                             {chartFilters.loan && (
@@ -148,7 +152,6 @@ export const HoldingsView = () => {
                                     strokeDasharray="4 4"
                                     dot={false}
                                     name={t.loan}
-                                    label={showEndLabels ? (props) => <CustomLabel {...props} name={t.loan} color={THEME.danger} /> : undefined}
                                 />
                             )}
                             {fundSource === 'mortgage' && (
@@ -169,8 +172,10 @@ export const HoldingsView = () => {
                                 strokeWidth={3}
                                 dot={false}
                                 name={t.netEquity}
-                                label={showEndLabels ? (props) => <CustomLabel {...props} name={t.netEquity} color={"#020617"} /> : undefined}
                             />
+                            {showEndLabels && (
+                                <Customized component={(props: any) => <EndLabels {...props} labels={END_LABEL_SERIES} />} />
+                            )}
                         </ComposedChart>
                     </ResponsiveContainer>
                 </div>
