@@ -1,14 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     calculateProjection, calculateStressTest, calculatePMT,
     deriveUnlockedCash, deriveEffectiveMortgageRate
 } from '../utils/calculations';
 import { checkAssumptions } from '../utils/advisories';
-import { DEFAULT_INPUTS } from '../constants/defaults';
+import { DEFAULT_CLIENT_NAME, DEFAULT_INPUTS } from '../constants/defaults';
+import { nextSteps } from '../utils/guide';
 import { Language } from '../types';
 
 export const useAppState = () => {
     const [activeView, setActiveView] = useState('allocation');
+    const [visitedViews, setVisitedViews] = useState<string[]>(['allocation']);
     const [lang, setLang] = useState<Language>('en');
 
     // Financial State — initial values come from DEFAULT_INPUTS so the golden projection
@@ -34,7 +36,7 @@ export const useAppState = () => {
     const [tempCashReserve, setTempCashReserve] = useState(DEFAULT_INPUTS.cashReserve);
     const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>(DEFAULT_INPUTS.interestBasis);
     const [cofRate, setCofRate] = useState(DEFAULT_INPUTS.cofRate);
-    const [clientName, setClientName] = useState('Estate of Mr. H.N.W.');
+    const [clientName, setClientName] = useState(DEFAULT_CLIENT_NAME);
     const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
     // Mortgage Refi State
@@ -107,8 +109,21 @@ export const useAppState = () => {
         [simulationInput, projection, stressTest]
     );
 
+    useEffect(() => {
+        setVisitedViews(prev => prev.includes(activeView) ? prev : [...prev, activeView]);
+    }, [activeView]);
+
+    const guide = useMemo(
+        () => nextSteps({
+            input: simulationInput, output: projection, advisories,
+            visitedViews, clientName, simulatedHibor, bondPriceDrop, hibor,
+        }),
+        [simulationInput, projection, advisories, visitedViews, clientName, simulatedHibor, bondPriceDrop, hibor]
+    );
+
     return {
         activeView, setActiveView,
+        visitedViews,
         lang, setLang,
         budget, setBudget,
         extraCash, setExtraCash,
@@ -152,6 +167,7 @@ export const useAppState = () => {
         monthlyMortgagePmt,
         projection,
         stressTest,
-        advisories
+        advisories,
+        guide
     };
 };

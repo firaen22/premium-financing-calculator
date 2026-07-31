@@ -4,4 +4,5 @@ export { SelectField } from './SelectField';
 export { ToggleField } from './ToggleField';
 export { KPICard } from './KPICard';
 export { AdvisoryBanner } from './AdvisoryBanner';
+export { GuidePanel } from './GuidePanel';
 export { RiskAcknowledgement } from './RiskAcknowledgement';

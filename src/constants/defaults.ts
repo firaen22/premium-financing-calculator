@@ -40,3 +40,5 @@ export const DEFAULT_INPUTS = {
     mortgagePModifier: 1.75,
     mortgageTenor: 30,
 };
+
+export const DEFAULT_CLIENT_NAME = 'Estate of Mr. H.N.W.';
