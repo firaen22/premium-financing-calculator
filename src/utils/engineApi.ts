@@ -61,7 +61,9 @@ const isPlainObject = (value: unknown): value is PlainObject => {
 
 const missing = (value: unknown): boolean => value === undefined || value === null;
 
-const validateNumber = (field: string, value: unknown, range: NumericRange): ValidationField | null => {
+// Exported for api/chat.ts, which validates partial input patches field-by-field
+// against the same rules the full-request validator applies.
+export const validateNumber = (field: string, value: unknown, range: NumericRange): ValidationField | null => {
     if (missing(value)) return { field, reason: 'missing' };
     if (typeof value !== 'number' || Number.isNaN(value)) return { field, reason: 'not_a_number' };
     if (!Number.isFinite(value)) return { field, reason: 'not_finite' };

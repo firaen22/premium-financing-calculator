@@ -362,6 +362,60 @@ describe('/api/chat', () => {
         expect(bodyOf(response).toolCalls).toEqual([]);
     });
 
+    // set_inputs is never executed server-side: the validated patch travels back in
+    // toolCalls for the client to apply, and the model is told it was applied so it
+    // can narrate the change.
+    it('returns a validated set_inputs patch in toolCalls without executing anything', async () => {
+        process.env.GROQ_API_KEY = 'test-key';
+        let toolContent = '';
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'set-1', type: 'function', function: { name: 'set_inputs', arguments: '{"leverageLTV":70,"hibor":3}' } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'Set the LTV to 70% and HIBOR to 3%.' });
+            });
+        const response = await call(validBody());
+        expect(response.statusCode).toBe(200);
+        expect(bodyOf(response).toolCalls).toEqual([{ name: 'set_inputs', args: { leverageLTV: 70, hibor: 3 } }]);
+        expect(toolContent).toContain('"applied":true');
+        expect(toolContent).toContain('"leverageLTV":70');
+    });
+
+    // The client applies whatever arrives under set_inputs, so a patch with any invalid
+    // field — out of range, derived-not-settable, or empty — must never reach toolCalls.
+    it.each([
+        ['out of range', '{"leverageLTV":250}', 'too_large'],
+        ['derived field', '{"unlockedCash":1}', 'not_settable'],
+        ['empty patch', '{}', 'empty'],
+    ])('rejects a set_inputs patch that is %s and keeps it out of toolCalls', async (_label, args, reason) => {
+        process.env.GROQ_API_KEY = 'test-key';
+        let toolContent = '';
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'set-1', type: 'function', function: { name: 'set_inputs', arguments: args } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'That change is not possible.' });
+            });
+        const response = await call(validBody());
+        expect(response.statusCode).toBe(200);
+        expect(bodyOf(response).toolCalls).toEqual([]);
+        expect(toolContent).toContain(reason);
+    });
+
+    it('exposes set_inputs as an all-optional patch schema without derived fields', () => {
+        const setInputs = TOOL_DEFINITIONS.find(tool => tool.function.name === 'set_inputs');
+        expect(setInputs).toBeDefined();
+        expect(setInputs?.function.parameters.required).toEqual([]);
+        const fields = Object.keys(setInputs?.function.parameters.properties ?? {});
+        expect(fields).toContain('leverageLTV');
+        expect(fields).toContain('showGuaranteed');
+        for (const derived of ['unlockedCash', 'effectiveMortgageRate', 'monthlyMortgagePmt']) {
+            expect(fields).not.toContain(derived);
+        }
+    });
+
     it('preserves assistant content alongside tool calls and non-ASCII text', async () => {
         process.env.GROQ_API_KEY = 'test-key';
         fetchMock

@@ -8,6 +8,8 @@ import { DEFAULT_CLIENT_NAME, DEFAULT_INPUTS } from '../constants/defaults';
 import { nextSteps } from '../utils/guide';
 import { Language } from '../types';
 
+export type InputPatch = Record<string, number | string | boolean>;
+
 export const useAppState = () => {
     const [activeView, setActiveView] = useState('allocation');
     const [visitedViews, setVisitedViews] = useState<string[]>(['allocation']);
@@ -113,6 +115,49 @@ export const useAppState = () => {
         setVisitedViews(prev => prev.includes(activeView) ? prev : [...prev, activeView]);
     }, [activeView]);
 
+    // Applies a chat-assistant patch to the on-screen inputs and returns the previous
+    // values of the fields it actually changed, so the caller can offer an undo (which
+    // is just applyInputPatch of the returned object). Fields arrive server-validated
+    // against INPUT_RANGES/STRESS_RANGES, but each is still type-guarded here because
+    // the patch crosses the network. budget/cashReserve also update their temp mirrors,
+    // or the Apply button's pending edits would silently revert the change.
+    const applyInputPatch = (patch: InputPatch): InputPatch => {
+        const numericFields: Record<string, [number, (value: number) => void]> = {
+            budget: [budget, value => { setBudget(value); setTempBudget(value); }],
+            cashReserve: [cashReserve, value => { setCashReserve(value); setTempCashReserve(value); }],
+            bondAlloc: [bondAlloc, setBondAlloc],
+            bondYield: [bondYield, setBondYield],
+            hibor: [hibor, setHibor],
+            cofRate: [cofRate, setCofRate],
+            spread: [spread, setSpread],
+            capRate: [capRate, setCapRate],
+            leverageLTV: [leverageLTV, setLeverageLTV],
+            handlingFee: [handlingFee, setHandlingFee],
+            mortgageTenor: [mortgageTenor, setMortgageTenor],
+            simulatedHibor: [simulatedHibor, setSimulatedHibor],
+            bondPriceDrop: [bondPriceDrop, setBondPriceDrop],
+            sensitivityYear: [sensitivityYear, setSensitivityYear],
+        };
+        const previous: InputPatch = {};
+        for (const [field, value] of Object.entries(patch)) {
+            const numeric = numericFields[field];
+            if (numeric && typeof value === 'number' && Number.isFinite(value)) {
+                previous[field] = numeric[0];
+                numeric[1](value);
+            } else if (field === 'interestBasis' && (value === 'hibor' || value === 'cof')) {
+                previous.interestBasis = interestBasis;
+                setInterestBasis(value);
+            } else if (field === 'fundSource' && (value === 'cash' || value === 'mortgage')) {
+                previous.fundSource = fundSource;
+                setFundSource(value);
+            } else if (field === 'showGuaranteed' && typeof value === 'boolean') {
+                previous.showGuaranteed = showGuaranteed;
+                setShowGuaranteed(value);
+            }
+        }
+        return previous;
+    };
+
     const guide = useMemo(
         () => nextSteps({
             input: simulationInput, output: projection, advisories,
@@ -165,6 +210,7 @@ export const useAppState = () => {
         unlockedCash,
         effectiveMortgageRate,
         monthlyMortgagePmt,
+        applyInputPatch,
         simulationInput,
         projection,
         stressTest,
