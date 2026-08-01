@@ -39,6 +39,13 @@ export const INPUT_RANGES: Readonly<Record<string, NumericRange>> = {
     mortgageTenor: { min: 0, max: 50, integer: true },
 };
 
+// Validated only when present. Kept out of INPUT_RANGES because validateInput requires
+// every key there, which would reject every existing caller that predates these fields.
+export const OPTIONAL_INPUT_RANGES: Readonly<Record<string, NumericRange>> = {
+    bondCollateralLTV: { min: 0, max: 100 },
+    bondLoanSpread: { min: 0, max: 100 },
+};
+
 export const STRESS_RANGES: Readonly<Record<string, NumericRange>> = {
     simulatedHibor: { min: 0, max: 100 },
     bondPriceDrop: { min: 0, max: 100 },
@@ -78,6 +85,11 @@ const validateInput = (input: PlainObject): ValidationField[] => {
     const fields: ValidationField[] = [];
     for (const field of Object.keys(INPUT_RANGES)) {
         const result = validateNumber(field, input[field], INPUT_RANGES[field]);
+        if (result) fields.push(result);
+    }
+    for (const field of Object.keys(OPTIONAL_INPUT_RANGES)) {
+        if (missing(input[field])) continue;
+        const result = validateNumber(field, input[field], OPTIONAL_INPUT_RANGES[field]);
         if (result) fields.push(result);
     }
     for (const field of ['interestBasis', 'fundSource'] as const) {
@@ -136,6 +148,8 @@ const pickInput = (input: PlainObject): SimulationInput => ({
     effectiveMortgageRate: input.effectiveMortgageRate as number,
     monthlyMortgagePmt: input.monthlyMortgagePmt as number,
     mortgageTenor: input.mortgageTenor as number,
+    bondCollateralLTV: input.bondCollateralLTV as number | undefined,
+    bondLoanSpread: input.bondLoanSpread as number | undefined,
 });
 
 const pickStress = (stress: PlainObject, input: SimulationInput, output: SimulationOutput): StressTestInput => ({
@@ -157,6 +171,10 @@ const pickStress = (stress: PlainObject, input: SimulationInput, output: Simulat
     interestBasis: input.interestBasis,
     cofRate: input.cofRate,
     hibor: input.hibor,
+    // From the projection, not the request: the drawn amount is netBondAlloc x LTV, which
+    // only the engine has resolved after its own clamping of bondAlloc to the budget.
+    bondLoan: output.bondLoan,
+    bondLoanSpread: input.bondLoanSpread,
 });
 
 export const runSimulate = (body: { input: PlainObject; stress?: PlainObject }): SimulateResult => {

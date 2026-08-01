@@ -369,25 +369,32 @@ describe('/api/chat', () => {
         process.env.GROQ_API_KEY = 'test-key';
         let toolContent = '';
         fetchMock
-            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'set-1', type: 'function', function: { name: 'set_inputs', arguments: '{"leverageLTV":70,"hibor":3}' } }] }))
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'set-1', type: 'function', function: { name: 'set_inputs', arguments: '{"bondAlloc":3500000,"bondCollateralLTV":0}' } }] }))
             .mockImplementationOnce(async (_url: string, options: { body: string }) => {
                 const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
                 toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
-                return upstream({ content: 'Set the LTV to 70% and HIBOR to 3%.' });
+                return upstream({ content: 'Moved more capital into the bond fund and switched off the bond-collateral loan.' });
             });
         const response = await call(validBody());
         expect(response.statusCode).toBe(200);
-        expect(bodyOf(response).toolCalls).toEqual([{ name: 'set_inputs', args: { leverageLTV: 70, hibor: 3 } }]);
+        expect(bodyOf(response).toolCalls).toEqual([{ name: 'set_inputs', args: { bondAlloc: 3500000, bondCollateralLTV: 0 } }]);
         expect(toolContent).toContain('"applied":true');
-        expect(toolContent).toContain('"leverageLTV":70');
+        expect(toolContent).toContain('"bondAlloc":3500000');
     });
 
     // The client applies whatever arrives under set_inputs, so a patch with any invalid
-    // field — out of range, derived-not-settable, or empty — must never reach toolCalls.
+    // field — out of range, derived-not-settable, rate-locked, or empty — must never
+    // reach toolCalls. The rate-locked cases are the load-bearing ones: the assistant
+    // must not be able to reprice an illustration to make a strategy look affordable.
     it.each([
-        ['out of range', '{"leverageLTV":250}', 'too_large'],
+        ['out of range', '{"bondCollateralLTV":250}', 'too_large'],
         ['derived field', '{"unlockedCash":1}', 'not_settable'],
         ['empty patch', '{}', 'empty'],
+        ['a locked market rate', '{"hibor":1}', 'rate_locked'],
+        ['a locked bank spread', '{"spread":0.1}', 'rate_locked'],
+        ['a locked bond loan spread', '{"bondLoanSpread":0.1}', 'rate_locked'],
+        ['a bank-fixed LTV', '{"leverageLTV":70}', 'rate_locked'],
+        ['a locked rate beside a legal field', '{"bondAlloc":100,"capRate":2}', 'rate_locked'],
     ])('rejects a set_inputs patch that is %s and keeps it out of toolCalls', async (_label, args, reason) => {
         process.env.GROQ_API_KEY = 'test-key';
         let toolContent = '';
@@ -404,15 +411,23 @@ describe('/api/chat', () => {
         expect(toolContent).toContain(reason);
     });
 
-    it('exposes set_inputs as an all-optional patch schema without derived fields', () => {
+    // The schema is the model's only map of what it may touch. A rate field advertised
+    // here would be requested even though validatePatch rejects it, so the two lists have
+    // to agree — the schema omits what the validator refuses.
+    it('exposes set_inputs as an all-optional patch schema without derived or rate fields', () => {
         const setInputs = TOOL_DEFINITIONS.find(tool => tool.function.name === 'set_inputs');
         expect(setInputs).toBeDefined();
         expect(setInputs?.function.parameters.required).toEqual([]);
         const fields = Object.keys(setInputs?.function.parameters.properties ?? {});
-        expect(fields).toContain('leverageLTV');
+        expect(fields).toContain('bondAlloc');
+        expect(fields).toContain('bondCollateralLTV');
         expect(fields).toContain('showGuaranteed');
         for (const derived of ['unlockedCash', 'effectiveMortgageRate', 'monthlyMortgagePmt']) {
             expect(fields).not.toContain(derived);
+        }
+        for (const locked of ['hibor', 'cofRate', 'spread', 'bondLoanSpread', 'capRate',
+            'bondYield', 'handlingFee', 'leverageLTV', 'interestBasis']) {
+            expect(fields).not.toContain(locked);
         }
     });
 

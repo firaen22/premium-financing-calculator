@@ -36,6 +36,8 @@ export const useAppState = () => {
     // must start equal to the live values or the first Apply silently reverts them.
     const [tempBudget, setTempBudget] = useState(DEFAULT_INPUTS.budget);
     const [tempCashReserve, setTempCashReserve] = useState(DEFAULT_INPUTS.cashReserve);
+    const [bondCollateralLTV, setBondCollateralLTV] = useState(DEFAULT_INPUTS.bondCollateralLTV);
+    const [bondLoanSpread, setBondLoanSpread] = useState(DEFAULT_INPUTS.bondLoanSpread);
     const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>(DEFAULT_INPUTS.interestBasis);
     const [cofRate, setCofRate] = useState(DEFAULT_INPUTS.cofRate);
     const [clientName, setClientName] = useState(DEFAULT_CLIENT_NAME);
@@ -89,8 +91,9 @@ export const useAppState = () => {
     const simulationInput = useMemo(() => ({
         budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
         leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
-        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor
-    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor]);
+        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor,
+        bondCollateralLTV, bondLoanSpread
+    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, bondCollateralLTV, bondLoanSpread]);
 
     const projection = useMemo(() => {
         return calculateProjection(simulationInput);
@@ -100,9 +103,10 @@ export const useAppState = () => {
         return calculateStressTest({
             projectionData: projection.projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
             totalPremium: projection.totalPremium, netBondPrincipal: projection.netBondPrincipal, bondYield, bankLoan: projection.bankLoan, spread, capRate,
-            budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor
+            budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor,
+            bondLoan: projection.bondLoan, bondLoanSpread
         });
-    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor]);
+    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor, bondLoanSpread]);
 
     // Deterministic, no-LLM assumption checker (src/utils/advisories.ts). Display-only —
     // does not gate PDF export.
@@ -121,18 +125,20 @@ export const useAppState = () => {
     // against INPUT_RANGES/STRESS_RANGES, but each is still type-guarded here because
     // the patch crosses the network. budget/cashReserve also update their temp mirrors,
     // or the Apply button's pending edits would silently revert the change.
+    //
+    // Deliberately ABSENT, and they must stay absent: hibor, cofRate, spread,
+    // bondLoanSpread, capRate, bondYield, handlingFee, leverageLTV, interestBasis. Those
+    // are market data or contracted bank terms — an assistant that can rewrite the rate
+    // an illustration is priced on can make any strategy look affordable. leverageLTV in
+    // particular is fixed by the bank at 90-95%; the client's real lever is bondAlloc and
+    // bondCollateralLTV, which are settable. api/chat.ts refuses the locked fields
+    // upstream; this omission is the second line of defence.
     const applyInputPatch = (patch: InputPatch): InputPatch => {
         const numericFields: Record<string, [number, (value: number) => void]> = {
             budget: [budget, value => { setBudget(value); setTempBudget(value); }],
             cashReserve: [cashReserve, value => { setCashReserve(value); setTempCashReserve(value); }],
             bondAlloc: [bondAlloc, setBondAlloc],
-            bondYield: [bondYield, setBondYield],
-            hibor: [hibor, setHibor],
-            cofRate: [cofRate, setCofRate],
-            spread: [spread, setSpread],
-            capRate: [capRate, setCapRate],
-            leverageLTV: [leverageLTV, setLeverageLTV],
-            handlingFee: [handlingFee, setHandlingFee],
+            bondCollateralLTV: [bondCollateralLTV, setBondCollateralLTV],
             mortgageTenor: [mortgageTenor, setMortgageTenor],
             simulatedHibor: [simulatedHibor, setSimulatedHibor],
             bondPriceDrop: [bondPriceDrop, setBondPriceDrop],
@@ -144,9 +150,6 @@ export const useAppState = () => {
             if (numeric && typeof value === 'number' && Number.isFinite(value)) {
                 previous[field] = numeric[0];
                 numeric[1](value);
-            } else if (field === 'interestBasis' && (value === 'hibor' || value === 'cof')) {
-                previous.interestBasis = interestBasis;
-                setInterestBasis(value);
             } else if (field === 'fundSource' && (value === 'cash' || value === 'mortgage')) {
                 previous.fundSource = fundSource;
                 setFundSource(value);
@@ -182,6 +185,8 @@ export const useAppState = () => {
         handlingFee, setHandlingFee,
         simulatedHibor, setSimulatedHibor,
         bondPriceDrop, setBondPriceDrop,
+        bondCollateralLTV, setBondCollateralLTV,
+        bondLoanSpread, setBondLoanSpread,
         showGuaranteed, setShowGuaranteed,
         fundSource, setFundSource,
         tempBudget, setTempBudget,

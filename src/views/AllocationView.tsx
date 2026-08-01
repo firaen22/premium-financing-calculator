@@ -11,7 +11,15 @@ import { useApp } from '../state';
 
 export const AllocationView = () => {
     const { t, fundSource, budget, cashReserve, lang, setActiveView: onNavigate, projection } = useApp();
-    const { pfEquity, totalPremium, bankLoan, effectiveRate, finalNetEquity, roi, monthlyBondIncome, monthlyLoanInterest, monthlyNetCashflow, netBondPrincipal, monthlyMortgagePmt } = projection;
+    const { pfEquity, totalPremium, bankLoan, effectiveRate, finalNetEquity, roi, monthlyBondIncome, monthlyLoanInterest, monthlyBondLoanInterest, monthlyNetCashflow, netBondPrincipal, monthlyMortgagePmt } = projection;
+    // Bars carry their own fill because the row set varies (bond loan drawn or not,
+    // mortgage or not) — a positional colour list would repaint rows on insertion.
+    const cashflowBars = [
+        { name: t.income, value: monthlyBondIncome, fill: THEME.success },
+        { name: t.intCost, value: monthlyLoanInterest, fill: THEME.danger },
+        ...(monthlyBondLoanInterest > 0 ? [{ name: t.bondLoanInterest, value: monthlyBondLoanInterest, fill: THEME.danger }] : []),
+        ...(fundSource === 'mortgage' ? [{ name: t.mtgCost, value: monthlyMortgagePmt, fill: THEME.orange }] : [])
+    ];
     return (
         <div className="space-y-5 sm:space-y-6 md:space-y-8 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
@@ -50,6 +58,18 @@ export const AllocationView = () => {
                                 {formatCurrency(monthlyLoanInterest)}
                             </div>
                         </div>
+                        {/* Only when the bond-collateral loan is drawn: the net figure below
+                            includes this cost, so hiding the line would leave the panel's
+                            visible items not summing to the net. */}
+                        {monthlyBondLoanInterest > 0 && (
+                            <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t.bondLoanInterest}</div>
+                                <div className="text-xl font-serif text-[#991b1b] flex items-center">
+                                    <MinusCircle className="w-4 h-4 mr-2" />
+                                    {formatCurrency(monthlyBondLoanInterest)}
+                                </div>
+                            </div>
+                        )}
                         {fundSource === 'mortgage' && (
                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                 <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">{t.mtgCost}</div>
@@ -71,11 +91,7 @@ export const AllocationView = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 layout="vertical"
-                                data={[
-                                    { name: t.income, value: monthlyBondIncome, fill: THEME.success },
-                                    { name: t.intCost, value: monthlyLoanInterest, fill: THEME.danger },
-                                    ...(fundSource === 'mortgage' ? [{ name: t.mtgCost, value: monthlyMortgagePmt, fill: THEME.orange }] : [])
-                                ]}
+                                data={cashflowBars}
                                 margin={{ top: 0, right: 30, left: 30, bottom: 0 }}
                                 barSize={24}
                             >
@@ -95,8 +111,8 @@ export const AllocationView = () => {
                                 />
                                 <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={false}>
                                     {
-                                        [THEME.success, THEME.danger, THEME.orange].map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry} />
+                                        cashflowBars.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))
                                     }
                                 </Bar>

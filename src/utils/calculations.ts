@@ -55,9 +55,17 @@ export interface ProjectionData {
     cumulativeMortgageCost: number;
     cumulativeMortgageInterest: number;
     annualMortgagePayment: number;
+    // Bond-fund collateral loan. Kept separate from `loan`/`cumulativeInterest` because
+    // the two facilities are secured by different collateral: the policy loan against the
+    // policy's cash surrender value, this one against the bond fund. Blended into one
+    // number, a bond crash barely moves the ratio and the margin call it triggers is
+    // invisible. Zero unless bondCollateralLTV is set.
+    bondLoan: number;
+    cumulativeBondLoanInterest: number;
     // Stress test fields
     baselineNetEquity?: number;
     ltv?: number;
+    bondLtv?: number;
 }
 
 export interface SimulationInput {
@@ -77,6 +85,11 @@ export interface SimulationInput {
     effectiveMortgageRate: number;
     monthlyMortgagePmt: number;
     mortgageTenor: number;
+    // Second leverage layer: pledge the bond fund as collateral and borrow against it to
+    // top up the policy down payment. Optional and 0 by default, so every existing caller
+    // and the golden projection snapshot keep their current numbers.
+    bondCollateralLTV?: number;
+    bondLoanSpread?: number;
 }
 
 export interface SimulationOutput {
@@ -93,6 +106,9 @@ export interface SimulationOutput {
     oneOffBondFee: number;
     netBondPrincipal: number;
     monthlyMortgagePmt: number;
+    bondLoan: number;
+    bondLoanRate: number;
+    monthlyBondLoanInterest: number;
 }
 
 export interface StressTestInput {
@@ -116,6 +132,11 @@ export interface StressTestInput {
     interestBasis: 'hibor' | 'cof';
     cofRate: number;
     hibor: number; // current HIBOR — the shock is (simulatedHibor - hibor)
+    // The bond-collateral facility, if drawn. It reprices off the same shocked base as the
+    // policy loan, and the bond price drop hits the very collateral securing it — which is
+    // the margin call this layer exists to expose. Optional and 0 by default.
+    bondLoan?: number;
+    bondLoanSpread?: number;
 }
 
 export interface StressTestOutput {
@@ -213,8 +234,23 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
     const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0, MAX_MONEY);
     const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
+    const bondCollateralLTV = sanitize(input.bondCollateralLTV ?? 0, 0, 100);
+    // Defaults to the policy loan's spread only so an unset field is not silently free
+    // money; the real facility prices separately and the user enters it.
+    const bondLoanSpread = sanitize(input.bondLoanSpread ?? spread, 0, 100);
 
-    const equity = budget - cashReserve - bondAlloc;
+    // Bond Logic: Fee is one-off, deducted from capital. Yield applies to Net Capital.
+    // Computed before equity because the pledgeable collateral is what the client
+    // actually holds — the fund net of the entry fee, not the gross allocation.
+    const oneOffFee = bondAlloc * (handlingFee / 100);
+    const netBondAlloc = bondAlloc - oneOffFee;
+
+    // Borrowing against the bond fund raises the down payment the policy is bought with,
+    // which is why it is added to equity — but it is debt, so it is also carried into
+    // liabilities below. Left out of liabilities it would make borrowing look like it
+    // increased net worth.
+    const bondLoan = netBondAlloc * (bondCollateralLTV / 100);
+    const equity = budget - cashReserve - bondAlloc + bondLoan;
     const ltvDecimal = leverageLTV / 100.0;
 
     // Use the base factors directly
@@ -235,16 +271,15 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     // Effective Rate Logic
     const baseRate = interestBasis === 'hibor' ? hibor : cofRate;
     const effRate = Math.min(baseRate + spread, capRate);
-
-    // Bond Logic: Fee is one-off, deducted from capital. Yield applies to Net Capital.
-    const oneOffFee = bondAlloc * (handlingFee / 100);
-    const netBondAlloc = bondAlloc - oneOffFee;
+    // Same rate basis as the policy loan (bank practice per user), own spread, own cap.
+    const bondLoanRate = Math.min(baseRate + bondLoanSpread, capRate);
 
     // Monthly Cashflow Calculation (Year 1 Run-rate)
     const mBondIncome = (netBondAlloc * (bondYield / 100)) / 12;
     const mLoanInterest = (loan * (effRate / 100)) / 12;
+    const mBondLoanInterest = (bondLoan * (bondLoanRate / 100)) / 12;
     const mMortgageCost = fundSource === 'mortgage' ? monthlyMortgagePmt : 0;
-    const mNetCashflow = mBondIncome - mLoanInterest - mMortgageCost;
+    const mNetCashflow = mBondIncome - mLoanInterest - mBondLoanInterest - mMortgageCost;
 
     // Generate Mortgage Schedule if applicable
     const mortgageSchedule: any[] = [];
@@ -285,7 +320,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const yr0Factor = currentFactors[0];
     const yr0Surrender = tPremium * yr0Factor;
     const yr0Assets = yr0Surrender + netBondAlloc + cashReserve;
-    const yr0Liabilities = loan;
+    const yr0Liabilities = loan + bondLoan;
 
     const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
@@ -298,11 +333,11 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         bondFundNetValue: netBondAlloc,
         cashValue: cashReserve,
         totalAssets: yr0Assets,
-        loan: yr0Liabilities,
+        loan,
         cumulativeInterest: 0,
         netEquity: yr0NetEquity,
         formattedNetEquity: formatCurrency(yr0NetEquity),
-        formattedLoan: formatCurrency(yr0Liabilities),
+        formattedLoan: formatCurrency(loan),
         annualBondIncome: 0,
         annualLoanInterest: 0,
         annualPolicyGrowth: 0,
@@ -313,7 +348,9 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         mortgageBalance: yr0MortgageBal,
         cumulativeMortgageCost: 0,
         cumulativeMortgageInterest: 0,
-        annualMortgagePayment: 0
+        annualMortgagePayment: 0,
+        bondLoan,
+        cumulativeBondLoanInterest: 0
     });
 
     let runningCumMtgCost = 0;
@@ -325,10 +362,11 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const cumulativeBondInterest = netBondAlloc * (bondYield / 100) * yr;
         const bondFundNetValue = netBondAlloc + cumulativeBondInterest;
         const cumulativeInterest = loan * (effRate / 100) * yr;
+        const cumulativeBondLoanInterest = bondLoan * (bondLoanRate / 100) * yr;
         const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-        const currentLiabilities = loan;
+        const currentLiabilities = loan + bondLoan;
 
-        let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
+        let netEquity = currentAssets - currentLiabilities - cumulativeInterest - cumulativeBondLoanInterest;
 
         let mtgBal = 0;
         let annualMtgPmt = 0;
@@ -344,10 +382,11 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const prev = data[yr - 1];
         const annualBondIncome = cumulativeBondInterest - prev.cumulativeBondInterest;
         const annualLoanInterest = cumulativeInterest - prev.cumulativeInterest;
+        const annualBondLoanInterest = cumulativeBondLoanInterest - prev.cumulativeBondLoanInterest;
         const annualPolicyGrowth = surrenderValue - prev.surrenderValue;
 
         // Note: annualMtgPmt is local here, but we are using it for Net Gain calc
-        let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualMtgPmt;
+        let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualBondLoanInterest - annualMtgPmt;
 
         let annualRoC = 0;
         const denom = budget;
@@ -367,11 +406,11 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             bondFundNetValue,
             cashValue: cashReserve,
             totalAssets: currentAssets,
-            loan: currentLiabilities,
+            loan,
             cumulativeInterest,
             netEquity,
             formattedNetEquity: formatCurrency(netEquity),
-            formattedLoan: formatCurrency(currentLiabilities),
+            formattedLoan: formatCurrency(loan),
             annualBondIncome,
             annualLoanInterest,
             annualPolicyGrowth,
@@ -382,7 +421,9 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             mortgageBalance: mtgBal,
             cumulativeMortgageCost: runningCumMtgCost,
             cumulativeMortgageInterest: cumMtgInt,
-            annualMortgagePayment: annualMtgPmt
+            annualMortgagePayment: annualMtgPmt,
+            bondLoan,
+            cumulativeBondLoanInterest
         });
     }
 
@@ -403,7 +444,10 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         monthlyNetCashflow: mNetCashflow,
         oneOffBondFee: oneOffFee,
         netBondPrincipal: netBondAlloc,
-        monthlyMortgagePmt: mMortgageCost
+        monthlyMortgagePmt: mMortgageCost,
+        bondLoan,
+        bondLoanRate,
+        monthlyBondLoanInterest: mBondLoanInterest
     };
 };
 
@@ -426,6 +470,8 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const interestBasis = input.interestBasis;
     const cofRate = sanitize(input.cofRate, 0, 100);
     const hibor = sanitize(input.hibor, 0, 100);
+    const bondLoan = sanitize(input.bondLoan ?? 0, 0, MAX_MONEY);
+    const bondLoanSpread = sanitize(input.bondLoanSpread ?? spread, 0, 100);
 
     const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
 
@@ -442,6 +488,14 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         ? simulatedHibor
         : Math.max(0, cofRate + rateShock);
     const stressedRate = Math.min(stressedBase + spread, capRate);
+    const stressedBondLoanRate = Math.min(stressedBase + bondLoanSpread, capRate);
+
+    // The bond loan's own gearing against the collateral that actually secures it. Folding
+    // it into the blended ltv below would hide the margin call: at a 50% advance rate a 10%
+    // bond drop takes this ratio 50% -> 55.6% while the blended number barely moves.
+    const bondGearing = (collateral: number) => collateral > 0
+        ? (bondLoan / collateral) * 100
+        : (bondLoan > 0 ? LTV_IMPAIRED : 0);
 
     const data: ProjectionData[] = [];
     const baselineData = projectionData;
@@ -450,7 +504,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const yr0Factor = factors[0] || 0;
     const yr0Surrender = totalPremium * yr0Factor;
     const yr0Assets = yr0Surrender + stressedBondPrincipal + cashReserve;
-    const yr0Liabilities = bankLoan;
+    const yr0Liabilities = bankLoan + bondLoan;
     const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
 
@@ -460,8 +514,9 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         netEquity: yr0NetEquity,
         baselineNetEquity: baselineData?.[0]?.netEquity || 0,
         ltv: yr0Collateral > 0
-            ? (yr0Liabilities / yr0Collateral) * 100
-            : (yr0Liabilities > 0 ? LTV_IMPAIRED : 0)
+            ? (bankLoan / yr0Collateral) * 100
+            : (bankLoan > 0 ? LTV_IMPAIRED : 0),
+        bondLtv: bondGearing(stressedBondPrincipal)
     } as ProjectionData);
 
     let lowestEquity = yr0NetEquity;
@@ -473,11 +528,12 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         const cumulativeBondInterest = stressedBondPrincipal * (bondYield / 100) * yr;
         const bondFundNetValue = stressedBondPrincipal + cumulativeBondInterest;
         const cumulativeInterest = bankLoan * (stressedRate / 100) * yr;
+        const cumulativeBondLoanInterest = bondLoan * (stressedBondLoanRate / 100) * yr;
 
         const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-        const currentLiabilities = bankLoan;
+        const currentLiabilities = bankLoan + bondLoan;
 
-        let netEquity = currentAssets - currentLiabilities - cumulativeInterest;
+        let netEquity = currentAssets - currentLiabilities - cumulativeInterest - cumulativeBondLoanInterest;
 
         if (fundSource === 'mortgage') {
             const mtgBal = baselineData[yr]?.mortgageBalance || 0;
@@ -490,14 +546,15 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         // exists to show; reporting 0% there rendered the worst outcome as the safest.
         const collateralValue = surrenderValue + bondFundNetValue;
         const ltv = collateralValue > 0
-            ? (currentLiabilities / collateralValue) * 100
-            : (currentLiabilities > 0 ? LTV_IMPAIRED : 0);
+            ? (bankLoan / collateralValue) * 100
+            : (bankLoan > 0 ? LTV_IMPAIRED : 0);
 
         data.push({
             year: yr,
             netEquity,
             baselineNetEquity: baselineData[yr]?.netEquity || 0,
             ltv,
+            bondLtv: bondGearing(bondFundNetValue),
             surrenderValue,
             bondFundNetValue
         } as ProjectionData);

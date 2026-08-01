@@ -287,9 +287,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 0,
                   "annualRoC": 0,
                   "bondFundNetValue": 2970000,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 0,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 0,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -312,9 +314,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 0,
                   "annualRoC": 1.2808928571428557,
                   "bondFundNetValue": 3133350,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 163350,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 112114.28571428577,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -337,9 +341,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 60285.714285714086,
                   "annualRoC": 2.7880357142857077,
                   "bondFundNetValue": 3296700,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 326700,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 224228.57142857154,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -362,9 +368,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 66000,
                   "annualRoC": 2.9308928571428567,
                   "bondFundNetValue": 3460050,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 490050,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 336342.8571428573,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -387,9 +395,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 83428.57142857136,
                   "annualRoC": 3.366607142857139,
                   "bondFundNetValue": 3623400,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 653400,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 448457.1428571431,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -412,9 +422,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 380571.42857142864,
                   "annualRoC": 10.79517857142857,
                   "bondFundNetValue": 3786750,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 816750,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 560571.4285714289,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -437,9 +449,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 220571.4285714291,
                   "annualRoC": 6.795178571428585,
                   "bondFundNetValue": 3950100,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 980100,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 672685.7142857146,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -462,9 +476,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 292571.4285714282,
                   "annualRoC": 8.595178571428558,
                   "bondFundNetValue": 4113450,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1143450,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 784800.0000000003,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -487,9 +503,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 155714.2857142859,
                   "annualRoC": 5.173750000000003,
                   "bondFundNetValue": 4276800,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1306800,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 896914.2857142861,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -512,9 +530,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 167142.8571428568,
                   "annualRoC": 5.459464285714275,
                   "bondFundNetValue": 4440150,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1470150,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1009028.571428572,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -537,9 +557,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 253428.57142857183,
                   "annualRoC": 7.616607142857151,
                   "bondFundNetValue": 4603500,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1633500,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1121142.8571428577,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -562,9 +584,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 156571.4285714291,
                   "annualRoC": 5.195178571428586,
                   "bondFundNetValue": 4766850,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1796850,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1233257.1428571434,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -587,9 +611,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 179714.28571428545,
                   "annualRoC": 5.773749999999994,
                   "bondFundNetValue": 4930200,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 1960200,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1345371.428571429,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -612,9 +638,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 237142.85714285728,
                   "annualRoC": 7.209464285714285,
                   "bondFundNetValue": 5093550,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2123550,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1457485.714285715,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -637,9 +665,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 192000,
                   "annualRoC": 6.080892857142858,
                   "bondFundNetValue": 5256900,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2286900,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1569600.0000000007,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -662,9 +692,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 261142.85714285728,
                   "annualRoC": 7.8094642857142835,
                   "bondFundNetValue": 5420250,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2450250,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1681714.2857142866,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -687,9 +719,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 255714.28571428545,
                   "annualRoC": 7.673749999999995,
                   "bondFundNetValue": 5583600,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2613600,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1793828.5714285723,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -712,9 +746,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 244571.4285714291,
                   "annualRoC": 7.395178571428586,
                   "bondFundNetValue": 5746950,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2776950,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 1905942.857142858,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -737,9 +773,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 296857.1428571418,
                   "annualRoC": 8.702321428571397,
                   "bondFundNetValue": 5910300,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 2940300,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2018057.142857144,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -762,9 +800,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 285714.2857142864,
                   "annualRoC": 8.423750000000018,
                   "bondFundNetValue": 6073650,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3103650,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2130171.4285714296,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -787,9 +827,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 344857.14285714366,
                   "annualRoC": 9.902321428571444,
                   "bondFundNetValue": 6237000,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3267000,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2242285.7142857155,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -812,9 +854,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 282857.1428571427,
                   "annualRoC": 8.352321428571432,
                   "bondFundNetValue": 6400350,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3430350,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2354400.000000001,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -837,9 +881,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 306000,
                   "annualRoC": 8.930892857142853,
                   "bondFundNetValue": 6563700,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3593700,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2466514.285714287,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -862,9 +908,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 352571.4285714291,
                   "annualRoC": 10.09517857142858,
                   "bondFundNetValue": 6727050,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3757050,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2578628.5714285728,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -887,9 +935,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 376000.00000000093,
                   "annualRoC": 10.680892857142886,
                   "bondFundNetValue": 6890400,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 3920400,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2690742.857142858,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -912,9 +962,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 371142.85714285634,
                   "annualRoC": 10.559464285714261,
                   "bondFundNetValue": 7053750,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4083750,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2802857.142857144,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -937,9 +989,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 393142.8571428573,
                   "annualRoC": 11.109464285714283,
                   "bondFundNetValue": 7217100,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4247100,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 2914971.42857143,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -962,9 +1016,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 428571.4285714291,
                   "annualRoC": 11.99517857142858,
                   "bondFundNetValue": 7380450,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4410450,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 3027085.714285716,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -987,9 +1043,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 441142.85714285634,
                   "annualRoC": 12.309464285714272,
                   "bondFundNetValue": 7543800,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4573800,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 3139200.0000000014,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -1012,9 +1070,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 482571.4285714291,
                   "annualRoC": 13.345178571428578,
                   "bondFundNetValue": 7707150,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4737150,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 3251314.2857142873,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -1037,9 +1097,11 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                   "annualPolicyGrowth": 495428.5714285709,
                   "annualRoC": 13.666607142857124,
                   "bondFundNetValue": 7870500,
+                  "bondLoan": 0,
                   "bondPrincipal": 2970000,
                   "cashValue": 200000,
                   "cumulativeBondInterest": 4900500,
+                  "cumulativeBondLoanInterest": 0,
                   "cumulativeInterest": 3363428.571428573,
                   "cumulativeMortgageCost": 0,
                   "cumulativeMortgageInterest": 0,
@@ -1150,6 +1212,104 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             }));
 
             expect(stressed.stressedProjection[10].ltv).toBe(LTV_IMPAIRED);
+        });
+    });
+
+    // The bond-fund collateral loan is a SECOND leverage layer: pledge the bond fund,
+    // borrow against it, and use the proceeds as extra down payment on the policy. The
+    // failure mode it must never have is the one the rest of this file guards against
+    // elsewhere — borrowed money counted as an asset without the matching liability,
+    // which makes borrowing look like it created net worth.
+    describe('10. bond-fund collateral loan', () => {
+        it('is off by default, leaving every existing number untouched', () => {
+            const withoutField = calculateProjection(inputFromDefaults());
+            const explicitZero = calculateProjection(inputFromDefaults({ bondCollateralLTV: 0 }));
+
+            expect(withoutField.bondLoan).toBe(0);
+            expect(withoutField.projectionData).toEqual(explicitZero.projectionData);
+        });
+
+        it('draws against the fund net of the handling fee, not the gross allocation', () => {
+            const projection = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+
+            // 3,000,000 gross - 1% fee = 2,970,000 pledgeable, half of which is drawn.
+            expect(projection.netBondPrincipal).toBeCloseTo(2_970_000, 6);
+            expect(projection.bondLoan).toBeCloseTo(1_485_000, 6);
+        });
+
+        it('adds the drawn amount to equity and carries it as a liability, so the balance sheet still reconciles', () => {
+            const projection = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+            const baseline = calculateProjection(inputFromDefaults());
+            const yr0 = projection.projectionData[0];
+
+            expect(projection.pfEquity).toBeCloseTo(baseline.pfEquity + projection.bondLoan, 6);
+
+            const assets = yr0.surrenderValue + yr0.bondFundNetValue + yr0.cashValue;
+            expect(yr0.netEquity).toBeCloseTo(assets - yr0.loan - yr0.bondLoan, 6);
+        });
+
+        it('does not let borrowing inflate year-0 net equity', () => {
+            const baseline = calculateProjection(inputFromDefaults());
+            const geared = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+
+            // Year 0 books the policy's surrender haircut on a larger premium funded with
+            // debt, so gearing up must REDUCE opening net equity. A rise here means the
+            // drawn loan escaped the liability side.
+            expect(geared.projectionData[0].netEquity)
+                .toBeLessThan(baseline.projectionData[0].netEquity);
+        });
+
+        it('accrues its own interest and drags monthly cashflow', () => {
+            const baseline = calculateProjection(inputFromDefaults());
+            const geared = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+
+            expect(geared.monthlyBondLoanInterest)
+                .toBeCloseTo((geared.bondLoan * (geared.bondLoanRate / 100)) / 12, 6);
+            expect(geared.monthlyNetCashflow).toBeLessThan(baseline.monthlyNetCashflow);
+            expect(geared.projectionData[10].cumulativeBondLoanInterest)
+                .toBeCloseTo(geared.bondLoan * (geared.bondLoanRate / 100) * 10, 6);
+        });
+
+        it('prices off the same basis as the policy loan but its own spread', () => {
+            const wide = calculateProjection(inputFromDefaults({
+                bondCollateralLTV: 50, bondLoanSpread: 3,
+            }));
+
+            expect(wide.bondLoanRate).toBeCloseTo(DEFAULT_INPUTS.hibor + 3, 6);
+            expect(wide.bondLoanRate).toBeGreaterThan(wide.effectiveRate);
+        });
+
+        it('reports the bond facility gearing separately, so a bond crash is not hidden by policy collateral', () => {
+            const projection = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+            const mild = calculateStressTest(stressInput(projection, {
+                bondPriceDrop: 0, bondLoan: projection.bondLoan,
+            }));
+            const severe = calculateStressTest(stressInput(projection, {
+                bondPriceDrop: 60, bondLoan: projection.bondLoan,
+            }));
+
+            expect(mild.stressedProjection[0].bondLtv).toBeCloseTo(50, 6);
+            // 50% advance against collateral worth 40% of par is a blown facility. The
+            // blended policy ratio barely moves over the same shock, which is exactly why
+            // this is reported as its own number.
+            expect(severe.stressedProjection[0].bondLtv).toBeCloseTo(125, 6);
+            expect(severe.stressedProjection[0].ltv).toBeLessThan(100);
+        });
+
+        it('flags a fully impaired bond facility rather than reporting 0%', () => {
+            const projection = calculateProjection(inputFromDefaults({ bondCollateralLTV: 50 }));
+            const wipeout = calculateStressTest(stressInput(projection, {
+                bondPriceDrop: 100, bondLoan: projection.bondLoan,
+            }));
+
+            expect(wipeout.stressedProjection[0].bondLtv).toBe(LTV_IMPAIRED);
+        });
+
+        it('stays finite across the whole collateral-LTV range', () => {
+            for (const bondCollateralLTV of [0, 1, 50, 99, 100]) {
+                const projection = calculateProjection(inputFromDefaults({ bondCollateralLTV }));
+                expect(nonFiniteNumbers(projection)).toEqual([]);
+            }
         });
     });
 });
