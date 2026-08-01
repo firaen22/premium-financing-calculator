@@ -258,6 +258,20 @@ export const checkAssumptions = (
             if (finite(trigger.ltv) && trigger.ltv !== LTV_IMPAIRED && trigger.ltv > 100) values.ltv = rate(trigger.ltv);
             groups.push(finding('A11_STRESS_MARGIN_CALL', 'warning', null, values));
         }
+        // The bond-collateral facility is geared separately from the policy loan: row.ltv is
+        // bankLoan against surrender+bond value, row.bondLtv is bondLoan against the stressed
+        // fund alone. A bond crash can blow the facility (bondLtv > 100, or LTV_IMPAIRED when
+        // the collateral is wiped with the loan outstanding) while netEquity stays positive on
+        // the surrender-value cushion — without this rule that client saw no warning anywhere.
+        const bondTrigger = stressRows.find(row =>
+            finite(row.bondLtv) && (row.bondLtv === LTV_IMPAIRED || row.bondLtv > 100));
+        if (bondTrigger) {
+            const values: Record<string, number> = { year: year(bondTrigger.year) };
+            if (finite(bondTrigger.bondLtv) && bondTrigger.bondLtv !== LTV_IMPAIRED && bondTrigger.bondLtv > 100) {
+                values.bondLtv = rate(bondTrigger.bondLtv);
+            }
+            groups.push(finding('A12_BOND_FACILITY_CALL', 'warning', null, values));
+        }
     }
 
     for (const field of Object.keys(PLAUSIBILITY_RANGES)) {

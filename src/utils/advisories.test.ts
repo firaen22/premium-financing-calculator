@@ -97,6 +97,24 @@ describe('checkAssumptions', () => {
         expect(impaired.find(f => f.id === 'A11_STRESS_MARGIN_CALL')!.values.ltv).toBeUndefined();
     });
 
+    it('fires A12 when the bond-collateral facility gears past 100% or is impaired', () => {
+        const clean = projectionFor();
+        const bondRow = (bondLtv: number) => ({ ...row(0, 1), bondLtv } as ProjectionData);
+        // A blown bond facility with positive netEquity and healthy policy ltv: exactly the
+        // case the separate gearing ratio exists for — A11 must stay silent, A12 must fire.
+        const geared = checkAssumptions(clean.input, clean.output, stressWith([bondRow(125)]));
+        expect(ids(geared)).toContain('A12_BOND_FACILITY_CALL');
+        expect(ids(geared)).not.toContain('A11_STRESS_MARGIN_CALL');
+        expect(geared.find(f => f.id === 'A12_BOND_FACILITY_CALL')!.values.bondLtv).toBe(125);
+        // Collateral wiped with the loan outstanding: fires, but the 9999 sentinel must not
+        // be rendered as a percentage — same contract as A11's LTV_IMPAIRED handling.
+        const impaired = checkAssumptions(clean.input, clean.output, stressWith([bondRow(LTV_IMPAIRED)]));
+        expect(ids(impaired)).toContain('A12_BOND_FACILITY_CALL');
+        expect(impaired.find(f => f.id === 'A12_BOND_FACILITY_CALL')!.values.bondLtv).toBeUndefined();
+        // A geared-but-healthy facility stays silent.
+        expect(ids(checkAssumptions(clean.input, clean.output, stressWith([bondRow(60)])))).not.toContain('A12_BOND_FACILITY_CALL');
+    });
+
     it('fires both Group B outcomes and suppresses clean values', () => {
         const clean = projectionFor();
         const cases: Array<[keyof SimulationInput, number, string, string]> = [

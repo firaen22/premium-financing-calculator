@@ -26,6 +26,13 @@ export const DEFAULT_INPUTS = {
     cofRate: 5.0,
     fundSource: 'cash' as const,
 
+    // Bond-fund collateral loan (second leverage layer). Defaults to 0 = not drawn, which
+    // is what keeps the golden projection snapshot bound to the pre-existing numbers.
+    // bondLoanSpread mirrors the policy spread only as a placeholder — the real facility
+    // prices separately and the user enters it.
+    bondCollateralLTV: 0,
+    bondLoanSpread: 1.3,
+
     // Stress test / sensitivity
     simulatedHibor: 4.5,
     bondPriceDrop: 10,

@@ -39,7 +39,7 @@ export const Sidebar = ({
     isMobileOpen,
     onMobileClose,
 }: SidebarProps) => {
-    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, propertyValue, setPropertyValue, existingMortgage, setExistingMortgage, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, mortgageLtv, setMortgageLtv, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, mortgageTenor, setMortgageTenor } = useApp();
+    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, bondCollateralLTV, setBondCollateralLTV, bondLoanSpread, setBondLoanSpread, projection, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, propertyValue, setPropertyValue, existingMortgage, setExistingMortgage, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, mortgageLtv, setMortgageLtv, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, mortgageTenor, setMortgageTenor } = useApp();
     const { addNotification, onDownloadPDF } = useServices();
     // pfEquity comes from the projection engine rather than being recomputed here. A local
     // copy once used raw values while the engine clamps cashReserve to budget, so the two
@@ -275,6 +275,28 @@ export const Sidebar = ({
                                         </div>
                                     )}
                                     <InputField label={labels.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" dark />
+                                </div>
+
+                                {/* Second leverage layer: pledge the bond fund, borrow against it, and
+                                    use the proceeds as extra down payment. 0 = not drawn, which is the
+                                    default and the "lower risk" position. The drawn figure is shown
+                                    because the pledge is taken on the fund NET of the handling fee, so
+                                    a % of the headline allocation would be the wrong number. */}
+                                <div className="pt-4 border-t border-slate-800">
+                                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-4">{labels.bondCollateralLoan}</div>
+                                    <InputField label={labels.bondCollateralLTV} value={bondCollateralLTV} onChange={setBondCollateralLTV} prefix="" step={5} suffix="%" dark />
+                                    {bondCollateralLTV > 0 ? (
+                                        <>
+                                            <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                                                {labels.bondCollateralDrawn} {formatCurrency(projection.bondLoan)}
+                                            </div>
+                                            <InputField label={labels.bondLoanSpread} value={bondLoanSpread} onChange={setBondLoanSpread} prefix="" step={0.1} suffix="%" dark />
+                                        </>
+                                    ) : (
+                                        <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                            {labels.bondCollateralOff}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Premium Financing Loan Interest */}
