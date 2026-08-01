@@ -128,6 +128,7 @@ export const AllocationView = () => {
                     cash={cashReserve}
                     bond={netBondPrincipal}
                     equity={pfEquity}
+                    bondLoan={projection.bondLoan}
                     loan={bankLoan}
                     premium={totalPremium}
                     labels={t}

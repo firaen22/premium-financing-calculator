@@ -48,6 +48,9 @@ const CASES: Array<[string, Partial<SimulationInput>, string[]]> = [
     ['mortgage, big release', { fundSource: 'mortgage', unlockedCash: 4_500_000, monthlyMortgagePmt: 22_000 },
         ['A9B_UNDERWATER_PERIOD', 'A11_STRESS_MARGIN_CALL']],
     ['mortgage, small release', { fundSource: 'mortgage', unlockedCash: 300_000, monthlyMortgagePmt: 1_500 }, []],
+    // 90% pledge into the probe's fixed 30% bond-price drop: 90 / 0.7 ≈ 128.6% facility
+    // gearing at year 0 — the separate bond-facility call the blended ltv used to hide.
+    ['bond facility impaired', { bondCollateralLTV: 90 }, ['A12_BOND_FACILITY_CALL']],
     ['thin spread', { spread: 0.2 }, ['B_SPREAD_IMPLAUSIBLE']],
     ['fat spread', { spread: 3 }, ['B_SPREAD_IMPLAUSIBLE']],
     ['spread absurd', { spread: 8 }, ['B_SPREAD_OUT_OF_RANGE']],
@@ -98,6 +101,9 @@ const run = (patch: Partial<SimulationInput>): Finding[] => {
         budget: input.budget, cashReserve: input.cashReserve, sensitivityYear: 10,
         fundSource: input.fundSource, unlockedCash: input.unlockedCash,
         interestBasis: input.interestBasis, cofRate: input.cofRate, hibor: input.hibor,
+        // Mirrors useAppState's wiring: without these the stress run silently models a
+        // facility that was never drawn, and A12 becomes unreachable from this probe.
+        bondLoan: projection.bondLoan, bondLoanSpread: input.bondLoanSpread,
     });
     return checkAssumptions(input, projection, stress);
 };
@@ -219,7 +225,7 @@ describe('advisory render coverage (real engine, real checker)', () => {
             'A1_ALLOCATION_EXCEEDS_BUDGET', 'A3_NO_POLICY_FUNDED', 'A4_CAP_BINDS_IMMEDIATELY',
             'A5_STALE_COF_BASIS', 'A6_NO_UNLOCKED_CASH', 'A7_NEGATIVE_YEAR1_CASHFLOW',
             'A8_FUNDING_GAP', 'A9_ENDS_NEGATIVE', 'A9B_UNDERWATER_PERIOD', 'A10_NEVER_GROWS',
-            'A11_STRESS_MARGIN_CALL', 'STRUCT_INVALID_ENUM',
+            'A11_STRESS_MARGIN_CALL', 'A12_BOND_FACILITY_CALL', 'STRUCT_INVALID_ENUM',
         ]);
         const token = (f: string) => f.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase();
         for (const field of VALIDATED_FIELDS) expected.add(`B_${token(field)}_INVALID`);

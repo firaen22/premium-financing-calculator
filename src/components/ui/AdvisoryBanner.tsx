@@ -39,7 +39,7 @@ const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCas
     'shortfall', 'totalPremium', 'netEquity', 'finalNetEquity', 'initialNetEquity',
     'worstNetEquity', 'monthlyNetCashflow', 'annualShortfall']);
 const RATE_FIELDS = new Set(['bondYield', 'hibor', 'cofRate', 'spread', 'leverageLTV', 'capRate',
-    'handlingFee', 'effectiveMortgageRate', 'basisRate', 'ltv']);
+    'handlingFee', 'effectiveMortgageRate', 'basisRate', 'ltv', 'bondLtv']);
 // Neither money nor a rate: a count of years. Formatting these as a percent (one reviewer's
 // suggested fix) would print "80.00%" for an 80-year tenor; leaving them bare prints "80".
 const YEAR_FIELDS = new Set(['mortgageTenor']);
@@ -90,7 +90,8 @@ export const renderMessage = (t: Labels, f: Finding): string => {
     });
     const template: string | undefined = (a as unknown as Record<string, string>)[
         f.id === 'A11_STRESS_MARGIN_CALL' && typeof f.values.ltv === 'number' ? 'a11WithLtv'
-            : f.id.toLowerCase().replace(/^a(\d+b?).*/, 'a$1')
+            : f.id === 'A12_BOND_FACILITY_CALL' && typeof f.values.bondLtv === 'number' ? 'a12WithLtv'
+                : f.id.toLowerCase().replace(/^a(\d+b?).*/, 'a$1')
     ];
     if (!template) return f.id; // last-resort fallback — should not happen for a known rule id
     const values: Record<string, string> = {};

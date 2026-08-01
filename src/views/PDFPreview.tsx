@@ -22,7 +22,7 @@ export const PDFPreview = ({
     isSidebarCollapsed
 }: PDFPreviewProps) => {
     const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, propertyValue, unlockedCash, hibor, effectiveMortgageRate, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, budget, projection } = useApp();
-    const { totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity } = projection;
+    const { totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity, bondLoan } = projection;
     const sensitivityData = useApp().stressTest.sensitivityData;
     const onDownloadPDF = useServices().onDownloadPDF;
 
@@ -206,6 +206,7 @@ export const PDFPreview = ({
                             cashReserve={cashReserve}
                             netBondPrincipal={netBondPrincipal}
                             pfEquity={pfEquity}
+                            bondLoan={bondLoan}
                             fundSource={fundSource}
                             sensitivityData={sensitivityData}
                             clientName={clientName}

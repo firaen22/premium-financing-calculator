@@ -25,7 +25,7 @@ import { DetailedCalculationTable } from './DetailedCalculationTable';
 export const PDFProposal = ({
     projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
     propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve,
-    netBondPrincipal, pfEquity, fundSource, clientName, representativeName,
+    netBondPrincipal, pfEquity, bondLoan, fundSource, clientName, representativeName,
     sensitivityData, spread, leverageLTV, bondYield, sensitivityYear,
     interestBasis, loanRate
 }: any) => {
@@ -153,6 +153,7 @@ export const PDFProposal = ({
                             cash={cashReserve}
                             bond={netBondPrincipal}
                             equity={pfEquity}
+                            bondLoan={bondLoan}
                             loan={bankLoan}
                             premium={totalPremium}
                             labels={{
@@ -163,7 +164,8 @@ export const PDFProposal = ({
                                 leverage: t.leverage,
                                 totalExposure: t.totalExposure,
                                 assetsPreserved: t.assetsPreserved,
-                                oneOffDeduction: t.oneOffDeduction
+                                oneOffDeduction: t.oneOffDeduction,
+                                fundedByBondLoan: t.fundedByBondLoan
                             }}
                             sourceType={fundSource}
                         />

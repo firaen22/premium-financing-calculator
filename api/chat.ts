@@ -341,8 +341,10 @@ const PROJECTION_FIELDS = [
     'year', 'netEquity', 'loan', 'totalAssets', 'surrenderValue',
     'cumulativeInterest', 'annualNetGain',
     // Optional on ProjectionData and populated only on stressed rows, where they are
-    // the whole point of the comparison.
-    'baselineNetEquity', 'ltv',
+    // the whole point of the comparison. bondLtv is the bond-collateral facility's own
+    // gearing — without it the assistant cannot see an impaired facility whose loss is
+    // still cushioned by surrender value in netEquity.
+    'baselineNetEquity', 'ltv', 'bondLtv',
 ] as const;
 
 const compactRow = (row: unknown): unknown => {

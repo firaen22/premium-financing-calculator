@@ -18,6 +18,7 @@ export interface FlowDiagramLabels {
     totalExposure: string;
     assetsPreserved: string;
     oneOffDeduction: string;
+    fundedByBondLoan: string;
 }
 
 export const FlowDiagram = React.memo(({
@@ -25,18 +26,24 @@ export const FlowDiagram = React.memo(({
     cash,
     bond,
     equity,
+    bondLoan,
     loan,
     premium,
     labels,
     sourceType
 }: {
-    budget: number, cash: number, bond: number, equity: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
+    budget: number, cash: number, bond: number, equity: number, bondLoan: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
 }) => {
-    // budget === cash + bondAlloc + equity by definition (calculations.ts), and `bond` here is
-    // netBondPrincipal (bondAlloc net of the one-off handling fee), so this difference is exactly
-    // that fee — not an approximation. Only surface it when it would round to a visible dollar.
-    const oneOffFee = Math.max(0, budget - cash - bond - equity);
+    // budget === cash + bondAlloc + (equity - bondLoan) by definition (calculations.ts:
+    // equity includes the amount drawn against the bond fund, which is not the client's
+    // capital), and `bond` here is netBondPrincipal (bondAlloc net of the one-off handling
+    // fee), so this difference is exactly that fee — not an approximation. Deriving it
+    // without adding bondLoan back understates the fee by the drawn loan and hides the
+    // deduction line entirely once bondLoan ≥ fee. Only surface it when it would round to
+    // a visible dollar.
+    const oneOffFee = Math.max(0, budget - cash - bond - (equity - bondLoan));
     const showFee = oneOffFee > 0.5;
+    const showBondLoan = bondLoan > 0.5;
     return (
         <div className="w-full h-full flex justify-center py-4" style={{ minHeight: '400px' }}>
             <svg viewBox="0 0 700 400" className="w-full h-full max-w-[800px]" preserveAspectRatio="xMidYMid meet" style={{ overflow: 'visible' }}>
@@ -98,6 +105,13 @@ export const FlowDiagram = React.memo(({
                         <rect x="0" y="0" width="220" height="70" rx="6" fill="#fff7ed" stroke="#ffedd5" strokeWidth="1" />
                         <text x="20" y="25" fill="#ea580c" fontSize="10" fontWeight="bold" letterSpacing="1">{labels.policyEquityCaps}</text>
                         <text x="20" y="52" fill="#9a3412" fontSize="18" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(equity)}</text>
+                        {/* Part of this box is a drawn loan, not the client's capital. Leaving it
+                            unlabeled presents debt as equity in a client-facing illustration. */}
+                        {showBondLoan && (
+                            <text x="20" y="64" fill="#b45309" fontSize="8" fontWeight="500">
+                                {formatCurrency(bondLoan)} {labels.fundedByBondLoan}
+                            </text>
+                        )}
                     </g>
 
                     {/* Liquidity (Right) */}

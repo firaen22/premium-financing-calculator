@@ -113,6 +113,7 @@ const AppShell = () => {
                         cashReserve={state.cashReserve}
                         netBondPrincipal={state.projection.netBondPrincipal}
                         pfEquity={state.projection.pfEquity}
+                        bondLoan={state.projection.bondLoan}
                         fundSource={state.fundSource}
                         clientName={state.clientName}
                         representativeName={state.representativeName}
