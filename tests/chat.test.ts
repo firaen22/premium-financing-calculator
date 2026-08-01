@@ -257,6 +257,35 @@ describe('/api/chat', () => {
         expect(toolContent.length).toBeLessThan(9000);
     });
 
+    // The stress branch's rows live under stress.stressedProjection, not
+    // output.projectionData — a compactBranch that only recognizes the latter key
+    // silently leaves the whole stress payload uncompacted (verified: this test
+    // failed against that version, ~10.7 KB of tool content, before the fix).
+    it('compacts the stress branch too, keyed off stressedProjection', async () => {
+        process.env.GROQ_API_KEY = 'test-key';
+        const args = JSON.stringify({
+            ...baseInput(),
+            simulatedHibor: 4.5,
+            bondPriceDrop: 10,
+            sensitivityYear: 15,
+            showGuaranteed: false,
+        });
+        let toolContent = '';
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'call-1', type: 'function', function: { name: 'run_stress_test', arguments: args } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'Answered.' });
+            });
+        expect((await call(validBody())).statusCode).toBe(200);
+        expect(toolContent).toContain('stressedProjection');
+        // Stress rows carry the comparison figures a stress-test answer would cite.
+        expect(toolContent).toContain('baselineNetEquity');
+        expect(toolContent).not.toContain('formattedNetEquity');
+        expect(toolContent.length).toBeLessThan(9000);
+    });
+
     it('feeds tool validation failures back instead of returning 500', async () => {
         process.env.GROQ_API_KEY = 'test-key';
         fetchMock

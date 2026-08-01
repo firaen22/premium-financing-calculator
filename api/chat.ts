@@ -259,6 +259,9 @@ const executeTool = (name: string, args: PlainObject): SimulateResult | Validati
 const PROJECTION_FIELDS = [
     'year', 'netEquity', 'loan', 'totalAssets', 'surrenderValue',
     'cumulativeInterest', 'annualNetGain',
+    // Optional on ProjectionData and populated only on stressed rows, where they are
+    // the whole point of the comparison.
+    'baselineNetEquity', 'ltv',
 ] as const;
 
 const compactRow = (row: unknown): unknown => {
@@ -271,11 +274,19 @@ const compactRow = (row: unknown): unknown => {
     return compacted;
 };
 
-// Applies to whichever branches carry a projection (output, and stress when a stress
-// test ran); anything else — findings, scalars, error strings — passes through as-is.
+// output.projectionData and stress.stressedProjection are different field names for
+// the same shape (ProjectionData[]) — the stress branch's rows additionally carry
+// baselineNetEquity/ltv, which is why PROJECTION_FIELDS keeps them. Anything else —
+// findings, scalars, error strings — passes through as-is.
 const compactBranch = (branch: unknown): unknown => {
-    if (!isPlainObject(branch) || !Array.isArray(branch.projectionData)) return branch;
-    return { ...branch, projectionData: branch.projectionData.map(compactRow) };
+    if (!isPlainObject(branch)) return branch;
+    if (Array.isArray(branch.projectionData)) {
+        return { ...branch, projectionData: branch.projectionData.map(compactRow) };
+    }
+    if (Array.isArray(branch.stressedProjection)) {
+        return { ...branch, stressedProjection: branch.stressedProjection.map(compactRow) };
+    }
+    return branch;
 };
 
 const compactToolResult = (result: unknown): unknown => {
