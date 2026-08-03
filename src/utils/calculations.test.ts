@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_INPUTS } from '../constants/defaults';
 import {
+    BASE_FACTORS,
     calculateIRR,
     calculatePMT,
     calculateProjection,
@@ -2053,6 +2054,52 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             }));
 
             expect(stressed.stressStats.breakEvenHibor).toBe(100);
+        });
+
+        it('charges the bond-collateral facility in break-even HIBOR', () => {
+            // The stressed projection and heatmap charge interest on BOTH facilities, so
+            // the break-even stat must too. At the reported break-even HIBOR, combined
+            // interest must exactly consume the income the stat is built on (bond income
+            // plus average years-1-5 policy growth); the pre-fix formula ignored the bond
+            // loan and reported a break-even where outgo exceeded income by its interest.
+            const overrides = {
+                interestBasis: 'hibor' as const, hibor: 3.0, spread: 1.5, capRate: 50.0,
+                bondYield: 5.0, handlingFee: 1.0,
+                bondCollateralLTV: 50, bondLoanSpread: 1.5,
+            };
+            const projection = calculateProjection(inputFromDefaults(overrides));
+            expect(projection.bondLoan).toBeGreaterThan(0);
+            const stressed = calculateStressTest(stressInput(projection, {
+                ...overrides, simulatedHibor: 3.0, bondPriceDrop: 0,
+                bondLoan: projection.bondLoan,
+            }));
+            const breakEven = stressed.stressStats.breakEvenHibor;
+
+            let growth = 0;
+            for (let i = 1; i <= 5; i++) {
+                growth += projection.totalPremium * (BASE_FACTORS[i] - BASE_FACTORS[i - 1]);
+            }
+            const income = projection.netBondPrincipal * 0.05 + growth / 5;
+            const rate = Math.min(breakEven + 1.5, 50.0);
+            const outgo = (projection.bankLoan + projection.bondLoan) * (rate / 100);
+            expect(outgo / income).toBeCloseTo(1, 9);
+        });
+
+        it('keeps a zero-shock stress run equal to the baseline while top-ups are drawn', () => {
+            // The top-up principal cancels between assets and liabilities, but its
+            // cumulative interest does not; a stress run that drops it reads higher than
+            // the baseline by exactly that interest, breaking the zero-shock invariant.
+            const projection = calculateProjection(inputFromDefaults({
+                topUpMode: 'annual', minTopUpAmount: 50_000, fxRate: 7.8,
+            }));
+            expect(projection.projectionData[30].cumulativeTopUpInterest ?? 0).toBeGreaterThan(0);
+            const stressed = calculateStressTest(stressInput(projection, {
+                simulatedHibor: DEFAULT_INPUTS.hibor, bondPriceDrop: 0,
+            }));
+            for (const yr of [1, 15, 30]) {
+                expect(stressed.stressedProjection[yr].netEquity)
+                    .toBeCloseTo(projection.projectionData[yr].netEquity, 4);
+            }
         });
 
         it('clamps the stressed cash reserve against budget plus extraCash, like the projection', () => {

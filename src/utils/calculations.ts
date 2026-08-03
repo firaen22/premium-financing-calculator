@@ -1048,6 +1048,14 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
 
         let netEquity = currentAssets - currentLiabilities - cumulativeInterest - cumulativeBondLoanInterest;
 
+        // The top-up layer's principal cancels between assets and liabilities, so its whole
+        // net effect on baseline equity is its cumulative interest. Carried across from the
+        // baseline row (unshocked — the stress input has no top-up schedule to reprice);
+        // without it a zero-shock stress run reads HIGHER than the baseline by exactly this
+        // amount, breaking the comparability contract stated above stressedRate.
+        const baselineTopUpInterest = baselineData?.[yr]?.cumulativeTopUpInterest ?? 0;
+        netEquity -= Number.isFinite(baselineTopUpInterest) ? baselineTopUpInterest : 0;
+
         if (fundSource === 'mortgage') {
             const mtgBal = baselineData[yr]?.mortgageBalance || 0;
             netEquity -= mtgBal;
@@ -1083,21 +1091,52 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const totalAnnualIncome = annualBondIncome + avgAnnualPolicyGrowth;
     const annualMtgPmt = fundSource === 'mortgage' ? baselineData[1]?.annualMortgagePayment || 0 : 0;
 
-    // The loan rate that would exactly consume all income. Break-even is then the HIBOR
-    // that produces that rate on whichever basis the facility prices off.
+    // The rate base that would make BOTH facilities' interest exactly consume all income.
+    // Break-even is then the HIBOR that produces that base on whichever basis the loans
+    // price off. The bond-collateral loan must be included: the stressed projection and
+    // heatmap charge its interest, so a break-even computed on the policy loan alone
+    // overstates the safe HIBOR by the bond facility's share (reproduced: at the reported
+    // break-even, outgo exceeded income by exactly the bond loan's interest).
+    // Solve piecewise for base b in
+    //   bankLoan * min(b + spread, cap) + bondLoan * min(b + bondLoanSpread, cap)
+    //     = (income - mortgage) * 100
+    // With bondLoan = 0 this reduces exactly to the previous single-facility formula.
     let breakEvenHibor = 0;
-    if (bankLoan > 0) {
-        const breakEvenRate = ((totalAnnualIncome - annualMtgPmt) / bankLoan) * 100;
-        if (breakEvenRate > capRate) {
+    const totalDebt = bankLoan + bondLoan;
+    if (totalDebt > 0) {
+        const incomeAvailable = totalAnnualIncome - annualMtgPmt;
+        const maxAnnualInterest = totalDebt * (capRate / 100);
+        let base: number;
+        if (incomeAvailable > maxAnnualInterest) {
             // The cap binds before break-even is reachable, so no HIBOR level produces a
             // loss. Reported as 100 — the same "never breaks even" sentinel used below.
+            base = Infinity;
+        } else if (incomeAvailable === maxAnnualInterest) {
+            // Both facilities capped: the earliest base at which interest first reaches
+            // the income is where the last drawn facility hits its cap. Undrawn
+            // facilities carry no interest and must not pick the spread.
+            base = capRate - Math.min(
+                bankLoan > 0 ? spread : Infinity,
+                bondLoan > 0 ? bondLoanSpread : Infinity);
+        } else {
+            // Uncapped solution first; if it pushes one facility past its cap, re-solve
+            // with that facility's interest frozen at the cap. Both-past-cap is excluded
+            // by the incomeAvailable < maxAnnualInterest branch above.
+            base = (incomeAvailable * 100 - bankLoan * spread - bondLoan * bondLoanSpread) / totalDebt;
+            if (bondLoan > 0 && base + bondLoanSpread > capRate && bankLoan > 0) {
+                base = (incomeAvailable * 100 - bondLoan * capRate - bankLoan * spread) / bankLoan;
+            } else if (bankLoan > 0 && base + spread > capRate && bondLoan > 0) {
+                base = (incomeAvailable * 100 - bankLoan * capRate - bondLoan * bondLoanSpread) / bondLoan;
+            }
+        }
+        if (!Number.isFinite(base)) {
             breakEvenHibor = 100;
         } else if (interestBasis === 'hibor') {
-            breakEvenHibor = breakEvenRate - spread;
+            breakEvenHibor = base;
         } else {
-            // On COF the loan reprices by the HIBOR delta, not by HIBOR itself:
-            // rate = cofRate + (H - hibor) + spread.
-            breakEvenHibor = breakEvenRate - spread - cofRate + hibor;
+            // On COF the loans reprice by the HIBOR delta, not by HIBOR itself:
+            // base = cofRate + (H - hibor).
+            breakEvenHibor = base - cofRate + hibor;
         }
     } else {
         breakEvenHibor = 100;
@@ -1127,7 +1166,12 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
             // they do in the projection: omitted, the borrowed principal sat in bondVal
             // with no matching liability and read as profit.
             const bondLoanInterest = bondLoan * (Math.min(columnBase + bondLoanSpread, capRate) / 100) * yr;
-            let result = (surr + bondVal + cashReserve) - bankLoan - interest - bondLoan - bondLoanInterest;
+            // Same top-up carry-across as the stressed projection above, for the same
+            // comparability reason: `profit` below nets this cell against the baseline's
+            // netEquity, which already includes the top-up interest.
+            const topUpInterest = baselineData?.[yr]?.cumulativeTopUpInterest ?? 0;
+            let result = (surr + bondVal + cashReserve) - bankLoan - interest - bondLoan - bondLoanInterest
+                - (Number.isFinite(topUpInterest) ? topUpInterest : 0);
 
             if (fundSource === 'mortgage') {
                 const mtgBal = baselineData[yr]?.mortgageBalance || 0;
