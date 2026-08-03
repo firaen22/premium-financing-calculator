@@ -157,9 +157,9 @@ export const useAppState = () => {
             projectionData: projection.projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
             totalPremium: projection.totalPremium, netBondPrincipal: projection.netBondPrincipal, bondYield, bankLoan: projection.bankLoan, spread, capRate,
             budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor,
-            bondLoan: projection.bondLoan, bondLoanSpread
+            bondLoan: projection.bondLoan, bondLoanSpread, extraCash: deployedExtraCash
         });
-    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor, bondLoanSpread]);
+    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor, bondLoanSpread, deployedExtraCash]);
 
     // Deterministic, no-LLM assumption checker (src/utils/advisories.ts). Display-only —
     // does not gate PDF export.

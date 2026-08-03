@@ -177,6 +177,7 @@ const pickStress = (stress: PlainObject, input: SimulationInput, output: Simulat
     // only the engine has resolved after its own clamping of bondAlloc to the budget.
     bondLoan: output.bondLoan,
     bondLoanSpread: input.bondLoanSpread,
+    extraCash: input.extraCash,
 });
 
 export const runSimulate = (body: { input: PlainObject; stress?: PlainObject }): SimulateResult => {

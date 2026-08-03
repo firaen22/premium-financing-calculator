@@ -185,6 +185,12 @@ export interface StressTestInput {
     // the margin call this layer exists to expose. Optional and 0 by default.
     bondLoan?: number;
     bondLoanSpread?: number;
+    // The client's injected cash, mirrored from SimulationInput. The projection clamps
+    // cashReserve against budget + extraCash; the stress side must clamp against the
+    // SAME total, or a reserve above the borrowed portion is silently clipped here and
+    // a zero-shock stress run diverges from the baseline by the clipped amount.
+    // Optional and 0 by default.
+    extraCash?: number;
 }
 
 export interface StressTestOutput {
@@ -962,7 +968,9 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const spread = sanitize(input.spread, 0, 100);
     const capRate = sanitize(input.capRate, 0, 100);
     const budget = sanitize(input.budget, 0, MAX_MONEY);
-    const cashReserve = sanitize(input.cashReserve, 0, budget);
+    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
+    // Same clamp as calculateProjection's: the reserve can be funded from either source.
+    const cashReserve = sanitize(input.cashReserve, 0, budget + extraCash);
     const sensitivityYear = sanitize(input.sensitivityYear, 1, 30, 20);
     const fundSource = input.fundSource;
     const unlockedCash = sanitize(input.unlockedCash, 0, MAX_MONEY);

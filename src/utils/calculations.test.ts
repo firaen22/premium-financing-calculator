@@ -2055,6 +2055,29 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             expect(stressed.stressStats.breakEvenHibor).toBe(100);
         });
 
+        it('clamps the stressed cash reserve against budget plus extraCash, like the projection', () => {
+            // The projection funds the reserve from budget + extraCash; a stress side that
+            // still clamps to budget alone clips a reserve above the borrowed portion and a
+            // zero-shock stress run diverges from the baseline by exactly the clipped amount.
+            const overrides = {
+                budget: 2_000_000, cashReserve: 3_000_000, bondAlloc: 500_000,
+                extraCash: 4_000_000, fundSource: 'mortgage' as const,
+                unlockedCash: 2_000_000, effectiveMortgageRate: 3.5,
+                monthlyMortgagePmt: 10_000, mortgageTenor: 20,
+                interestBasis: 'hibor' as const, hibor: 3.0, spread: 1.5, capRate: 9.0,
+                bondYield: 5.0, handlingFee: 1.0,
+            };
+            const projection = calculateProjection(inputFromDefaults(overrides));
+            const stressed = calculateStressTest(stressInput(projection, {
+                ...overrides, simulatedHibor: 3.0, bondPriceDrop: 0,
+                bondLoan: projection.bondLoan,
+            }));
+            for (const yr of [1, 15, 30]) {
+                expect(stressed.stressedProjection[yr].netEquity)
+                    .toBeCloseTo(projection.projectionData[yr].netEquity, 4);
+            }
+        });
+
         it('does not count bond allocation the budget cannot fund', () => {
             // equity goes negative here, so no policy is funded and no loan is drawn. The
             // over-allocation must not still appear as a Year-0 asset.
