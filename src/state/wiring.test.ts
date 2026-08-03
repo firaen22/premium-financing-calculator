@@ -42,6 +42,14 @@ const ENGINE_FIELDS = [
     'finalNetEquity', 'roi', 'monthlyBondIncome', 'monthlyLoanInterest',
     'monthlyNetCashflow', 'oneOffBondFee', 'netBondPrincipal', 'monthlyMortgagePmt',
     'stressedProjection', 'stressStats', 'sensitivityData',
+    // Phase 4 rebate/fee scalars the ENGINE alone produces — the PDF reads these, so
+    // the top-level-vs-`projection` trap applies. bankCashRebate and fundFeeRebate are
+    // deliberately NOT listed: they became dual-role when the Sidebar gained input
+    // fields for them — a top-level editable input that the engine echoes back
+    // sanitized. Sidebar's top-level read is the correct one for editing; the PDF
+    // reads the projection copy. The two copies differ only when the input is
+    // out-of-range (negative/NaN), which sanitize() clamps.
+    'policyRebate', 'policyRebateRate', 'assetLoanFee', 'belowMinPremium',
 ];
 
 const COMPONENTS = [

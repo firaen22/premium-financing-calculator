@@ -39,15 +39,15 @@ export const Sidebar = ({
     isMobileOpen,
     onMobileClose,
 }: SidebarProps) => {
-    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, bondCollateralLTV, setBondCollateralLTV, bondLoanSpread, setBondLoanSpread, projection, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, propertyValue, setPropertyValue, existingMortgage, setExistingMortgage, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, mortgageLtv, setMortgageLtv, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, mortgageTenor, setMortgageTenor } = useApp();
+    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, bondCollateralLTV, setBondCollateralLTV, bondLoanSpread, setBondLoanSpread, projection, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, properties, addProperty, removeProperty, updateProperty, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, fxRate, setFxRate, policyRebateBands, addRebateBand, removeRebateBand, updateRebateBand, bankCashRebate, setBankCashRebate, fundFeeRebate, setFundFeeRebate, assetLoanHandlingFee, setAssetLoanHandlingFee, minPremiumUsd, setMinPremiumUsd } = useApp();
     const { addNotification, onDownloadPDF } = useServices();
     // pfEquity comes from the projection engine rather than being recomputed here. A local
     // copy once used raw values while the engine clamps cashReserve to budget, so the two
     // could disagree on screen.
     const { pfEquity } = useApp().projection;
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isFullPayment, setIsFullPayment] = useState(existingMortgage === 0);
     const [showRateAssumptions, setShowRateAssumptions] = useState(false);
+    const [showRebatesFees, setShowRebatesFees] = useState(false);
 
     const handleCollapseToggle = () => {
         const next = !isCollapsed;
@@ -215,22 +215,41 @@ export const Sidebar = ({
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="flex bg-slate-800/30 p-1 rounded-md mb-2">
-                                            <button
-                                                onClick={() => { setIsFullPayment(true); setExistingMortgage(0); }}
-                                                className={`min-w-0 flex-1 py-2 min-h-[44px] text-[11px] font-bold uppercase rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
-                                            >
-                                                {labels.fullPayment}
-                                            </button>
-                                            <button
-                                                onClick={() => setIsFullPayment(false)}
-                                                className={`min-w-0 flex-1 py-2 min-h-[44px] text-[11px] font-bold uppercase rounded transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] ${!isFullPayment ? 'bg-slate-700 text-white' : 'text-slate-500'}`}
-                                            >
-                                                {labels.remortgage}
-                                            </button>
+                                        <div className="space-y-5">
+                                            {properties.map((property, index) => (
+                                                <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+                                                    <div className="flex items-center justify-between gap-3 mb-5">
+                                                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                                                            {labels.propertyLabel} {index + 1}
+                                                        </h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeProperty(index)}
+                                                            disabled={properties.length <= 1}
+                                                            aria-label={`${labels.removeProperty} ${labels.propertyLabel} ${index + 1}`}
+                                                            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
+                                                        >
+                                                            <MinusCircle className="w-4 h-4" />
+                                                            {labels.removeProperty}
+                                                        </button>
+                                                    </div>
+                                                    <InputField label={labels.propVal} value={property.value} onChange={value => updateProperty(index, { value })} dark />
+                                                    <InputField label={labels.mortgageLtvLabel} value={property.ltv} onChange={ltv => updateProperty(index, { ltv })} prefix="" step={5} suffix="%" dark />
+                                                    <InputField label={labels.existingLoan} value={property.existingMortgage} onChange={existingMortgage => updateProperty(index, { existingMortgage })} dark />
+                                                    <InputField label={labels.mortgageTenorLabel} value={property.tenor} onChange={tenor => updateProperty(index, { tenor })} prefix="" step={5} suffix="YRS" dark />
+                                                    <InputField label={labels.mortgageRate} value={property.rate} onChange={rate => updateProperty(index, { rate })} prefix="" step={0.05} suffix="%" dark />
+                                                </div>
+                                            ))}
                                         </div>
-                                        <InputField label={labels.propVal} value={propertyValue} onChange={setPropertyValue} dark />
-                                        {!isFullPayment && <InputField label={labels.existingLoan} value={existingMortgage} onChange={setExistingMortgage} dark />}
+                                        <button
+                                            type="button"
+                                            onClick={addProperty}
+                                            disabled={properties.length >= 8}
+                                            className="w-full flex items-center justify-center gap-2 min-h-[44px] py-2 border border-slate-700 hover:border-[#c5a059] text-slate-300 hover:text-[#e4c685] text-[10px] font-bold uppercase tracking-widest rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]"
+                                        >
+                                            <PlusCircle className="w-4 h-4" />
+                                            {labels.addProperty}
+                                        </button>
                                         <InputField label={labels.inputCash} value={extraCash} onChange={setExtraCash} dark />
                                         <button
                                             onClick={() => setShowRateAssumptions(v => !v)}
@@ -242,19 +261,23 @@ export const Sidebar = ({
                                         </button>
                                         {showRateAssumptions && (
                                             <div className="space-y-4 pt-2">
-                                                <InputField label={labels.mortgageLtvLabel} value={mortgageLtv} onChange={setMortgageLtv} prefix="" step={5} suffix="%" dark />
                                                 <InputField label={labels.primeRateLabel} value={primeRate} onChange={setPrimeRate} prefix="" step={0.125} suffix="%" dark />
                                                 <InputField label={labels.hSpreadLabel} value={mortgageHSpread} onChange={setMortgageHSpread} prefix="" step={0.05} suffix="%" dark />
                                                 <InputField label={labels.pModifierLabel} value={mortgagePModifier} onChange={setMortgagePModifier} prefix="" step={0.05} suffix="%" dark />
-                                                <InputField label={labels.mortgageTenorLabel} value={mortgageTenor} onChange={setMortgageTenor} prefix="" step={5} suffix="YRS" dark />
                                             </div>
                                         )}
                                         <div className="bg-emerald-900/20 p-3 rounded border border-emerald-800/30 mb-2">
                                             <div className="flex justify-between items-center text-[10px] font-bold text-emerald-500 uppercase">
-                                                <span>{labels.unlockedCapital}</span>
+                                                <span>{labels.totalAvailableCapital}</span>
                                                 <span>{formatCurrency(unlockedCash + extraCash)}</span>
                                             </div>
                                         </div>
+                                        {Math.abs(budget - (unlockedCash + extraCash)) > 1 && (
+                                            <div className="-mt-2 flex items-center gap-2 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                                                <AlertTriangle className="w-3.5 h-3.5 flex-none" />
+                                                <span>{labels.budgetMismatchWarning} ({formatCurrency(budget)} vs {formatCurrency(unlockedCash + extraCash)})</span>
+                                            </div>
+                                        )}
                                         <button
                                             onClick={handleApplyCapital}
                                             className="w-full min-h-[44px] py-2 bg-[#c5a059] hover:bg-[#e4c685] text-[#020617] text-[10px] font-bold uppercase tracking-widest rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -295,6 +318,62 @@ export const Sidebar = ({
                                     ) : (
                                         <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                                             {labels.bondCollateralOff}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Rebates & one-off fees — contracted bank terms, so they live behind a
+                                    collapse like Rate Assumptions and default to the engine's no-ops.
+                                    Band rates are stored as DECIMALS (0.01 = 1%) to match the engine and
+                                    the workbook's VLOOKUP table; the ×100/÷100 here is the only place
+                                    the percent representation exists. */}
+                                <div className="pt-4 border-t border-slate-800">
+                                    <button
+                                        onClick={() => setShowRebatesFees(v => !v)}
+                                        aria-expanded={showRebatesFees}
+                                        className="w-full flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-200 transition-colors min-h-[44px] py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
+                                    >
+                                        <span>{labels.rebatesFeesSection}</span>
+                                        <span>{showRebatesFees ? '−' : '+'}</span>
+                                    </button>
+                                    {showRebatesFees && (
+                                        <div className="space-y-4 pt-4">
+                                            <InputField label={labels.fxRateLabel} value={fxRate} onChange={setFxRate} prefix="" step={0.05} dark />
+                                            <InputField label={labels.bankCashRebateLabel} value={bankCashRebate} onChange={setBankCashRebate} dark />
+                                            <InputField label={labels.fundFeeRebateLabel} value={fundFeeRebate} onChange={setFundFeeRebate} dark />
+                                            <InputField label={labels.assetLoanFeeLabel} value={assetLoanHandlingFee} onChange={setAssetLoanHandlingFee} prefix="" step={0.05} suffix="%" dark />
+                                            <InputField label={labels.minPremiumUsdLabel} value={minPremiumUsd} onChange={setMinPremiumUsd} step={1000} dark />
+
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.rebateBandsLabel}</div>
+                                            {policyRebateBands.map((band, index) => (
+                                                <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+                                                    <div className="flex items-center justify-between gap-3 mb-5">
+                                                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                                                            {labels.bandLabel} {index + 1}
+                                                        </h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeRebateBand(index)}
+                                                            aria-label={`${labels.removeBand} ${labels.bandLabel} ${index + 1}`}
+                                                            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
+                                                        >
+                                                            <MinusCircle className="w-4 h-4" />
+                                                            {labels.removeBand}
+                                                        </button>
+                                                    </div>
+                                                    <InputField label={labels.bandMinPremiumLabel} value={band.minPremiumUsd} onChange={minPremiumUsd => updateRebateBand(index, { minPremiumUsd })} step={100000} dark />
+                                                    <InputField label={labels.bandRateLabel} value={band.rate * 100} onChange={pctValue => updateRebateBand(index, { rate: pctValue / 100 })} prefix="" step={0.5} suffix="%" dark />
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={addRebateBand}
+                                                disabled={policyRebateBands.length >= 8}
+                                                className="w-full flex items-center justify-center gap-2 min-h-[44px] py-2 border border-slate-700 hover:border-[#c5a059] text-slate-300 hover:text-[#e4c685] text-[10px] font-bold uppercase tracking-widest rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]"
+                                            >
+                                                <PlusCircle className="w-4 h-4" />
+                                                {labels.addBand}
+                                            </button>
                                         </div>
                                     )}
                                 </div>

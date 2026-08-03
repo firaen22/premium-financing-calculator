@@ -21,8 +21,12 @@ const PREVIEW_MARGIN_PX = 24;
 export const PDFPreview = ({
     isSidebarCollapsed
 }: PDFPreviewProps) => {
-    const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, propertyValue, unlockedCash, hibor, effectiveMortgageRate, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, budget, projection } = useApp();
-    const { totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity, bondLoan } = projection;
+    const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, hibor, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, budget, interestBasis, fxRate, projection } = useApp();
+    const {
+        totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity, bondLoan,
+        effectiveRate, policyRebate, policyRebateRate, bankCashRebate, fundFeeRebate,
+        assetLoanFee, belowMinPremium
+    } = projection;
     const sensitivityData = useApp().stressTest.sensitivityData;
     const onDownloadPDF = useServices().onDownloadPDF;
 
@@ -195,14 +199,12 @@ export const PDFPreview = ({
                             projectionData={projectionData}
                             lang={lang}
                             budget={budget}
+                            fxRate={fxRate}
                             totalPremium={totalPremium}
                             bankLoan={bankLoan}
                             roi={roi}
                             netEquityAt30={projectionData?.[projectionData.length - 1]?.netEquity || 0}
-                            propertyValue={propertyValue}
-                            unlockedCash={unlockedCash}
                             hibor={hibor}
-                            currentMtgRate={effectiveMortgageRate}
                             cashReserve={cashReserve}
                             netBondPrincipal={netBondPrincipal}
                             pfEquity={pfEquity}
@@ -215,6 +217,14 @@ export const PDFPreview = ({
                             leverageLTV={leverageLTV}
                             bondYield={bondYield}
                             sensitivityYear={sensitivityYear}
+                            interestBasis={interestBasis}
+                            loanRate={effectiveRate}
+                            policyRebate={policyRebate}
+                            policyRebateRate={policyRebateRate}
+                            bankCashRebate={bankCashRebate}
+                            fundFeeRebate={fundFeeRebate}
+                            assetLoanFee={assetLoanFee}
+                            belowMinPremium={belowMinPremium}
                         />
                     </div>
                 </div>

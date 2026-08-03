@@ -106,10 +106,7 @@ const AppShell = () => {
                         bankLoan={state.projection.bankLoan}
                         roi={state.projection.roi}
                         netEquityAt30={state.projection.projectionData?.[state.projection.projectionData.length - 1]?.netEquity || 0}
-                        propertyValue={state.propertyValue}
-                        unlockedCash={state.unlockedCash}
                         hibor={state.hibor}
-                        currentMtgRate={state.effectiveMortgageRate}
                         cashReserve={state.cashReserve}
                         netBondPrincipal={state.projection.netBondPrincipal}
                         pfEquity={state.projection.pfEquity}
