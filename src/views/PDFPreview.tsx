@@ -21,7 +21,7 @@ const PREVIEW_MARGIN_PX = 24;
 export const PDFPreview = ({
     isSidebarCollapsed
 }: PDFPreviewProps) => {
-    const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, hibor, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, budget, interestBasis, fxRate, projection } = useApp();
+    const { t, lang, clientName, setClientName, representativeName, setRepresentativeName, setActiveView: onNavigate, isGeneratingPDF, hibor, cashReserve, fundSource, spread, leverageLTV, bondYield, sensitivityYear, interestBasis, fxRate, projection } = useApp();
     const {
         totalPremium, bankLoan, projectionData, roi, netBondPrincipal, pfEquity, bondLoan,
         effectiveRate, policyRebate, policyRebateRate, bankCashRebate, fundFeeRebate,
@@ -198,7 +198,7 @@ export const PDFPreview = ({
                         <PDFProposal
                             projectionData={projectionData}
                             lang={lang}
-                            budget={budget}
+                            deployedCapital={projection.deployedCapital}
                             fxRate={fxRate}
                             totalPremium={totalPremium}
                             bankLoan={bankLoan}

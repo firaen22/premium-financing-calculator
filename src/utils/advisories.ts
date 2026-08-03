@@ -139,15 +139,26 @@ export const checkAssumptions = (
     const rows = usableProjectionRows(output?.projectionData);
     const basisRate = input.interestBasis === 'cof' ? input.cofRate : input.hibor;
 
+    // Injected cash funds the reserve and the bond sleeve exactly like the budget does
+    // (calculations.ts clamps both against budget + extraCash), so leaving it out of the
+    // sum raised a blocker on allocations the engine funds in full. Deliberately NOT in
+    // VALIDATED_FIELDS: it is optional, and poisoning it would fire B_EXTRA_CASH_INVALID
+    // at every caller that omits it. A non-finite value therefore counts as 0 here, which
+    // errs toward raising the blocker rather than suppressing it.
+    const extraCash = finite(input.extraCash) ? Math.max(0, input.extraCash) : 0;
     if (reads('cashReserve', 'bondAlloc', 'budget')) {
-        const shortfall = input.cashReserve + input.bondAlloc - input.budget;
+        const totalCapital = input.budget + extraCash;
+        const shortfall = input.cashReserve + input.bondAlloc - totalCapital;
         // Strictly greater, not >=: at exact equality nothing is over budget, and A1 would
         // render "is $0 over budget". Equality still leaves zero premium, which A3 states
         // correctly ("Budget of X funds no policy"), so nothing goes unreported.
         if (finite(shortfall) && shortfall > 0) groups.push(finding('A1_ALLOCATION_EXCEEDS_BUDGET', 'blocker',
-            input.cashReserve > input.budget ? 'cashReserve' : 'bondAlloc', {
+            input.cashReserve > totalCapital ? 'cashReserve' : 'bondAlloc', {
                 cashReserve: money(input.cashReserve), bondAlloc: money(input.bondAlloc),
-                budget: money(input.budget), shortfall: money(shortfall),
+                // The message's "budget" is the capital the allocation is measured against,
+                // which is both sources — quoting budget alone made the arithmetic in the
+                // sentence fail to add up whenever cash was injected.
+                budget: money(totalCapital), shortfall: money(shortfall),
             }));
     }
     const totalPremium = outputNumber('totalPremium');

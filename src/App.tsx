@@ -101,7 +101,7 @@ const AppShell = () => {
                     <PDFProposal
                         projectionData={state.projection.projectionData}
                         lang={state.lang}
-                        budget={state.budget}
+                        deployedCapital={state.projection.deployedCapital}
                         totalPremium={state.projection.totalPremium}
                         bankLoan={state.projection.bankLoan}
                         roi={state.projection.roi}

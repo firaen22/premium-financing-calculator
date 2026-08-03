@@ -134,14 +134,19 @@ export const useAppState = () => {
 
     // Built once and reused for both the engine and the assumption checker below, so the
     // two never drift out of sync on which fields make up a SimulationInput.
+    // Input Cash is only editable inside the mortgage-refi panel, and under cash funding
+    // `budget` already IS the client's own money — so a value left behind by a since-
+    // abandoned mortgage scenario must not silently top up a cash-funded projection.
+    const deployedExtraCash = fundSource === 'mortgage' ? extraCash : 0;
+
     const simulationInput = useMemo(() => ({
         budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
         leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
         effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties,
-        bondCollateralLTV, bondLoanSpread,
+        bondCollateralLTV, bondLoanSpread, extraCash: deployedExtraCash,
         fxRate, policyRebateBands, bankCashRebate, fundFeeRebate,
         assetLoanHandlingFee, minPremiumUsd
-    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread, fxRate, policyRebateBands, bankCashRebate, fundFeeRebate, assetLoanHandlingFee, minPremiumUsd]);
+    }), [deployedExtraCash, budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread, fxRate, policyRebateBands, bankCashRebate, fundFeeRebate, assetLoanHandlingFee, minPremiumUsd]);
 
     const projection = useMemo(() => {
         return calculateProjection(simulationInput);
@@ -152,9 +157,9 @@ export const useAppState = () => {
             projectionData: projection.projectionData, simulatedHibor, bondPriceDrop, showGuaranteed,
             totalPremium: projection.totalPremium, netBondPrincipal: projection.netBondPrincipal, bondYield, bankLoan: projection.bankLoan, spread, capRate,
             budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor,
-            bondLoan: projection.bondLoan, bondLoanSpread
+            bondLoan: projection.bondLoan, bondLoanSpread, extraCash: deployedExtraCash
         });
-    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor, bondLoanSpread]);
+    }, [projection, simulatedHibor, bondPriceDrop, showGuaranteed, bondYield, spread, capRate, budget, cashReserve, sensitivityYear, fundSource, unlockedCash, interestBasis, cofRate, hibor, bondLoanSpread, deployedExtraCash]);
 
     // Deterministic, no-LLM assumption checker (src/utils/advisories.ts). Display-only —
     // does not gate PDF export.

@@ -185,6 +185,12 @@ export interface StressTestInput {
     // the margin call this layer exists to expose. Optional and 0 by default.
     bondLoan?: number;
     bondLoanSpread?: number;
+    // The client's injected cash, mirrored from SimulationInput. The projection clamps
+    // cashReserve against budget + extraCash; the stress side must clamp against the
+    // SAME total, or a reserve above the borrowed portion is silently clipped here and
+    // a zero-shock stress run diverges from the baseline by the clipped amount.
+    // Optional and 0 by default.
+    extraCash?: number;
 }
 
 export interface StressTestOutput {
@@ -570,11 +576,19 @@ export const deriveEffectiveMortgageRate = (
 // Core Calculation Logic
 export const calculateProjection = (input: SimulationInput): SimulationOutput => {
     const budget = sanitize(input.budget, 0, MAX_MONEY);
-    const cashReserve = sanitize(input.cashReserve, 0, budget);
-    // Bonds can only be bought with money the budget actually contains. Uncapped, an
+    // The client's own cash injected on top of `budget`. Under mortgage funding `budget`
+    // is the mortgage cash-out (borrowed) and this is the only money that is actually
+    // theirs, which is what makes the two separate fields rather than one total.
+    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
+    // Every clamp below is against the capital on hand, which is both sources — not
+    // `budget` alone. Clamping to `budget` capped the reserve and the bond sleeve at the
+    // borrowed portion, so injected cash could not fund either.
+    const totalCapital = budget + extraCash;
+    const cashReserve = sanitize(input.cashReserve, 0, totalCapital);
+    // Bonds can only be bought with money the capital actually contains. Uncapped, an
     // over-allocation counted as a Year-0 asset while funding no policy and drawing no
     // loan, so unfunded money showed up as net equity.
-    const bondAlloc = sanitize(input.bondAlloc, 0, Math.max(0, budget - cashReserve));
+    const bondAlloc = sanitize(input.bondAlloc, 0, Math.max(0, totalCapital - cashReserve));
     const bondYield = sanitize(input.bondYield, 0, 100);
     const hibor = sanitize(input.hibor, 0, 100);
     const cofRate = sanitize(input.cofRate, 0, 100);
@@ -588,7 +602,6 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
     const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0, MAX_MONEY);
     const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
-    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
     const bondCollateralLTV = sanitize(input.bondCollateralLTV ?? 0, 0, 100);
     // Defaults to the policy loan's spread only so an unset field is not silently free
     // money; the real facility prices separately and the user enters it.
@@ -731,16 +744,34 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         topUpToClient: row.toClient,
     };
     const ownCapital = (fundSource === 'mortgage' ? 0 : budget) + extraCash;
-    const deployedCapital = budget + extraCash;
+    const deployedCapital = totalCapital;
     const calculateRowRoi = (cumulativeNetGain: number): number => {
         const roi = deployedCapital > 0 ? (cumulativeNetGain / deployedCapital) * 100 : 0;
         return Number.isFinite(roi) ? roi : 0;
     };
-    const calculateRowIrr = (year: number, cumulativeNetGain: number): number | null => {
+    // The IRR vector is the client's OWN money. Under cash funding that is a single
+    // outlay at t=0 and every mortgage payment below is 0, so this collapses exactly
+    // to the original two-point vector. Under mortgage funding the client fronts no
+    // day-1 capital but services the mortgage for its tenor — with a two-point vector
+    // the initial flow was 0, so the solver saw no sign change and returned null for
+    // every year of every mortgage-funded proposal.
+    const calculateRowIrr = (
+        year: number,
+        cumulativeNetGain: number,
+        cumulativeMortgagePayments: number,
+        mortgagePaymentByYear: readonly number[],
+    ): number | null => {
         if (year === 0) return null;
         const cashFlows = Array(year + 1).fill(0);
         cashFlows[0] = -ownCapital;
-        cashFlows[year] = ownCapital + cumulativeNetGain;
+        for (let y = 1; y <= year; y++) {
+            cashFlows[y] = -(mortgagePaymentByYear[y] ?? 0);
+        }
+        // cumulativeNetGain has ALREADY deducted cumulativeMortgagePayments, so they
+        // must be added back into the terminal value — otherwise the per-year stream
+        // above charges the mortgage a second time, which surfaces as a plausible but
+        // materially understated IRR rather than an obvious failure.
+        cashFlows[year] += ownCapital + cumulativeNetGain + cumulativeMortgagePayments;
         const rate = calculateIRR(cashFlows);
         return rate === null ? null : rate * 100;
     };
@@ -795,6 +826,9 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     });
 
     let runningCumMtgCost = 0;
+    // Filled from the loop's own annualMtgPmt rather than re-read from mortgageSchedule,
+    // so the IRR stream cannot drift from the payments charged to annualNetGain.
+    const mtgPaymentByYear: number[] = Array(31).fill(0);
 
     for (let yr = 1; yr <= 30; yr++) {
         const factor = currentFactors[yr] || currentFactors[30];
@@ -821,6 +855,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             runningCumMtgCost += annualMtgPmt;
             netEquity -= mtgBal;
         }
+        mtgPaymentByYear[yr] = annualMtgPmt;
 
         const prev = data[yr - 1];
         const annualBondIncome = cumulativeBondInterest - prev.cumulativeBondInterest;
@@ -832,10 +867,12 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest
             - annualBondLoanInterest - annualMtgPmt - topUp.annualInterest;
 
+        // Same capital base as roi (calculateRowRoi): budget + extraCash. A budget-only
+        // denominator overstated the annual return whenever extraCash > 0, and read 0
+        // when the position was funded entirely by extraCash.
         let annualRoC = 0;
-        const denom = budget;
-        if (denom !== 0) {
-            annualRoC = (annualNetGain / denom) * 100;
+        if (deployedCapital > 0) {
+            annualRoC = (annualNetGain / deployedCapital) * 100;
         }
 
         const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
@@ -879,7 +916,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             annualMortgagePayment: annualMtgPmt,
             roi,
             averageReturn: roi / yr,
-            irr: calculateRowIrr(yr, cumulativeNetGain),
+            irr: calculateRowIrr(yr, cumulativeNetGain, cumulativeMortgagePayments, mtgPaymentByYear),
             bondLoan,
             cumulativeBondLoanInterest,
             ...topUpFields(topUp)
@@ -931,7 +968,9 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const spread = sanitize(input.spread, 0, 100);
     const capRate = sanitize(input.capRate, 0, 100);
     const budget = sanitize(input.budget, 0, MAX_MONEY);
-    const cashReserve = sanitize(input.cashReserve, 0, budget);
+    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
+    // Same clamp as calculateProjection's: the reserve can be funded from either source.
+    const cashReserve = sanitize(input.cashReserve, 0, budget + extraCash);
     const sensitivityYear = sanitize(input.sensitivityYear, 1, 30, 20);
     const fundSource = input.fundSource;
     const unlockedCash = sanitize(input.unlockedCash, 0, MAX_MONEY);

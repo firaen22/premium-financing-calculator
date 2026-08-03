@@ -50,6 +50,11 @@ const ENGINE_FIELDS = [
     // reads the projection copy. The two copies differ only when the input is
     // out-of-range (negative/NaN), which sanitize() clamps.
     'policyRebate', 'policyRebateRate', 'assetLoanFee', 'belowMinPremium',
+    // Capital bases the engine resolves after sanitising and clamping its two capital
+    // inputs. `deployedCapital` is the trap of the pair: a top-level read would find
+    // nothing, but the nearby `budget` is a plausible-looking substitute that silently
+    // drops the client's injected cash from every allocation display.
+    'ownCapital', 'deployedCapital',
 ];
 
 const COMPONENTS = [
@@ -184,6 +189,23 @@ describe('Tier 1 wiring gate', () => {
             ['views/SystemConfigView.tsx', 'SystemConfigViewProps'],
         ] as const) {
             expect(interfaceMemberCount(read(rel), name), `${rel} should take no props`).toBeNull();
+        }
+    });
+
+    it('6. every input the sidebar edits reaches the engine', () => {
+        // extraCash existed as a state field, a labelled sidebar input and an engine input
+        // for months without the three ever being connected: useAppState simply left it
+        // out of simulationInput, so typing into Input Cash changed nothing the engine
+        // saw. Nothing else in the suite fails when a field is dropped here — the object
+        // is structurally typed against SimulationInput, whose optional fields tsc is
+        // happy to see omitted.
+        const src = read('hooks/useAppState.ts');
+        const start = src.indexOf('const simulationInput');
+        expect(start, 'useAppState must build a simulationInput').toBeGreaterThan(-1);
+        const body = src.slice(start, src.indexOf('}), [', start));
+
+        for (const field of ['budget', 'cashReserve', 'bondAlloc', 'extraCash', 'fundSource']) {
+            expect(body, `simulationInput omits '${field}'`).toMatch(new RegExp(`\\b${field}\\b`));
         }
     });
 
