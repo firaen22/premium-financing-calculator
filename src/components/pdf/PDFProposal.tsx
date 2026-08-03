@@ -23,7 +23,7 @@ import { StaticHeatmap } from '../charts/StaticHeatmap';
 import { DetailedCalculationTable } from './DetailedCalculationTable';
 
 export const PDFProposal = ({
-    projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
+    projectionData, lang, budget, fxRate, totalPremium, bankLoan, roi, netEquityAt30,
     hibor, cashReserve,
     netBondPrincipal, pfEquity, bondLoan, fundSource, clientName, representativeName,
     sensitivityData, spread, leverageLTV, bondYield, sensitivityYear,
@@ -380,6 +380,7 @@ export const PDFProposal = ({
                         dataY15={dataY15}
                         dataY20={dataY20}
                         dataY30={dataY30}
+                        fxRate={fxRate}
                         lang={lang}
                     />
                 </div>

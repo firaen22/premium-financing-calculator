@@ -234,7 +234,12 @@ export const lookupRebateRate = (
         if (band.minPremiumUsd > premiumUsd) break;
         rate = band.rate;
     }
-    return Number.isFinite(rate) ? rate : 0;
+    // A rebate is a credit the insurer pays the client — this product has no concept of
+    // a negative one; a fee/clawback already has its own dedicated field
+    // (assetLoanHandlingFee), which is subtracted separately. A negative band rate here
+    // is therefore a data-entry mistake, not a legitimate tier, so it is clamped rather
+    // than passed through — otherwise it renders as a negative "rebate" on a client PDF.
+    return Number.isFinite(rate) ? Math.max(0, rate) : 0;
 };
 
 // Reported LTV when a loan is outstanding against fully impaired collateral. The true
@@ -733,7 +738,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     };
     const calculateRowIrr = (year: number, cumulativeNetGain: number): number | null => {
         if (year === 0) return null;
-        const cashFlows = Array(year).fill(0);
+        const cashFlows = Array(year + 1).fill(0);
         cashFlows[0] = -ownCapital;
         cashFlows[year] = ownCapital + cumulativeNetGain;
         const rate = calculateIRR(cashFlows);

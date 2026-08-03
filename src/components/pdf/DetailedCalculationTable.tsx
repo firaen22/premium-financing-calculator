@@ -1,11 +1,13 @@
 import React from 'react';
 import { TRANSLATIONS } from '../../i18n/translations';
 
-export const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang }: any) => {
+export const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, lang, fxRate }: any) => {
     if (!dataY10 || !dataY15 || !dataY20 || !dataY30) return null;
 
     const t = TRANSLATIONS[lang as keyof typeof TRANSLATIONS];
-    const exchangeRate = 7.8;
+    // Keep this fallback aligned with calculations.ts so the USD row uses the same rate
+    // the engine used when banding the rebate.
+    const exchangeRate = Number.isFinite(fxRate) && fxRate > 0 ? fxRate : 7.8;
 
     const years = [dataY10, dataY15, dataY20, dataY30];
 
