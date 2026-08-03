@@ -10,7 +10,7 @@ import { Language } from '../types';
 import { useApp } from '../state';
 
 export const AllocationView = () => {
-    const { t, fundSource, budget, cashReserve, lang, setActiveView: onNavigate, projection } = useApp();
+    const { t, fundSource, cashReserve, lang, setActiveView: onNavigate, projection } = useApp();
     const { pfEquity, totalPremium, bankLoan, effectiveRate, finalNetEquity, roi, monthlyBondIncome, monthlyLoanInterest, monthlyBondLoanInterest, monthlyNetCashflow, netBondPrincipal, monthlyMortgagePmt } = projection;
     // Bars carry their own fill because the row set varies (bond loan drawn or not,
     // mortgage or not) — a positional colour list would repaint rows on insertion.
@@ -124,7 +124,7 @@ export const AllocationView = () => {
 
             <Card title={t.structureVis} subtitle={t.fundFlow}>
                 <FlowDiagram
-                    budget={budget}
+                    capital={projection.deployedCapital}
                     cash={cashReserve}
                     bond={netBondPrincipal}
                     equity={pfEquity}

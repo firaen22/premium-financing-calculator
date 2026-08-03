@@ -22,7 +22,7 @@ export interface FlowDiagramLabels {
 }
 
 export const FlowDiagram = React.memo(({
-    budget,
+    capital,
     cash,
     bond,
     equity,
@@ -32,16 +32,19 @@ export const FlowDiagram = React.memo(({
     labels,
     sourceType
 }: {
-    budget: number, cash: number, bond: number, equity: number, bondLoan: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
+    capital: number, cash: number, bond: number, equity: number, bondLoan: number, loan: number, premium: number, labels: FlowDiagramLabels, sourceType: 'cash' | 'mortgage'
 }) => {
-    // budget === cash + bondAlloc + (equity - bondLoan) by definition (calculations.ts:
+    // `capital` is the engine's deployedCapital (budget + injected cash), not `budget`
+    // alone — the identity below is what the engine's own equity line is built from, and
+    // it only closes when both capital sources are counted.
+    // capital === cash + bondAlloc + (equity - bondLoan) by definition (calculations.ts:
     // equity includes the amount drawn against the bond fund, which is not the client's
     // capital), and `bond` here is netBondPrincipal (bondAlloc net of the one-off handling
     // fee), so this difference is exactly that fee — not an approximation. Deriving it
     // without adding bondLoan back understates the fee by the drawn loan and hides the
     // deduction line entirely once bondLoan ≥ fee. Only surface it when it would round to
     // a visible dollar.
-    const oneOffFee = Math.max(0, budget - cash - bond - (equity - bondLoan));
+    const oneOffFee = Math.max(0, capital - cash - bond - (equity - bondLoan));
     const showFee = oneOffFee > 0.5;
     const showBondLoan = bondLoan > 0.5;
     return (
@@ -82,7 +85,7 @@ export const FlowDiagram = React.memo(({
                             <Briefcase x={28} y={28} width={24} height={24} stroke="#0f172a" strokeWidth={1.5} />
                         )}
                         <text x="80" y="32" textAnchor="start" fill="#64748b" fontSize="12" fontWeight="bold" letterSpacing="1.5" style={{ textTransform: 'uppercase', fontFamily: 'sans-serif' }}>{labels.capital}</text>
-                        <text x="80" y="58" textAnchor="start" fill="#0f172a" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(budget)}</text>
+                        <text x="80" y="58" textAnchor="start" fill="#0f172a" fontSize="22" fontWeight="500" style={{ fontFamily: 'serif' }}>{formatCurrency(capital)}</text>
                     </g>
 
                     {/* Yield Fund (Left) */}

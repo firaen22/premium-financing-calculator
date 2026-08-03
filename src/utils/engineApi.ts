@@ -44,6 +44,7 @@ export const INPUT_RANGES: Readonly<Record<string, NumericRange>> = {
 export const OPTIONAL_INPUT_RANGES: Readonly<Record<string, NumericRange>> = {
     bondCollateralLTV: { min: 0, max: 100 },
     bondLoanSpread: { min: 0, max: 100 },
+    extraCash: { min: 0, max: MAX_MONEY },
 };
 
 export const STRESS_RANGES: Readonly<Record<string, NumericRange>> = {
@@ -150,6 +151,7 @@ const pickInput = (input: PlainObject): SimulationInput => ({
     mortgageTenor: input.mortgageTenor as number,
     bondCollateralLTV: input.bondCollateralLTV as number | undefined,
     bondLoanSpread: input.bondLoanSpread as number | undefined,
+    extraCash: input.extraCash as number | undefined,
 });
 
 const pickStress = (stress: PlainObject, input: SimulationInput, output: SimulationOutput): StressTestInput => ({

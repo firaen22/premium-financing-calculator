@@ -570,11 +570,19 @@ export const deriveEffectiveMortgageRate = (
 // Core Calculation Logic
 export const calculateProjection = (input: SimulationInput): SimulationOutput => {
     const budget = sanitize(input.budget, 0, MAX_MONEY);
-    const cashReserve = sanitize(input.cashReserve, 0, budget);
-    // Bonds can only be bought with money the budget actually contains. Uncapped, an
+    // The client's own cash injected on top of `budget`. Under mortgage funding `budget`
+    // is the mortgage cash-out (borrowed) and this is the only money that is actually
+    // theirs, which is what makes the two separate fields rather than one total.
+    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
+    // Every clamp below is against the capital on hand, which is both sources — not
+    // `budget` alone. Clamping to `budget` capped the reserve and the bond sleeve at the
+    // borrowed portion, so injected cash could not fund either.
+    const totalCapital = budget + extraCash;
+    const cashReserve = sanitize(input.cashReserve, 0, totalCapital);
+    // Bonds can only be bought with money the capital actually contains. Uncapped, an
     // over-allocation counted as a Year-0 asset while funding no policy and drawing no
     // loan, so unfunded money showed up as net equity.
-    const bondAlloc = sanitize(input.bondAlloc, 0, Math.max(0, budget - cashReserve));
+    const bondAlloc = sanitize(input.bondAlloc, 0, Math.max(0, totalCapital - cashReserve));
     const bondYield = sanitize(input.bondYield, 0, 100);
     const hibor = sanitize(input.hibor, 0, 100);
     const cofRate = sanitize(input.cofRate, 0, 100);
@@ -588,7 +596,6 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
     const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0, MAX_MONEY);
     const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
-    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
     const bondCollateralLTV = sanitize(input.bondCollateralLTV ?? 0, 0, 100);
     // Defaults to the policy loan's spread only so an unset field is not silently free
     // money; the real facility prices separately and the user enters it.
@@ -731,7 +738,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         topUpToClient: row.toClient,
     };
     const ownCapital = (fundSource === 'mortgage' ? 0 : budget) + extraCash;
-    const deployedCapital = budget + extraCash;
+    const deployedCapital = totalCapital;
     const calculateRowRoi = (cumulativeNetGain: number): number => {
         const roi = deployedCapital > 0 ? (cumulativeNetGain / deployedCapital) * 100 : 0;
         return Number.isFinite(roi) ? roi : 0;

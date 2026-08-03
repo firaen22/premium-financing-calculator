@@ -75,8 +75,13 @@ export const Sidebar = ({
     };
 
     const handleApplyCapital = () => {
-        setBudget(unlockedCash + extraCash);
-        setCashReserve(extraCash);
+        // `budget` is the mortgage cash-out ALONE; the client's injected cash reaches the
+        // engine as its own `extraCash` input. Folding both into budget and then parking
+        // the same amount in cashReserve — which is what this used to do — cancelled the
+        // injection out of equity while still inflating the ROI denominator, so entering
+        // Input Cash lowered the quoted return without buying any more policy.
+        setBudget(unlockedCash);
+        setCashReserve(tempCashReserve);
         addNotification({
             title: 'Capital Applied',
             message: 'Mortgage refi capital deployed to strategy.',
@@ -251,6 +256,13 @@ export const Sidebar = ({
                                             {labels.addProperty}
                                         </button>
                                         <InputField label={labels.inputCash} value={extraCash} onChange={setExtraCash} dark />
+                                        {/* The reserve used to be set implicitly to whatever Input Cash
+                                            held, which is why this panel never needed a field for it.
+                                            Now that injected cash buys policy, the reserve has to be
+                                            stated — otherwise the mortgage path has no way to hold a
+                                            liquidity buffer at all. Same temp-then-apply mirror as the
+                                            cash panel, so both tabs commit on the same button. */}
+                                        <InputField label={labels.cashReserve} value={tempCashReserve} onChange={setTempCashReserve} dark />
                                         <button
                                             onClick={() => setShowRateAssumptions(v => !v)}
                                             aria-expanded={showRateAssumptions}
@@ -272,10 +284,13 @@ export const Sidebar = ({
                                                 <span>{formatCurrency(unlockedCash + extraCash)}</span>
                                             </div>
                                         </div>
-                                        {Math.abs(budget - (unlockedCash + extraCash)) > 1 && (
+                                        {/* Both sides are totals, because injected cash now reaches the
+                                            engine on its own input: what is applied is budget + extraCash,
+                                            what is available is unlockedCash + extraCash. */}
+                                        {Math.abs(budget - unlockedCash) > 1 && (
                                             <div className="-mt-2 flex items-center gap-2 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
                                                 <AlertTriangle className="w-3.5 h-3.5 flex-none" />
-                                                <span>{labels.budgetMismatchWarning} ({formatCurrency(budget)} vs {formatCurrency(unlockedCash + extraCash)})</span>
+                                                <span>{labels.budgetMismatchWarning} ({formatCurrency(budget + extraCash)} vs {formatCurrency(unlockedCash + extraCash)})</span>
                                             </div>
                                         )}
                                         <button
@@ -289,12 +304,14 @@ export const Sidebar = ({
 
                                 <div className="pt-4 border-t border-slate-800">
                                     <InputField label={labels.bondFund} value={bondAlloc} onChange={setBondAlloc} dark />
-                                    {/* The engine silently clamps bondAlloc to what the budget can fund
+                                    {/* The engine silently clamps bondAlloc to what the capital can fund
                                         (calculations.ts). Without this the field kept showing the larger
-                                        entry while every projection ran on the smaller number. */}
-                                    {bondAlloc > Math.max(0, budget - cashReserve) && (
+                                        entry while every projection ran on the smaller number. Read off
+                                        the engine's own deployedCapital rather than recomputing
+                                        budget + extraCash here, so the two cannot drift. */}
+                                    {bondAlloc > Math.max(0, projection.deployedCapital - cashReserve) && (
                                         <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
-                                            {labels.bondFundCapped} {formatCurrency(Math.max(0, budget - cashReserve))}
+                                            {labels.bondFundCapped} {formatCurrency(Math.max(0, projection.deployedCapital - cashReserve))}
                                         </div>
                                     )}
                                     <InputField label={labels.bondYield} value={bondYield} onChange={setBondYield} prefix="" step={0.1} suffix="%" dark />

@@ -322,6 +322,90 @@ describe('Phase 5 return metrics', () => {
     });
 });
 
+describe('injected client cash (extraCash)', () => {
+    // `budget` is the mortgage cash-out; `extraCash` is the client's own money on top.
+    // The UI used to fold both into `budget` and then park the injection in cashReserve,
+    // so entering Input Cash bought no extra policy while still enlarging the ROI base.
+    const unlockedCash = deriveUnlockedCash(
+        DEFAULT_INPUTS.propertyValue, DEFAULT_INPUTS.mortgageLtv, DEFAULT_INPUTS.existingMortgage);
+    const mortgageFunded = (overrides: Partial<SimulationInput> = {}) =>
+        calculateProjection(inputFromDefaults({
+            fundSource: 'mortgage', budget: unlockedCash, ...overrides,
+        }));
+
+    it('deploys injected cash into the policy rather than parking it', () => {
+        const without = mortgageFunded();
+        const with1M = mortgageFunded({ extraCash: 1_000_000 });
+
+        expect(with1M.pfEquity).toBeCloseTo(without.pfEquity + 1_000_000, 6);
+        expect(with1M.totalPremium).toBeGreaterThan(without.totalPremium);
+    });
+
+    it('funds a reserve larger than the budget alone', () => {
+        // cashReserve used to be clamped to `budget`, so 500k of the reserve silently
+        // stayed in the policy — the projection ran on a reserve the user never asked for.
+        const projection = calculateProjection(inputFromDefaults({
+            budget: 1_000_000, extraCash: 2_000_000, cashReserve: 1_500_000, bondAlloc: 0,
+        }));
+
+        expect(projection.pfEquity).toBeCloseTo(1_500_000, 6);
+    });
+
+    it('funds a bond sleeve larger than the budget alone', () => {
+        const projection = calculateProjection(inputFromDefaults({
+            budget: 1_000_000, extraCash: 2_000_000, cashReserve: 0, bondAlloc: 2_500_000,
+            handlingFee: 0, bondCollateralLTV: 0,
+        }));
+
+        expect(projection.netBondPrincipal).toBeCloseTo(2_500_000, 6);
+        expect(projection.pfEquity).toBeCloseTo(500_000, 6);
+    });
+
+    it('still clamps an allocation the injected cash cannot cover', () => {
+        const projection = calculateProjection(inputFromDefaults({
+            budget: 1_000_000, extraCash: 500_000, cashReserve: 0, bondAlloc: 9_000_000,
+            handlingFee: 0,
+        }));
+
+        expect(projection.netBondPrincipal).toBeCloseTo(1_500_000, 6);
+    });
+
+    it('counts injected cash as the client\'s own capital under mortgage funding', () => {
+        const projection = mortgageFunded({ extraCash: 1_000_000 });
+
+        // The cash-out is borrowed; only the injection is theirs.
+        expect(projection.ownCapital).toBeCloseTo(1_000_000, 6);
+        expect(projection.deployedCapital).toBeCloseTo(unlockedCash + 1_000_000, 6);
+    });
+
+    it('charges injected cash as a day-1 outflow in the IRR', () => {
+        // Rebuilt from the rows rather than the engine's own vector: the injection has to
+        // appear at t=0, or a mortgage-funded IRR reads as return on no money at all.
+        const projection = mortgageFunded({ extraCash: 1_000_000 });
+        const rows = projection.projectionData;
+        const terminalRebate = projection.policyRebate + projection.bankCashRebate
+            + projection.fundFeeRebate - projection.assetLoanFee;
+        const rate = rows[30].irr! / 100;
+
+        let npv = -1_000_000;
+        for (let year = 1; year <= 30; year++) {
+            npv -= rows[year].annualMortgagePayment / (1 + rate) ** year;
+        }
+        npv += (rows[30].netEquity + terminalRebate) / (1 + rate) ** 30;
+
+        expect(npv / rows[30].netEquity).toBeCloseTo(0, 8);
+    });
+
+    it('leaves a projection without injected cash untouched', () => {
+        // Guards the whole feature against becoming a silent default: the golden snapshot
+        // and both workbook parity fixtures run with no injection.
+        const omitted = calculateProjection(inputFromDefaults());
+        const explicitZero = calculateProjection(inputFromDefaults({ extraCash: 0 }));
+
+        expect(explicitZero).toEqual(omitted);
+    });
+});
+
 describe('premium-financing arithmetic engine golden regressions', () => {
     describe('1. phantom loan', () => {
         it('does not create a loan when equity is non-positive', () => {

@@ -134,14 +134,19 @@ export const useAppState = () => {
 
     // Built once and reused for both the engine and the assumption checker below, so the
     // two never drift out of sync on which fields make up a SimulationInput.
+    // Input Cash is only editable inside the mortgage-refi panel, and under cash funding
+    // `budget` already IS the client's own money — so a value left behind by a since-
+    // abandoned mortgage scenario must not silently top up a cash-funded projection.
+    const deployedExtraCash = fundSource === 'mortgage' ? extraCash : 0;
+
     const simulationInput = useMemo(() => ({
         budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
         leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
         effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties,
-        bondCollateralLTV, bondLoanSpread,
+        bondCollateralLTV, bondLoanSpread, extraCash: deployedExtraCash,
         fxRate, policyRebateBands, bankCashRebate, fundFeeRebate,
         assetLoanHandlingFee, minPremiumUsd
-    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread, fxRate, policyRebateBands, bankCashRebate, fundFeeRebate, assetLoanHandlingFee, minPremiumUsd]);
+    }), [deployedExtraCash, budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread, fxRate, policyRebateBands, bankCashRebate, fundFeeRebate, assetLoanHandlingFee, minPremiumUsd]);
 
     const projection = useMemo(() => {
         return calculateProjection(simulationInput);

@@ -72,6 +72,20 @@ describe('checkAssumptions', () => {
         ]);
     });
 
+    it('measures the allocation against injected cash as well as the budget', () => {
+        const clean = projectionFor();
+        // 3M reserve + 2M bonds against a 4M budget is over-allocated on its own, and A1
+        // fired before injected cash reached the engine. A 1M injection funds it exactly,
+        // and the engine's own clamps now let it through — so the blocker must go quiet.
+        const over = inputFromDefaults({ cashReserve: 3_000_000, bondAlloc: 2_000_000 });
+        expect(ids(checkAssumptions(over, clean.output))).toContain('A1_ALLOCATION_EXCEEDS_BUDGET');
+        expect(ids(checkAssumptions({ ...over, extraCash: 1_000_000 }, clean.output)))
+            .not.toContain('A1_ALLOCATION_EXCEEDS_BUDGET');
+        // Still fires when the injection is not enough to close the gap.
+        expect(ids(checkAssumptions({ ...over, extraCash: 500_000 }, clean.output)))
+            .toContain('A1_ALLOCATION_EXCEEDS_BUDGET');
+    });
+
     it('fires and suppresses each Group A rule', () => {
         const clean = projectionFor();
         expect(ids(checkAssumptions(inputFromDefaults({ cashReserve: 3_000_000, bondAlloc: 2_000_000 }), clean.output))).toContain('A1_ALLOCATION_EXCEEDS_BUDGET');
