@@ -185,6 +185,141 @@ describe('Phase 5 return metrics', () => {
             && row.irr === null)).toBe(true);
         expect(projection.projectionData[0].irr).toBeNull();
     });
+
+    it('computes annualRoC on the same deployed-capital base as roi', () => {
+        const extraCash = 500_000;
+        const projection = calculateProjection(inputFromDefaults({ extraCash }));
+        const deployedCapital = projection.deployedCapital;
+        expect(deployedCapital).toBeGreaterThan(extraCash);
+
+        for (const year of [1, 5, 10, 30]) {
+            const row = projection.projectionData[year];
+            expect(row.annualRoC).toBeCloseTo((row.annualNetGain / deployedCapital) * 100, 10);
+        }
+    });
+
+    it('reports a non-zero annualRoC when the position is funded entirely by extra cash', () => {
+        const projection = calculateProjection(inputFromDefaults({
+            budget: 0, cashReserve: 0, bondAlloc: 0, extraCash: 1_000_000,
+        }));
+
+        expect(projection.deployedCapital).toBe(1_000_000);
+        const row = projection.projectionData[10];
+        // Guards the regression: with a budget-only denominator this read 0.
+        expect(row.annualNetGain).not.toBe(0);
+        expect(row.annualRoC).toBeCloseTo((row.annualNetGain / 1_000_000) * 100, 10);
+    });
+
+    describe('mortgage-funded IRR', () => {
+        // fundSource 'mortgage' means the client fronts no day-1 capital and instead
+        // services the refinanced mortgage. DEFAULT_INPUTS is cash-funded, so nothing
+        // else in the suite covers this path.
+        const mortgageFunded = (overrides: Partial<SimulationInput> = {}) => {
+            const unlockedCash = deriveUnlockedCash(
+                DEFAULT_INPUTS.propertyValue, DEFAULT_INPUTS.mortgageLtv,
+                DEFAULT_INPUTS.existingMortgage);
+            return calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage', budget: unlockedCash, ...overrides,
+            }));
+        };
+        const netRebate = (p: SimulationOutput) =>
+            p.policyRebate + p.bankCashRebate + p.fundFeeRebate - p.assetLoanFee;
+
+        it('returns a rate once the position is above water', () => {
+            // Previously EVERY year returned null here, because ownCapital was 0 under
+            // mortgage funding and a two-point vector had no sign change to solve.
+            const projection = mortgageFunded();
+            const rows = projection.projectionData;
+            const terminalRebate = netRebate(projection);
+
+            expect(rows[0].irr).toBeNull();
+            for (let year = 1; year <= 30; year++) {
+                const row = rows[year];
+                const exitFlow = row.netEquity + terminalRebate - row.annualMortgagePayment;
+                if (exitFlow > 0) {
+                    expect(row.irr).not.toBeNull();
+                    expect(Number.isFinite(row.irr!)).toBe(true);
+                } else {
+                    // Every flow is an outflow, so there is genuinely no rate to solve.
+                    expect(row.irr).toBeNull();
+                }
+            }
+            // Keeps the loop above from passing vacuously if the scenario ever changes.
+            expect(rows[30].irr).not.toBeNull();
+        });
+
+        it('stays null only while net equity is still below the day-1 haircut', () => {
+            const rows = mortgageFunded().projectionData;
+
+            expect(rows[4].netEquity).toBeLessThan(0);
+            expect(rows[4].irr).toBeNull();
+
+            expect(rows[10].netEquity).toBeGreaterThan(0);
+            expect(rows[10].irr).not.toBeNull();
+        });
+
+        it('prices an early exit as a loss', () => {
+            // A year-5 unwind has barely cleared the haircut against five years of
+            // servicing, so the rate must be deeply negative rather than flattering.
+            const rows = mortgageFunded().projectionData;
+
+            expect(rows[5].irr!).toBeLessThan(0);
+            expect(rows[30].irr!).toBeGreaterThan(0);
+        });
+
+        it('returns a rate that zeroes the NPV of the real client cash flows', () => {
+            // Independent of how the engine assembles its vector: discount the mortgage
+            // payments the client actually makes against the equity they actually exit
+            // with, and the reported rate must solve it.
+            const projection = mortgageFunded();
+            const rows = projection.projectionData;
+            const terminalRebate = netRebate(projection);
+
+            for (const year of [5, 10, 20, 30]) {
+                const rate = rows[year].irr! / 100;
+                let npv = 0;
+                for (let y = 1; y <= year; y++) {
+                    npv -= rows[y].annualMortgagePayment / (1 + rate) ** y;
+                }
+                npv += (rows[year].netEquity + terminalRebate) / (1 + rate) ** year;
+                expect(npv / rows[year].netEquity).toBeCloseTo(0, 8);
+            }
+        });
+
+        it('adds mortgage payments back into the terminal value exactly once', () => {
+            // The invariant the terminal value depends on: cumulativeNetGain has already
+            // deducted the payments, so an IRR that also charges them per year must add
+            // them back. Without this the year-30 rate reads far below the true one.
+            const projection = mortgageFunded();
+            const row = projection.projectionData[30];
+
+            expect(row.cumulativeMortgageCost).toBeGreaterThan(0);
+            expect(row.cumulativeNetGain + row.cumulativeMortgageCost)
+                .toBeCloseTo(row.netEquity + netRebate(projection), 6);
+        });
+
+        it('beats the cash-funded rate on the same defaults, as leverage should', () => {
+            const cash = calculateProjection(inputFromDefaults({ fundSource: 'cash' }));
+            const mortgage = mortgageFunded();
+
+            expect(mortgage.projectionData[30].irr!)
+                .toBeGreaterThan(cash.projectionData[30].irr!);
+        });
+    });
+
+    it('leaves the cash-funded IRR on its original two-point vector', () => {
+        // The mortgage stream must collapse to a single day-1 outlay under cash funding.
+        const projection = calculateProjection(inputFromDefaults({ fundSource: 'cash' }));
+        const row = projection.projectionData[30];
+        const twoPoint = calculateIRR([
+            -projection.ownCapital,
+            ...Array(29).fill(0),
+            projection.ownCapital + row.cumulativeNetGain,
+        ]);
+
+        expect(twoPoint).not.toBeNull();
+        expect(row.irr).toBeCloseTo(twoPoint! * 100, 10);
+    });
 });
 
 describe('premium-financing arithmetic engine golden regressions', () => {

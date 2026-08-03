@@ -736,11 +736,29 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const roi = deployedCapital > 0 ? (cumulativeNetGain / deployedCapital) * 100 : 0;
         return Number.isFinite(roi) ? roi : 0;
     };
-    const calculateRowIrr = (year: number, cumulativeNetGain: number): number | null => {
+    // The IRR vector is the client's OWN money. Under cash funding that is a single
+    // outlay at t=0 and every mortgage payment below is 0, so this collapses exactly
+    // to the original two-point vector. Under mortgage funding the client fronts no
+    // day-1 capital but services the mortgage for its tenor — with a two-point vector
+    // the initial flow was 0, so the solver saw no sign change and returned null for
+    // every year of every mortgage-funded proposal.
+    const calculateRowIrr = (
+        year: number,
+        cumulativeNetGain: number,
+        cumulativeMortgagePayments: number,
+        mortgagePaymentByYear: readonly number[],
+    ): number | null => {
         if (year === 0) return null;
         const cashFlows = Array(year + 1).fill(0);
         cashFlows[0] = -ownCapital;
-        cashFlows[year] = ownCapital + cumulativeNetGain;
+        for (let y = 1; y <= year; y++) {
+            cashFlows[y] = -(mortgagePaymentByYear[y] ?? 0);
+        }
+        // cumulativeNetGain has ALREADY deducted cumulativeMortgagePayments, so they
+        // must be added back into the terminal value — otherwise the per-year stream
+        // above charges the mortgage a second time, which surfaces as a plausible but
+        // materially understated IRR rather than an obvious failure.
+        cashFlows[year] += ownCapital + cumulativeNetGain + cumulativeMortgagePayments;
         const rate = calculateIRR(cashFlows);
         return rate === null ? null : rate * 100;
     };
@@ -795,6 +813,9 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     });
 
     let runningCumMtgCost = 0;
+    // Filled from the loop's own annualMtgPmt rather than re-read from mortgageSchedule,
+    // so the IRR stream cannot drift from the payments charged to annualNetGain.
+    const mtgPaymentByYear: number[] = Array(31).fill(0);
 
     for (let yr = 1; yr <= 30; yr++) {
         const factor = currentFactors[yr] || currentFactors[30];
@@ -821,6 +842,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             runningCumMtgCost += annualMtgPmt;
             netEquity -= mtgBal;
         }
+        mtgPaymentByYear[yr] = annualMtgPmt;
 
         const prev = data[yr - 1];
         const annualBondIncome = cumulativeBondInterest - prev.cumulativeBondInterest;
@@ -832,10 +854,12 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest
             - annualBondLoanInterest - annualMtgPmt - topUp.annualInterest;
 
+        // Same capital base as roi (calculateRowRoi): budget + extraCash. A budget-only
+        // denominator overstated the annual return whenever extraCash > 0, and read 0
+        // when the position was funded entirely by extraCash.
         let annualRoC = 0;
-        const denom = budget;
-        if (denom !== 0) {
-            annualRoC = (annualNetGain / denom) * 100;
+        if (deployedCapital > 0) {
+            annualRoC = (annualNetGain / deployedCapital) * 100;
         }
 
         const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
@@ -879,7 +903,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             annualMortgagePayment: annualMtgPmt,
             roi,
             averageReturn: roi / yr,
-            irr: calculateRowIrr(yr, cumulativeNetGain),
+            irr: calculateRowIrr(yr, cumulativeNetGain, cumulativeMortgagePayments, mtgPaymentByYear),
             bondLoan,
             cumulativeBondLoanInterest,
             ...topUpFields(topUp)
