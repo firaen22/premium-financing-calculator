@@ -33,6 +33,17 @@ export const DEFAULT_INPUTS = {
     bondCollateralLTV: 0,
     bondLoanSpread: 1.3,
 
+    // Rebates, one-off fees and FX. Every default is the engine's own no-op (empty
+    // bands, zero rebates/fees, the engine's 7.8 FX and 28,000 USD floor), so wiring
+    // these into simulationInput changes no projected number until the user enters
+    // real bank terms — which is what keeps the golden snapshot green.
+    fxRate: 7.8,
+    policyRebateBands: [] as Array<{ minPremiumUsd: number; rate: number }>,
+    bankCashRebate: 0,
+    fundFeeRebate: 0,
+    assetLoanHandlingFee: 0,
+    minPremiumUsd: 28000,
+
     // Stress test / sensitivity
     simulatedHibor: 4.5,
     bondPriceDrop: 10,

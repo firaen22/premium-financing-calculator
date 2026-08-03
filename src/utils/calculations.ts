@@ -968,7 +968,13 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     const yr0Surrender = totalPremium * yr0Factor;
     const yr0Assets = yr0Surrender + stressedBondPrincipal + cashReserve;
     const yr0Liabilities = bankLoan + bondLoan;
-    const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
+    // Must match the baseline's own Year-0 balance (mortgageSchedule[0].balance, the GROSS
+    // new loan), not unlockedCash (net of the existing mortgage that's being refinanced
+    // away) — otherwise a zero-shock stress run diverges from the baseline by exactly the
+    // existing-mortgage amount, rendering a phantom Year-0-to-Year-1 equity drop.
+    const yr0MortgageBal = fundSource === 'mortgage'
+        ? (baselineData?.[0]?.mortgageBalance ?? unlockedCash)
+        : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
 
     const yr0Collateral = yr0Surrender + stressedBondPrincipal;
@@ -1084,8 +1090,14 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
                 result = result - mtgBal;
             }
 
-            // Same basis as cumulativeNetGain: profit is net of the principal put in.
-            const profit = result - budget;
+            // Re-express on the baseline's own gain basis rather than re-deriving it here:
+            // cumulativeNetGain = netEquity - ownCapitalBasis + adjustments, and neither
+            // ownCapitalBasis nor adjustments (rebates, extraCash, mortgage payments) move
+            // under a rate/yield shock, so subtracting baseline netEquity and re-adding its
+            // cumulativeNetGain recovers exactly "profit net of principal, rebates and
+            // ongoing costs" without duplicating that basis logic (and drifting from it).
+            const baselineYr = baselineData[yr];
+            const profit = result - (baselineYr?.netEquity ?? 0) + (baselineYr?.cumulativeNetGain ?? 0);
             row.push(profit);
         }
         heatMapRows.push(row);

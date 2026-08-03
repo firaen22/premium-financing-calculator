@@ -40,6 +40,17 @@ export const useAppState = () => {
     const [bondLoanSpread, setBondLoanSpread] = useState(DEFAULT_INPUTS.bondLoanSpread);
     const [interestBasis, setInterestBasis] = useState<'hibor' | 'cof'>(DEFAULT_INPUTS.interestBasis);
     const [cofRate, setCofRate] = useState(DEFAULT_INPUTS.cofRate);
+
+    // Rebates, one-off fees, FX. Defaults are the engine's own no-ops (see defaults.ts),
+    // so the projection is unchanged until real bank terms are entered. Bands are stored
+    // in the ENGINE's shape — rate as a DECIMAL (0.01 = 1%) — and the Sidebar converts
+    // to/from percent at the input boundary only.
+    const [fxRate, setFxRate] = useState(DEFAULT_INPUTS.fxRate);
+    const [policyRebateBands, setPolicyRebateBands] = useState(DEFAULT_INPUTS.policyRebateBands);
+    const [bankCashRebate, setBankCashRebate] = useState(DEFAULT_INPUTS.bankCashRebate);
+    const [fundFeeRebate, setFundFeeRebate] = useState(DEFAULT_INPUTS.fundFeeRebate);
+    const [assetLoanHandlingFee, setAssetLoanHandlingFee] = useState(DEFAULT_INPUTS.assetLoanHandlingFee);
+    const [minPremiumUsd, setMinPremiumUsd] = useState(DEFAULT_INPUTS.minPremiumUsd);
     const [clientName, setClientName] = useState(DEFAULT_CLIENT_NAME);
     const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
@@ -97,6 +108,17 @@ export const useAppState = () => {
     const updateProperty = (index: number, patch: Partial<MortgageProperty>) =>
         setProperties(prev => prev.map((property, i) => i === index ? { ...property, ...patch } : property));
 
+    // Rebate-band editor helpers, mirroring the properties trio above. Same 8-row soft
+    // cap — the workbook's own VLOOKUP table has 5 bands.
+    const addRebateBand = () => setPolicyRebateBands(prev =>
+        prev.length >= 8 ? prev : [...prev, { minPremiumUsd: 0, rate: 0 }]);
+
+    const removeRebateBand = (index: number) => setPolicyRebateBands(prev =>
+        prev.filter((_, i) => i !== index));
+
+    const updateRebateBand = (index: number, patch: Partial<{ minPremiumUsd: number; rate: number }>) =>
+        setPolicyRebateBands(prev => prev.map((band, i) => i === index ? { ...band, ...patch } : band));
+
     const unlockedCash = deriveMortgageCashOut(properties);
     const effectiveMortgageRate = deriveEffectiveMortgageRate(
         hibor, mortgageHSpread, primeRate, mortgagePModifier);
@@ -116,8 +138,10 @@ export const useAppState = () => {
         budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
         leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
         effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties,
-        bondCollateralLTV, bondLoanSpread
-    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread]);
+        bondCollateralLTV, bondLoanSpread,
+        fxRate, policyRebateBands, bankCashRebate, fundFeeRebate,
+        assetLoanHandlingFee, minPremiumUsd
+    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread, fxRate, policyRebateBands, bankCashRebate, fundFeeRebate, assetLoanHandlingFee, minPremiumUsd]);
 
     const projection = useMemo(() => {
         return calculateProjection(simulationInput);
@@ -151,7 +175,11 @@ export const useAppState = () => {
     // or the Apply button's pending edits would silently revert the change.
     //
     // Deliberately ABSENT, and they must stay absent: hibor, cofRate, spread,
-    // bondLoanSpread, capRate, bondYield, handlingFee, leverageLTV, interestBasis. Those
+    // bondLoanSpread, capRate, bondYield, handlingFee, leverageLTV, interestBasis —
+    // and the rebate/fee terms (fxRate, policyRebateBands, bankCashRebate,
+    // fundFeeRebate, assetLoanHandlingFee, minPremiumUsd), which are contracted bank
+    // terms under the same doctrine: an assistant that can invent a rebate can make
+    // any strategy look profitable. Those
     // are market data or contracted bank terms — an assistant that can rewrite the rate
     // an illustration is priced on can make any strategy look affordable. leverageLTV in
     // particular is fixed by the bank at 90-95%; the client's real lever is bondAlloc and
@@ -219,6 +247,12 @@ export const useAppState = () => {
         clientName, setClientName,
         representativeName, setRepresentativeName,
         properties, addProperty, removeProperty, updateProperty,
+        fxRate, setFxRate,
+        policyRebateBands, addRebateBand, removeRebateBand, updateRebateBand,
+        bankCashRebate, setBankCashRebate,
+        fundFeeRebate, setFundFeeRebate,
+        assetLoanHandlingFee, setAssetLoanHandlingFee,
+        minPremiumUsd, setMinPremiumUsd,
         primeRate, setPrimeRate,
         mortgageHSpread, setMortgageHSpread,
         mortgagePModifier, setMortgagePModifier,

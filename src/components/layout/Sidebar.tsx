@@ -39,7 +39,7 @@ export const Sidebar = ({
     isMobileOpen,
     onMobileClose,
 }: SidebarProps) => {
-    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, bondCollateralLTV, setBondCollateralLTV, bondLoanSpread, setBondLoanSpread, projection, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, properties, addProperty, removeProperty, updateProperty, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier } = useApp();
+    const { t: labels, activeView, setActiveView: onViewChange, lang, fundSource, setFundSource, extraCash, setExtraCash, tempBudget, setTempBudget, setBudget, tempCashReserve, setTempCashReserve, setCashReserve, budget, cashReserve, bondAlloc, setBondAlloc, bondYield, setBondYield, bondCollateralLTV, setBondCollateralLTV, bondLoanSpread, setBondLoanSpread, projection, hibor, spread, setSpread, capRate, setCapRate, leverageLTV, setLeverageLTV, handlingFee, setHandlingFee, interestBasis, setInterestBasis, cofRate, setCofRate, properties, addProperty, removeProperty, updateProperty, simulatedHibor, setSimulatedHibor, bondPriceDrop, setBondPriceDrop, showGuaranteed, setShowGuaranteed, isGeneratingPDF, unlockedCash, primeRate, setPrimeRate, mortgageHSpread, setMortgageHSpread, mortgagePModifier, setMortgagePModifier, fxRate, setFxRate, policyRebateBands, addRebateBand, removeRebateBand, updateRebateBand, bankCashRebate, setBankCashRebate, fundFeeRebate, setFundFeeRebate, assetLoanHandlingFee, setAssetLoanHandlingFee, minPremiumUsd, setMinPremiumUsd } = useApp();
     const { addNotification, onDownloadPDF } = useServices();
     // pfEquity comes from the projection engine rather than being recomputed here. A local
     // copy once used raw values while the engine clamps cashReserve to budget, so the two
@@ -47,6 +47,7 @@ export const Sidebar = ({
     const { pfEquity } = useApp().projection;
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showRateAssumptions, setShowRateAssumptions] = useState(false);
+    const [showRebatesFees, setShowRebatesFees] = useState(false);
 
     const handleCollapseToggle = () => {
         const next = !isCollapsed;
@@ -317,6 +318,62 @@ export const Sidebar = ({
                                     ) : (
                                         <div className="-mt-3 mb-5 md:mb-8 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                                             {labels.bondCollateralOff}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Rebates & one-off fees — contracted bank terms, so they live behind a
+                                    collapse like Rate Assumptions and default to the engine's no-ops.
+                                    Band rates are stored as DECIMALS (0.01 = 1%) to match the engine and
+                                    the workbook's VLOOKUP table; the ×100/÷100 here is the only place
+                                    the percent representation exists. */}
+                                <div className="pt-4 border-t border-slate-800">
+                                    <button
+                                        onClick={() => setShowRebatesFees(v => !v)}
+                                        aria-expanded={showRebatesFees}
+                                        className="w-full flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-200 transition-colors min-h-[44px] py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
+                                    >
+                                        <span>{labels.rebatesFeesSection}</span>
+                                        <span>{showRebatesFees ? '−' : '+'}</span>
+                                    </button>
+                                    {showRebatesFees && (
+                                        <div className="space-y-4 pt-4">
+                                            <InputField label={labels.fxRateLabel} value={fxRate} onChange={setFxRate} prefix="" step={0.05} dark />
+                                            <InputField label={labels.bankCashRebateLabel} value={bankCashRebate} onChange={setBankCashRebate} dark />
+                                            <InputField label={labels.fundFeeRebateLabel} value={fundFeeRebate} onChange={setFundFeeRebate} dark />
+                                            <InputField label={labels.assetLoanFeeLabel} value={assetLoanHandlingFee} onChange={setAssetLoanHandlingFee} prefix="" step={0.05} suffix="%" dark />
+                                            <InputField label={labels.minPremiumUsdLabel} value={minPremiumUsd} onChange={setMinPremiumUsd} step={1000} dark />
+
+                                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{labels.rebateBandsLabel}</div>
+                                            {policyRebateBands.map((band, index) => (
+                                                <div key={index} className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+                                                    <div className="flex items-center justify-between gap-3 mb-5">
+                                                        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
+                                                            {labels.bandLabel} {index + 1}
+                                                        </h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeRebateBand(index)}
+                                                            aria-label={`${labels.removeBand} ${labels.bandLabel} ${index + 1}`}
+                                                            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059] rounded"
+                                                        >
+                                                            <MinusCircle className="w-4 h-4" />
+                                                            {labels.removeBand}
+                                                        </button>
+                                                    </div>
+                                                    <InputField label={labels.bandMinPremiumLabel} value={band.minPremiumUsd} onChange={minPremiumUsd => updateRebateBand(index, { minPremiumUsd })} step={100000} dark />
+                                                    <InputField label={labels.bandRateLabel} value={band.rate * 100} onChange={pctValue => updateRebateBand(index, { rate: pctValue / 100 })} prefix="" step={0.5} suffix="%" dark />
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={addRebateBand}
+                                                disabled={policyRebateBands.length >= 8}
+                                                className="w-full flex items-center justify-center gap-2 min-h-[44px] py-2 border border-slate-700 hover:border-[#c5a059] text-slate-300 hover:text-[#e4c685] text-[10px] font-bold uppercase tracking-widest rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]"
+                                            >
+                                                <PlusCircle className="w-4 h-4" />
+                                                {labels.addBand}
+                                            </button>
                                         </div>
                                     )}
                                 </div>

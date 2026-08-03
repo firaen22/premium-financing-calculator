@@ -229,6 +229,32 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             expect(worst).toBeLessThan(1);
         });
 
+        // Regression for the Year-0 basis mismatch: the baseline's Year-0 mortgage
+        // balance is the GROSS new loan (mortgageSchedule[0].balance); a stress-test
+        // Year 0 built from the NET unlockedCash (excluding the refinanced-away existing
+        // mortgage) diverges from the baseline by exactly that existing-mortgage amount
+        // even at zero shock. inputFromDefaults's own fundSource stays 'cash', so this
+        // needs its own mortgage/properties input to exercise the path at all.
+        it('has no zero-shock divergence on the mortgage path with an existing loan', () => {
+            const unlockedCash = deriveMortgageCashOut([
+                { value: 5_100_000, ltv: 80, existingMortgage: 1_900_000, tenor: 25, rate: 2.31 },
+            ]);
+            const projection = calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage',
+                unlockedCash,
+                properties: [
+                    { value: 5_100_000, ltv: 80, existingMortgage: 1_900_000, tenor: 25, rate: 2.31 },
+                ],
+            }));
+            const stressed = calculateStressTest(stressInput(projection, {
+                unlockedCash, fundSource: 'mortgage', simulatedHibor: DEFAULT_INPUTS.hibor, bondPriceDrop: 0,
+            }));
+            const worst = Math.max(...projection.projectionData.map((row, year) =>
+                Math.abs(stressed.stressedProjection[year].netEquity - row.netEquity)));
+
+            expect(worst).toBeLessThan(1);
+        });
+
         it.each([
             ['hibor', 5.0],
             ['cof', 2.0],

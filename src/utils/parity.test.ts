@@ -126,6 +126,13 @@ describe('workbook parity', () => {
                 wb.expected.gainByYear[year], FACTOR_TOL, `Y${year} gain`);
         });
 
+        // ROI runs on deployedCapital (Phase 6), not the cumulativeNetGain basis above —
+        // a regression here would slip through the gain-only anchors.
+        it.each(anchors)('reproduces the Year %i ROI', year => {
+            close(projection.projectionData[year].roi,
+                wb.expected.roiByYear[year], FACTOR_TOL, `Y${year} ROI`);
+        });
+
         // Independent of the return basis — surrender value is premium x factor.
         it('reproduces the Year 5 surrender value', () => {
             close(projection.projectionData[5].surrenderValue,
