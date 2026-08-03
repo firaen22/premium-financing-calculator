@@ -685,7 +685,12 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const mNetCashflow = mBondIncome - mLoanInterest - mBondLoanInterest - mMortgageCost;
 
     // A supplied property list is the workbook-parity source of truth. The scalar
-    // fields remain the compatibility path used by the current UI.
+    // fields remain a compatibility fallback for callers that predate `properties`
+    // (the current UI always supplies the list). The fallback amortises monthly,
+    // matching deriveMortgageSchedule, but honours the caller's monthlyMortgagePmt
+    // rather than re-deriving it — the two paths still differ when that payment is
+    // not the PMT of unlockedCash (e.g. a payment summed across gross per-property
+    // loans against a cash-out balance net of existing mortgages).
     const hasProperties = input.properties !== undefined;
     let mortgageSchedule: MortgageYear[] | undefined;
     if (fundSource === 'mortgage' && hasProperties) {
@@ -695,20 +700,25 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         let balance = unlockedCash;
         let cumulativePayments = 0;
         let cumulativeInterest = 0;
+        let annualPayment = 0;
         mortgageSchedule[0].balance = balance;
-        for (let year = 1; year <= 30; year++) {
-            let annualPayment = 0;
-            if (year <= mortgageTenor) {
-                const interest = balance * (effectiveMortgageRate / 100);
-                const principal = Math.max(0, Math.min(balance, monthlyMortgagePmt * 12 - interest));
-                annualPayment = principal + interest;
+        for (let month = 1; month <= 360; month++) {
+            if (month <= mortgageTenor * 12) {
+                const interest = balance * effectiveMortgageRate / 1200;
+                const principal = Math.max(0, Math.min(balance, monthlyMortgagePmt - interest));
+                const payment = principal + interest;
                 balance -= principal;
+                if (balance < 1e-9) balance = 0;
+                cumulativePayments += payment;
                 cumulativeInterest += interest;
-                cumulativePayments += annualPayment;
+                annualPayment += payment;
             }
-            mortgageSchedule[year] = {
-                balance, cumulativePayments, cumulativeInterest, annualPayment,
-            };
+            if (month % 12 === 0) {
+                mortgageSchedule[month / 12] = {
+                    balance, cumulativePayments, cumulativeInterest, annualPayment,
+                };
+                annualPayment = 0;
+            }
         }
     }
     const mortgageCashOut = fundSource === 'mortgage' && hasProperties
