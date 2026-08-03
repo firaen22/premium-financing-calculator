@@ -55,6 +55,9 @@ export interface ProjectionData {
     cumulativeMortgageCost: number;
     cumulativeMortgageInterest: number;
     annualMortgagePayment: number;
+    roi: number;
+    averageReturn: number;
+    irr: number | null;
     // Bond-fund collateral loan. Kept separate from `loan`/`cumulativeInterest` because
     // the two facilities are secured by different collateral: the policy loan against the
     // policy's cash surrender value, this one against the bond fund. Blended into one
@@ -62,11 +65,31 @@ export interface ProjectionData {
     // invisible. Zero unless bondCollateralLTV is set.
     bondLoan: number;
     cumulativeBondLoanInterest: number;
+    topUpUnits?: number;
+    cumulativeTopUp?: number;
+    cumulativeTopUpInterest?: number;
+    topUpServicing?: number;
+    topUpToClient?: number;
     // Stress test fields
     baselineNetEquity?: number;
     ltv?: number;
     bondLtv?: number;
 }
+
+export type MortgageProperty = {
+    value: number;
+    ltv: number;
+    existingMortgage: number;
+    tenor: number;
+    rate: number;
+};
+
+export type MortgageYear = {
+    balance: number;
+    cumulativePayments: number;
+    cumulativeInterest: number;
+    annualPayment: number;
+};
 
 export interface SimulationInput {
     budget: number;
@@ -85,11 +108,27 @@ export interface SimulationInput {
     effectiveMortgageRate: number;
     monthlyMortgagePmt: number;
     mortgageTenor: number;
+    properties?: MortgageProperty[];
+    extraCash?: number;
     // Second leverage layer: pledge the bond fund as collateral and borrow against it to
     // top up the policy down payment. Optional and 0 by default, so every existing caller
     // and the golden projection snapshot keep their current numbers.
     bondCollateralLTV?: number;
     bondLoanSpread?: number;
+    topUpMode?: 'off' | 'annual' | 'every5' | 'serviceOnly';
+    minTopUpAmount?: number;
+    topUpRate?: number;
+    fxRate?: number;
+    /** Ascending-sorted rebate bands. `minPremiumUsd` is an INCLUSIVE lower bound; the
+     * applicable band is the last one whose bound is <= the USD premium. `rate` is a
+     * DECIMAL (0.01 = 1%). Default [] — no bands means no rebate, which keeps every
+     * existing caller unchanged.
+     */
+    policyRebateBands?: Array<{ minPremiumUsd: number; rate: number }>;
+    bankCashRebate?: number;
+    fundFeeRebate?: number;
+    assetLoanHandlingFee?: number;
+    minPremiumUsd?: number;
 }
 
 export interface SimulationOutput {
@@ -109,6 +148,15 @@ export interface SimulationOutput {
     bondLoan: number;
     bondLoanRate: number;
     monthlyBondLoanInterest: number;
+    mortgageCashOut: number;
+    ownCapital: number;
+    deployedCapital: number;
+    policyRebate: number;
+    policyRebateRate: number;
+    bankCashRebate: number;
+    fundFeeRebate: number;
+    assetLoanFee: number;
+    belowMinPremium: boolean;
 }
 
 export interface StressTestInput {
@@ -164,6 +212,31 @@ export const sanitize = (val: number, min = 0, max = Infinity, fallback = 0) => 
 // ceiling is orders of magnitude above any real premium-financing case.
 export const MAX_MONEY = 1e15;
 
+/** Excel VLOOKUP(x, table, col) with range_lookup omitted (approximate match):
+ *  the last band whose minPremiumUsd <= premiumUsd wins. Returns 0 when the
+ *  premium falls below every band, where Excel returns #N/A — a deliberate
+ *  divergence, since an advisor quote must not render an error string as a number.
+ */
+export const lookupRebateRate = (
+    premiumUsd: number,
+    bands: Array<{ minPremiumUsd: number; rate: number }> | undefined,
+): number => {
+    if (!Number.isFinite(premiumUsd) || !bands?.length) return 0;
+
+    const validBands = bands
+        .map((band, index) => ({ band, index }))
+        .filter(({ band }) => Number.isFinite(band?.minPremiumUsd) && Number.isFinite(band?.rate))
+        .sort((left, right) =>
+            left.band.minPremiumUsd - right.band.minPremiumUsd || left.index - right.index);
+
+    let rate = 0;
+    for (const { band } of validBands) {
+        if (band.minPremiumUsd > premiumUsd) break;
+        rate = band.rate;
+    }
+    return Number.isFinite(rate) ? rate : 0;
+};
+
 // Reported LTV when a loan is outstanding against fully impaired collateral. The true
 // ratio is unbounded, but the LTV chart needs a finite number, and any value this far
 // above a margin-call threshold reads unambiguously as "collateral gone".
@@ -188,6 +261,282 @@ export const calculatePMT = (rate: number, nper: number, pv: number) => {
     const growth = Math.pow(1 + r, n);
     if (!isFinite(growth) || growth === 1) return pv / (nper * 12);
     return (pv * r * growth) / (growth - 1);
+};
+
+/** Excel-XIRR-style root of the NPV function over annual periods (integer t, no dates).
+ * Returns the rate as a decimal, or null when the cash flows are degenerate or no
+ * finite root can be found in the displayable range.
+ */
+export const calculateIRR = (cashFlows: number[]): number | null => {
+    if (!Array.isArray(cashFlows) || cashFlows.length < 2
+        || cashFlows.some(flow => !Number.isFinite(flow))) return null;
+
+    const hasPositive = cashFlows.some(flow => flow > 0);
+    const hasNegative = cashFlows.some(flow => flow < 0);
+    if (!hasPositive || !hasNegative) return null;
+
+    const MIN_RATE = -0.9999;
+    const MAX_RATE = 1000;
+    const MAX_NEWTON_ITERATIONS = 50;
+    const MAX_BISECTION_ITERATIONS = 200;
+    const NPV_TOLERANCE = 1e-7;
+    const STEP_TOLERANCE = 1e-10;
+
+    const evaluate = (rate: number): { value: number; derivative: number | null } | null => {
+        const base = 1 + rate;
+        if (!Number.isFinite(base) || base <= 0) return null;
+
+        let value = 0;
+        let derivative = 0;
+        let derivativeFinite = true;
+        for (let t = 0; t < cashFlows.length; t++) {
+            const flow = cashFlows[t];
+            if (flow === 0) continue;
+
+            const denominator = Math.pow(base, t);
+            const term = denominator === 0 ? null : flow / denominator;
+            if (term === null || !Number.isFinite(term)) return null;
+
+            value += term;
+            if (!Number.isFinite(value)) return null;
+
+            if (t > 0 && derivativeFinite) {
+                const derivativeTerm = -t * term / base;
+                if (Number.isFinite(derivativeTerm)) {
+                    derivative += derivativeTerm;
+                    if (!Number.isFinite(derivative)) derivativeFinite = false;
+                } else {
+                    derivativeFinite = false;
+                }
+            }
+        }
+
+        return { value, derivative: derivativeFinite ? derivative : null };
+    };
+
+    const usableRate = (rate: number): number | null => {
+        if (!Number.isFinite(rate) || rate < MIN_RATE || rate > MAX_RATE) return null;
+        if (Math.abs(rate) < STEP_TOLERANCE) return 0;
+        return Math.max(MIN_RATE, Math.min(MAX_RATE, rate));
+    };
+
+    const newtonStart = 0.1;
+    let rate = newtonStart;
+    for (let iteration = 0; iteration < MAX_NEWTON_ITERATIONS; iteration++) {
+        const current = evaluate(rate);
+        if (!current) break;
+        if (Math.abs(current.value) < NPV_TOLERANCE) return usableRate(rate);
+        if (current.derivative === null || current.derivative === 0) break;
+
+        const step = current.value / current.derivative;
+        const nextRate = rate - step;
+        if (!Number.isFinite(step) || !Number.isFinite(nextRate) || nextRate <= -1
+            || nextRate < MIN_RATE || nextRate > MAX_RATE) break;
+
+        const next = evaluate(nextRate);
+        if (!next) break;
+        if (Math.abs(next.value) < NPV_TOLERANCE) return usableRate(nextRate);
+        if (Math.abs(step) < STEP_TOLERANCE) break;
+        rate = nextRate;
+    }
+
+    const lower = evaluate(MIN_RATE);
+    const upper = evaluate(MAX_RATE);
+    if (!lower || !upper) return null;
+    if (Math.abs(lower.value) < NPV_TOLERANCE) return MIN_RATE;
+    if (Math.abs(upper.value) < NPV_TOLERANCE) return MAX_RATE;
+    if (Math.sign(lower.value) === Math.sign(upper.value)) return null;
+
+    let left = MIN_RATE;
+    let right = MAX_RATE;
+    let leftValue = lower.value;
+    for (let iteration = 0; iteration < MAX_BISECTION_ITERATIONS; iteration++) {
+        const middle = left + (right - left) / 2;
+        const evaluated = evaluate(middle);
+        if (!evaluated) return null;
+        if (Math.abs(evaluated.value) < NPV_TOLERANCE
+            || Math.abs(right - left) < STEP_TOLERANCE) return usableRate(middle);
+
+        if (Math.sign(evaluated.value) === Math.sign(leftValue)) {
+            left = middle;
+            leftValue = evaluated.value;
+        } else {
+            right = middle;
+        }
+    }
+
+    return null;
+};
+
+const zeroMortgageYear = (): MortgageYear => ({
+    balance: 0,
+    cumulativePayments: 0,
+    cumulativeInterest: 0,
+    annualPayment: 0,
+});
+
+export const deriveMortgageSchedule = (properties?: MortgageProperty[]): MortgageYear[] => {
+    const schedule = Array.from({ length: 31 }, zeroMortgageYear);
+
+    for (const property of (properties ?? []).slice(0, 8)) {
+        const value = sanitize(property?.value, 0, MAX_MONEY);
+        const ltv = sanitize(property?.ltv, 0, 100);
+        const tenor = sanitize(property?.tenor, 0, 50);
+        const rate = sanitize(property?.rate, 0, 100);
+        const gross = value * (ltv / 100);
+        const pmt = calculatePMT(rate, tenor, gross);
+        let balance = gross;
+        let cumulativePayments = 0;
+        let cumulativeInterest = 0;
+        let annualPayment = 0;
+
+        schedule[0].balance += balance;
+        for (let month = 1; month <= 360; month++) {
+            let payment = 0;
+            let interest = 0;
+            if (month <= tenor * 12) {
+                interest = balance * rate / 1200;
+                const principal = Math.max(0, Math.min(balance, pmt - interest));
+                payment = principal + interest;
+                balance -= principal;
+                if (balance < 1e-9) balance = 0;
+            }
+
+            cumulativePayments += payment;
+            cumulativeInterest += interest;
+            annualPayment += payment;
+            if (month % 12 === 0) {
+                const year = month / 12;
+                schedule[year].balance += balance;
+                schedule[year].cumulativePayments += cumulativePayments;
+                schedule[year].cumulativeInterest += cumulativeInterest;
+                schedule[year].annualPayment += annualPayment;
+                annualPayment = 0;
+            }
+        }
+    }
+
+    return schedule;
+};
+
+export const deriveMortgageCashOut = (properties?: MortgageProperty[]): number =>
+    (properties ?? []).slice(0, 8).reduce((total, property) => {
+        const value = sanitize(property?.value, 0, MAX_MONEY);
+        const ltv = sanitize(property?.ltv, 0, 100);
+        const existingMortgage = sanitize(property?.existingMortgage, 0, MAX_MONEY);
+        const gross = value * (ltv / 100);
+        // Signed, matching 'Data Entry'!B6 = B3*B4-B5, which carries no MAX. A property
+        // whose existing mortgage exceeds the new facility is a refinance DOWN: it
+        // releases nothing and consumes cash to complete, so it must reduce the pooled
+        // cash-out ('Data Entry'!F6 = SUM(B6:E6)).
+        //
+        // Clamping each property at 0 instead looks safer and is not: the balance still
+        // carries the full `gross`, so the client would be charged a debt against a
+        // property recorded as having released no money — a loss of exactly `gross`
+        // conjured out of the floor. The aggregate is allowed to go negative; `budget`
+        // is sanitized downstream, where a non-viable structure collapses to a zero
+        // premium rather than being silently papered over here.
+        return total + (gross - existingMortgage);
+    }, 0);
+
+export type TopUpYear = {
+    units: number;
+    cumulativeTopUp: number;
+    annualInterest: number;
+    cumulativeInterest: number;
+    servicing: number;
+    toClient: number;
+};
+
+const zeroTopUpYear = (): TopUpYear => ({
+    units: 0,
+    cumulativeTopUp: 0,
+    annualInterest: 0,
+    cumulativeInterest: 0,
+    servicing: 0,
+    toClient: 0,
+});
+
+const finiteAt = (values: number[], index: number) => {
+    const value = values[index];
+    return Number.isFinite(value) ? value : 0;
+};
+
+/** Top-up rate as a DECIMAL. An explicit override wins; otherwise the plan's own
+ *  effective financing rate (a percent) converted to a decimal. */
+export const resolveTopUpRate = (explicit: number | undefined, effRatePercent: number): number => {
+    if (Number.isFinite(explicit) && (explicit as number) >= 0) return explicit as number;
+    return Number.isFinite(effRatePercent) && effRatePercent > 0 ? effRatePercent / 100 : 0;
+};
+
+export const deriveTopUpSchedule = (args: {
+    surrenderByYear: number[];
+    cumMortgagePayments: number[];
+    cumPolicyLoanInterest: number[];
+    cumBondInterest: number[];
+    cashReserve: number;
+    mode: 'off' | 'annual' | 'every5' | 'serviceOnly';
+    minTopUpHkd: number;
+    rate: number;
+}): TopUpYear[] => {
+    const schedule = Array.from({ length: 31 }, zeroTopUpYear);
+    if (!Number.isFinite(args.minTopUpHkd) || args.minTopUpHkd <= 0 || args.mode === 'off') return schedule;
+
+    // Releasable cash is 90% of the policy's APPRECIATION since year 1 — an advance
+    // rate against growth, NOT the initial leverage LTV against the whole surrender
+    // value. Both are 90% at the banks in the workbook's table, which is precisely how
+    // the two get conflated: do not wire this to `leverageLTV`. Dividing the
+    // appreciation by (minTopUp / 0.9) is the same statement as taking 90% of the
+    // appreciation and dividing by minTopUp.
+    const TOP_UP_ADVANCE_RATE = 0.9;
+    const collateralPerUnit = args.minTopUpHkd / TOP_UP_ADVANCE_RATE;
+    // ROUNDUP matches the workbook's hand-typed 55556 (= 50000/0.9 rounded up).
+    const divisor = Math.ceil(collateralPerUnit);
+    const rate = Number.isFinite(args.rate) && args.rate >= 0 ? args.rate : 0;
+    if (!Number.isFinite(divisor) || divisor <= 0) return schedule;
+
+    const baselineSurrender = finiteAt(args.surrenderByYear, 1);
+    let cumulativeInterest = 0;
+    for (let year = 5; year <= 30; year++) {
+        const surrender = finiteAt(args.surrenderByYear, year);
+        const capacity = Math.max(0, (surrender - baselineSurrender) / divisor);
+        let units = 0;
+        if (args.mode === 'serviceOnly') {
+            const mortgage = finiteAt(args.cumMortgagePayments, year);
+            const policyInterest = finiteAt(args.cumPolicyLoanInterest, year);
+            const need = Math.max(0, mortgage + policyInterest);
+            // Unrounded here, unlike `divisor` above — the workbook's U column uses
+            // -F20/0.9 directly while W uses the rounded literal. Kept apart on purpose.
+            units = Math.max(0, Math.ceil(need * 1.1 / collateralPerUnit));
+        } else if (args.mode === 'annual' || (args.mode === 'every5' && year % 5 === 0)) {
+            units = Math.max(0, Math.floor(capacity));
+        } else if (args.mode === 'every5') {
+            units = schedule[year - 1].units;
+        }
+
+        const cumulativeTopUp = args.minTopUpHkd * units;
+        const annualInterest = cumulativeTopUp * rate;
+        const safeTopUp = Number.isFinite(cumulativeTopUp) ? cumulativeTopUp : 0;
+        const safeAnnualInterest = Number.isFinite(annualInterest) ? annualInterest : 0;
+        cumulativeInterest += safeAnnualInterest;
+        if (!Number.isFinite(cumulativeInterest)) cumulativeInterest = 0;
+        const netOutgo = finiteAt([args.cashReserve], 0)
+            + finiteAt(args.cumBondInterest, year)
+            - cumulativeInterest
+            - finiteAt(args.cumPolicyLoanInterest, year)
+            - finiteAt(args.cumMortgagePayments, year);
+        const servicing = safeTopUp > 0 && netOutgo < 0 ? -netOutgo : 0;
+
+        schedule[year] = {
+            units,
+            cumulativeTopUp: safeTopUp,
+            annualInterest: safeAnnualInterest,
+            cumulativeInterest,
+            servicing: Number.isFinite(servicing) ? servicing : 0,
+            toClient: Number.isFinite(safeTopUp - servicing) ? safeTopUp - servicing : 0,
+        };
+    }
+    return schedule;
 };
 
 // The two derivations below were inline in useAppState. They are extracted for the same
@@ -234,10 +583,20 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const effectiveMortgageRate = sanitize(input.effectiveMortgageRate, 0, 100);
     const monthlyMortgagePmt = sanitize(input.monthlyMortgagePmt, 0, MAX_MONEY);
     const mortgageTenor = sanitize(input.mortgageTenor, 0, 50);
+    const extraCash = sanitize(input.extraCash ?? 0, 0, MAX_MONEY);
     const bondCollateralLTV = sanitize(input.bondCollateralLTV ?? 0, 0, 100);
     // Defaults to the policy loan's spread only so an unset field is not silently free
     // money; the real facility prices separately and the user enters it.
     const bondLoanSpread = sanitize(input.bondLoanSpread ?? spread, 0, 100);
+    const topUpMode = input.topUpMode ?? 'off';
+    const fxRate = Number.isFinite(input.fxRate) && (input.fxRate ?? 0) > 0 ? input.fxRate! : 7.8;
+    const minTopUpAmountInput = input.minTopUpAmount ?? 50000;
+    const minTopUpAmount = Number.isFinite(minTopUpAmountInput) ? Math.max(0, minTopUpAmountInput) : 0;
+    const minTopUpHkd = minTopUpAmount * fxRate;
+    const bankCashRebate = sanitize(input.bankCashRebate ?? 0, 0, MAX_MONEY);
+    const fundFeeRebate = sanitize(input.fundFeeRebate ?? 0, 0, MAX_MONEY);
+    const assetLoanHandlingFee = sanitize(input.assetLoanHandlingFee ?? 0, 0, 100);
+    const minPremiumUsd = sanitize(input.minPremiumUsd ?? 28000, 0, MAX_MONEY, 28000);
 
     // Bond Logic: Fee is one-off, deducted from capital. Yield applies to Net Capital.
     // Computed before equity because the pledgeable collateral is what the client
@@ -250,7 +609,7 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     // liabilities below. Left out of liabilities it would make borrowing look like it
     // increased net worth.
     const bondLoan = netBondAlloc * (bondCollateralLTV / 100);
-    const equity = budget - cashReserve - bondAlloc + bondLoan;
+    const equity = budget - cashReserve - bondAlloc + bondLoan + extraCash;
     const ltvDecimal = leverageLTV / 100.0;
 
     // Use the base factors directly
@@ -262,6 +621,32 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     if (denominator > 0 && equity > 0) {
         tPremium = sanitize(equity / denominator, 0, MAX_MONEY);
     }
+
+    // Rounded to cents before the band lookup, because the band edges are knife-edges
+    // and the app and the workbook reach the same premium by different division orders:
+    // the app computes (equity / 0.2799999999999999) / 7.8, the sheet computes
+    // (equity / 7.8) / 0.28. At a premium of exactly USD 1,000,000 those land on
+    // opposite sides — 1000000.0000000003 vs 999999.9999999999 — and the sheet drops a
+    // band, paying 2% where the table says 4%. Sub-cent precision is not meaningful in a
+    // premium, so rounding first makes the choice deterministic and lands both on the
+    // band the table intends.
+    const premiumUsdRaw = fxRate > 0 ? tPremium / fxRate : 0;
+    const premiumUsd = Number.isFinite(premiumUsdRaw)
+        ? Math.round(premiumUsdRaw * 100) / 100
+        : 0;
+    const rawPolicyRebateRate = lookupRebateRate(premiumUsd, input.policyRebateBands);
+    // Keep a finite rate-product even if a caller supplies an extreme finite rate.
+    const policyRebateRate = Math.max(-MAX_MONEY, Math.min(MAX_MONEY, rawPolicyRebateRate));
+    // The rate applies to the HKD premium directly; FX selected the band only.
+    const policyRebate = tPremium * policyRebateRate;
+    const assetLoanFee = bondLoan * (assetLoanHandlingFee / 100);
+    // Advisory only. The premium is not zeroed; the caller decides what to show.
+    // Negated `>=` rather than `<` so a non-finite down payment raises the advisory
+    // instead of silently clearing it — every NaN comparison is false, and the cheap
+    // failure here is one spurious warning, not a quote that hides an ineligible deal.
+    // Strict, per the sheet's own `IF(C29 < 28000, ...)`: exactly at the floor is fine.
+    const belowMinPremium = !((equity / fxRate) >= minPremiumUsd);
+    const flatAdjustment = policyRebate + bankCashRebate + fundFeeRebate - assetLoanFee;
 
     // The premium equation (loan = tPremium - equity) only holds once a policy is
     // actually funded. With equity <= 0 no policy is purchased (tPremium = 0), so
@@ -281,40 +666,79 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const mMortgageCost = fundSource === 'mortgage' ? monthlyMortgagePmt : 0;
     const mNetCashflow = mBondIncome - mLoanInterest - mBondLoanInterest - mMortgageCost;
 
-    // Generate Mortgage Schedule if applicable
-    const mortgageSchedule: any[] = [];
-    if (fundSource === 'mortgage') {
+    // A supplied property list is the workbook-parity source of truth. The scalar
+    // fields remain the compatibility path used by the current UI.
+    const hasProperties = input.properties !== undefined;
+    let mortgageSchedule: MortgageYear[] | undefined;
+    if (fundSource === 'mortgage' && hasProperties) {
+        mortgageSchedule = deriveMortgageSchedule(input.properties);
+    } else if (fundSource === 'mortgage') {
+        mortgageSchedule = Array.from({ length: 31 }, zeroMortgageYear);
         let balance = unlockedCash;
-        const annualPmt = monthlyMortgagePmt * 12;
-        let cumInterest = 0;
-
-        for (let y = 0; y <= 30; y++) {
-            if (y === 0) {
-                mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: 0, annualInterest: 0 });
-            } else if (y <= mortgageTenor) {
-                const interestPart = balance * (effectiveMortgageRate / 100);
-                let principalPart = annualPmt - interestPart;
-                let actualPmt = annualPmt;
-
-                if (balance < principalPart) {
-                    principalPart = balance;
-                    actualPmt = principalPart + interestPart;
-                }
-
-                cumInterest += interestPart;
-                balance -= principalPart;
-                if (balance < 0) balance = 0;
-                mortgageSchedule.push({ balance: balance, annualPmt: actualPmt, cumInterest: cumInterest, annualInterest: interestPart });
-            } else {
-                // Carry whatever principal is still outstanding. Hardcoding 0 here made an
-                // under-amortised balance vanish the year after the tenor ended, which
-                // showed as a one-year jump in net equity equal to the unpaid principal.
-                mortgageSchedule.push({ balance: balance, annualPmt: 0, cumInterest: cumInterest, annualInterest: 0 });
+        let cumulativePayments = 0;
+        let cumulativeInterest = 0;
+        mortgageSchedule[0].balance = balance;
+        for (let year = 1; year <= 30; year++) {
+            let annualPayment = 0;
+            if (year <= mortgageTenor) {
+                const interest = balance * (effectiveMortgageRate / 100);
+                const principal = Math.max(0, Math.min(balance, monthlyMortgagePmt * 12 - interest));
+                annualPayment = principal + interest;
+                balance -= principal;
+                cumulativeInterest += interest;
+                cumulativePayments += annualPayment;
             }
+            mortgageSchedule[year] = {
+                balance, cumulativePayments, cumulativeInterest, annualPayment,
+            };
         }
     }
+    const mortgageCashOut = fundSource === 'mortgage' && hasProperties
+        ? deriveMortgageCashOut(input.properties)
+        : 0;
+
+    const surrenderByYear = Array.from({ length: 31 }, (_, year) =>
+        tPremium * (currentFactors[year] || currentFactors[30]));
+    const topUpSchedule = deriveTopUpSchedule({
+        surrenderByYear,
+        cumMortgagePayments: mortgageSchedule?.map(row => row.cumulativePayments) ?? Array(31).fill(0),
+        cumPolicyLoanInterest: surrenderByYear.map((_, year) => loan * (effRate / 100) * year),
+        cumBondInterest: surrenderByYear.map((_, year) => netBondAlloc * (bondYield / 100) * year),
+        cashReserve,
+        mode: topUpMode,
+        minTopUpHkd,
+        // Defaults to the plan's own financing rate rather than a frozen literal.
+        // 'Data Entry'!B41 is VLOOKUP(bank, ..., 6) = the bank's "Rate (Premium
+        // Financing)" column, and for every bank in that table it equals
+        // HIBOR + spread — Wing Lung's 0.0231 is exactly 0.0026 + 0.0205. So the
+        // top-up borrows at the same rate as the policy loan; hardcoding 0.0231
+        // would freeze one bank's terms into every quote, which is the same defect
+        // the workbook has in its capacity divisor.
+        rate: resolveTopUpRate(input.topUpRate, effRate),
+    });
 
     const data: ProjectionData[] = [];
+    const topUpFields = (row: TopUpYear) => topUpMode === 'off' ? {} : {
+        topUpUnits: row.units,
+        cumulativeTopUp: row.cumulativeTopUp,
+        cumulativeTopUpInterest: row.cumulativeInterest,
+        topUpServicing: row.servicing,
+        topUpToClient: row.toClient,
+    };
+    const ownCapital = (fundSource === 'mortgage' ? 0 : budget) + extraCash;
+    const deployedCapital = budget + extraCash;
+    const calculateRowRoi = (cumulativeNetGain: number): number => {
+        const roi = deployedCapital > 0 ? (cumulativeNetGain / deployedCapital) * 100 : 0;
+        return Number.isFinite(roi) ? roi : 0;
+    };
+    const calculateRowIrr = (year: number, cumulativeNetGain: number): number | null => {
+        if (year === 0) return null;
+        const cashFlows = Array(year).fill(0);
+        cashFlows[0] = -ownCapital;
+        cashFlows[year] = ownCapital + cumulativeNetGain;
+        const rate = calculateIRR(cashFlows);
+        return rate === null ? null : rate * 100;
+    };
 
     // Initialize Year 0
     const yr0Factor = currentFactors[0];
@@ -322,8 +746,12 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     const yr0Assets = yr0Surrender + netBondAlloc + cashReserve;
     const yr0Liabilities = loan + bondLoan;
 
-    const yr0MortgageBal = fundSource === 'mortgage' ? unlockedCash : 0;
+    const yr0MortgageBal = fundSource === 'mortgage'
+        ? (mortgageSchedule?.[0].balance ?? unlockedCash)
+        : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
+    const yr0CumulativeNetGain = yr0NetEquity - (fundSource === 'mortgage' ? 0 : budget) - extraCash
+        + flatAdjustment;
 
     data.push({
         year: 0,
@@ -344,13 +772,21 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         annualNetGain: 0,
         annualRoC: 0,
         cumulativePolicyGrowth: 0,
-        cumulativeNetGain: 0,
+        // Measured against the capital actually put in (budget = mortgage-sourced +
+        // own cash), not against Year-0 net equity. Year 0 is therefore already
+        // negative by the bond entry fee plus the day-1 surrender-value haircut —
+        // that is a real cost of entry, not a starting point to grow from.
+        cumulativeNetGain: yr0CumulativeNetGain,
         mortgageBalance: yr0MortgageBal,
         cumulativeMortgageCost: 0,
         cumulativeMortgageInterest: 0,
         annualMortgagePayment: 0,
+        roi: calculateRowRoi(yr0CumulativeNetGain),
+        averageReturn: 0,
+        irr: null,
         bondLoan,
-        cumulativeBondLoanInterest: 0
+        cumulativeBondLoanInterest: 0,
+        ...topUpFields(topUpSchedule[0]),
     });
 
     let runningCumMtgCost = 0;
@@ -363,18 +799,20 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const bondFundNetValue = netBondAlloc + cumulativeBondInterest;
         const cumulativeInterest = loan * (effRate / 100) * yr;
         const cumulativeBondLoanInterest = bondLoan * (bondLoanRate / 100) * yr;
-        const currentAssets = surrenderValue + bondFundNetValue + cashReserve;
-        const currentLiabilities = loan + bondLoan;
+        const topUp = topUpSchedule[yr];
+        const currentAssets = surrenderValue + bondFundNetValue + cashReserve + topUp.cumulativeTopUp;
+        const currentLiabilities = loan + topUp.cumulativeTopUp + bondLoan;
 
-        let netEquity = currentAssets - currentLiabilities - cumulativeInterest - cumulativeBondLoanInterest;
+        let netEquity = currentAssets - currentLiabilities - cumulativeInterest
+            - cumulativeBondLoanInterest - topUp.cumulativeInterest;
 
         let mtgBal = 0;
         let annualMtgPmt = 0;
         let cumMtgInt = 0;
         if (fundSource === 'mortgage') {
-            mtgBal = mortgageSchedule[yr]?.balance || 0;
-            annualMtgPmt = mortgageSchedule[yr]?.annualPmt || 0;
-            cumMtgInt = mortgageSchedule[yr]?.cumInterest || 0;
+            mtgBal = mortgageSchedule?.[yr]?.balance ?? 0;
+            annualMtgPmt = mortgageSchedule?.[yr]?.annualPayment ?? 0;
+            cumMtgInt = mortgageSchedule?.[yr]?.cumulativeInterest ?? 0;
             runningCumMtgCost += annualMtgPmt;
             netEquity -= mtgBal;
         }
@@ -386,7 +824,8 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const annualPolicyGrowth = surrenderValue - prev.surrenderValue;
 
         // Note: annualMtgPmt is local here, but we are using it for Net Gain calc
-        let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest - annualBondLoanInterest - annualMtgPmt;
+        let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest
+            - annualBondLoanInterest - annualMtgPmt - topUp.annualInterest;
 
         let annualRoC = 0;
         const denom = budget;
@@ -396,7 +835,18 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
 
         const cumulativePolicyGrowth = surrenderValue - yr0Surrender;
 
-        const cumulativeNetGain = netEquity - yr0NetEquity;
+        // Principal deducted, not netted out against a marked-down Year-0 baseline.
+        // Using yr0NetEquity here credited the recovery of the day-1 surrender-value
+        // haircut as profit, and left ReturnStudio's waterfall unable to reconcile
+        // (opening equity = budget, gain measured off a different number).
+        const cumulativeMortgagePayments = mortgageSchedule?.[yr]?.cumulativePayments
+            ?? runningCumMtgCost;
+        const cumulativeNetGain = netEquity
+            - (fundSource === 'mortgage' ? 0 : budget)
+            - extraCash
+            - cumulativeMortgagePayments
+            + flatAdjustment;
+        const roi = calculateRowRoi(cumulativeNetGain);
 
         data.push({
             year: yr,
@@ -406,11 +856,11 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             bondFundNetValue,
             cashValue: cashReserve,
             totalAssets: currentAssets,
-            loan,
+            loan: loan + topUp.cumulativeTopUp,
             cumulativeInterest,
             netEquity,
             formattedNetEquity: formatCurrency(netEquity),
-            formattedLoan: formatCurrency(loan),
+            formattedLoan: formatCurrency(loan + topUp.cumulativeTopUp),
             annualBondIncome,
             annualLoanInterest,
             annualPolicyGrowth,
@@ -422,14 +872,18 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             cumulativeMortgageCost: runningCumMtgCost,
             cumulativeMortgageInterest: cumMtgInt,
             annualMortgagePayment: annualMtgPmt,
+            roi,
+            averageReturn: roi / yr,
+            irr: calculateRowIrr(yr, cumulativeNetGain),
             bondLoan,
-            cumulativeBondLoanInterest
+            cumulativeBondLoanInterest,
+            ...topUpFields(topUp)
         });
     }
 
     const final = data[30].netEquity;
     const totalGain = data[30].cumulativeNetGain;
-    const roiVal = budget > 0 ? (totalGain / budget) * 100 : 0;
+    const roiVal = deployedCapital > 0 ? (totalGain / deployedCapital) * 100 : 0;
 
     return {
         pfEquity: equity,
@@ -447,7 +901,16 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         monthlyMortgagePmt: mMortgageCost,
         bondLoan,
         bondLoanRate,
-        monthlyBondLoanInterest: mBondLoanInterest
+        monthlyBondLoanInterest: mBondLoanInterest,
+        mortgageCashOut,
+        ownCapital,
+        deployedCapital,
+        policyRebate,
+        policyRebateRate,
+        bankCashRebate,
+        fundFeeRebate,
+        assetLoanFee,
+        belowMinPremium,
     };
 };
 
@@ -610,14 +1073,19 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
             const bondVal = stressedBondPrincipal + (stressedBondPrincipal * (yieldVal / 100) * yr);
             const interest = bankLoan * (rate / 100) * yr;
 
-            let result = (surr + bondVal + cashReserve) - bankLoan - interest;
+            // The bond-collateral loan and its interest belong here for the same reason
+            // they do in the projection: omitted, the borrowed principal sat in bondVal
+            // with no matching liability and read as profit.
+            const bondLoanInterest = bondLoan * (Math.min(columnBase + bondLoanSpread, capRate) / 100) * yr;
+            let result = (surr + bondVal + cashReserve) - bankLoan - interest - bondLoan - bondLoanInterest;
 
             if (fundSource === 'mortgage') {
                 const mtgBal = baselineData[yr]?.mortgageBalance || 0;
                 result = result - mtgBal;
             }
 
-            const profit = result - yr0NetEquity;
+            // Same basis as cumulativeNetGain: profit is net of the principal put in.
+            const profit = result - budget;
             row.push(profit);
         }
         heatMapRows.push(row);

@@ -24,10 +24,12 @@ import { DetailedCalculationTable } from './DetailedCalculationTable';
 
 export const PDFProposal = ({
     projectionData, lang, budget, totalPremium, bankLoan, roi, netEquityAt30,
-    propertyValue, unlockedCash, hibor, currentMtgRate, cashReserve,
+    hibor, cashReserve,
     netBondPrincipal, pfEquity, bondLoan, fundSource, clientName, representativeName,
     sensitivityData, spread, leverageLTV, bondYield, sensitivityYear,
-    interestBasis, loanRate
+    interestBasis, loanRate,
+    policyRebate, policyRebateRate, bankCashRebate, fundFeeRebate, assetLoanFee,
+    belowMinPremium
 }: any) => {
     if (!projectionData || projectionData.length < 31) return null;
     const isZh = lang !== 'en';
@@ -64,6 +66,14 @@ export const PDFProposal = ({
     const dataY15 = projectionData[15];
     const dataY20 = projectionData[20];
     const dataY30 = projectionData[projectionData.length - 1];
+
+    // A null IRR means the cash-flow vector had no sign change for the solver to work on,
+    // not a 0% return — it must never render as a number.
+    const fmtPct = (val: number | null | undefined, dp = 1) =>
+        val === null || val === undefined || !Number.isFinite(val) ? t.notApplicable : `${val.toFixed(dp)}%`;
+
+    const netRebate = (policyRebate || 0) + (bankCashRebate || 0) + (fundFeeRebate || 0) - (assetLoanFee || 0);
+    const hasRebateLine = netRebate !== 0 || (assetLoanFee || 0) !== 0;
 
     return (
         <>
@@ -112,6 +122,16 @@ export const PDFProposal = ({
                                 <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.projectedRoi}</div>
                                 <div className="text-2xl font-serif text-[#c5a059] mb-1">{roi.toFixed(1)}%</div>
                                 <div className="text-[9px] text-[#c5a059] font-bold italic">{t.optimizedStructure}</div>
+                            </div>
+                            <div className="bg-white border-l-2 border-slate-400 p-4 shadow-sm">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.avgAnnualReturnKpi}</div>
+                                <div className="text-2xl font-serif text-slate-900 mb-1">{fmtPct(dataY30?.averageReturn)}</div>
+                                <div className="text-[9px] text-slate-400 font-bold">{t.overThirtyYears}</div>
+                            </div>
+                            <div className="bg-white border-l-2 border-slate-400 p-4 shadow-sm">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.irrKpi}</div>
+                                <div className="text-2xl font-serif text-slate-900 mb-1">{fmtPct(dataY30?.irr, 2)}</div>
+                                <div className="text-[9px] text-slate-400 font-bold">{t.moneyWeighted}</div>
                             </div>
                         </div>
                     </div>
@@ -310,6 +330,45 @@ export const PDFProposal = ({
                         </div>
                     </div>
                 </div>
+
+                {hasRebateLine && (
+                    <div className="mt-8">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-slate-900 mb-4">{t.rebatesAndFees}</h4>
+                        <div className="grid grid-cols-4 gap-4">
+                            <div className="bg-slate-50 border border-slate-100 p-4">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">
+                                    {/* The engine carries this rate as a DECIMAL (0.01 = 1%), matching the
+                                        workbook's VLOOKUP table — scale it before rendering as a percentage. */}
+                                    {t.policyRebateRow}{policyRebateRate ? ` (${(policyRebateRate * 100).toFixed(2)}%)` : ''}
+                                </div>
+                                <div className="text-sm font-serif font-bold text-emerald-700">{formatCurrency(policyRebate || 0)}</div>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-4">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.bankCashRebateRow}</div>
+                                <div className="text-sm font-serif font-bold text-emerald-700">{formatCurrency(bankCashRebate || 0)}</div>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-4">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.fundFeeRebateRow}</div>
+                                <div className="text-sm font-serif font-bold text-emerald-700">{formatCurrency(fundFeeRebate || 0)}</div>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-4">
+                                <div className="text-[9px] uppercase font-bold text-slate-400 mb-1">{t.assetLoanFeeRow}</div>
+                                <div className="text-sm font-serif font-bold text-red-600">({formatCurrency(assetLoanFee || 0)})</div>
+                            </div>
+                        </div>
+                        <div className="mt-3 flex justify-between items-center bg-slate-900 text-white px-4 py-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{t.netRebateRow}</span>
+                            <span className="text-sm font-serif font-bold text-[#c5a059]">{formatCurrency(netRebate)}</span>
+                        </div>
+                    </div>
+                )}
+
+                {belowMinPremium && (
+                    <div className="mt-6 flex items-start gap-2 bg-amber-50 border-l-4 border-amber-500 p-3">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span className="text-[10px] text-amber-800 leading-relaxed">{t.belowMinPremiumWarning}</span>
+                    </div>
+                )}
             </PageContainer>
 
             {/* Page 6: Detailed Calculations */}

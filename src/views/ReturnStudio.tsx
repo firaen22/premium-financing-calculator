@@ -30,6 +30,8 @@ export const ReturnStudio = () => {
     // COF basis and the cap, so this footnote contradicted the interest figure printed
     // beside it whenever either applied.
     const loanRate = useApp().projection.effectiveRate;
+    const oneOffBondFee = useApp().projection.oneOffBondFee;
+    const bondLoanRate = useApp().projection.bondLoanRate;
     const [selectedYear, setSelectedYear] = useState(1);
 
     const getCurrentYearData = (year: number) => {
@@ -38,9 +40,6 @@ export const ReturnStudio = () => {
 
         if (!currData || !initialData) return null;
 
-        const initialMtg = initialData.mortgageBalance || 0;
-        const currentMtg = currData.mortgageBalance || 0;
-        const mortgagePrincipalRepaid = Math.max(0, initialMtg - currentMtg);
         const policyPnL = currData.surrenderValue - totalPremium;
 
         return {
@@ -50,11 +49,21 @@ export const ReturnStudio = () => {
             policyGrowth: policyPnL,
             loanInterest: currData.cumulativeInterest,
             netGain: currData.cumulativeNetGain,
+            // Both are inside netEquity but had no attribution row. Harmless while the
+            // gain was measured off Year-0 net equity (which already carried the fee);
+            // now that principal is deducted, their absence left the walk short.
+            bondFee: oneOffBondFee,
+            bondLoanInterest: currData.cumulativeBondLoanInterest || 0,
             closingEquity: currData.netEquity,
             annualRoC: currData.annualRoC,
             cumulativeMortgageCost: currData.cumulativeMortgageCost || 0,
-            mortgageInterest: currData.cumulativeMortgageInterest || 0,
-            mortgagePrincipalRepaid
+            // The walk ends at net equity, and net equity carries the mortgage as a
+            // single `- balance` term. Charging the outstanding balance is therefore the
+            // whole of it: the old rows (+principal repaid, - interest) overstated the
+            // closing figure by the opening balance and understated it by the interest,
+            // which is exactly why the mortgage walk never reconciled. Cumulative
+            // payments are NOT here — they sit in cumulativeNetGain, one level down.
+            mortgageBalance: currData.mortgageBalance || 0
         };
     };
 
@@ -147,20 +156,6 @@ export const ReturnStudio = () => {
                                         {formatCurrency(stats.policyGrowth)}
                                     </div>
                                 </div>
-                                {stats.mortgagePrincipalRepaid > 0 && (
-                                    <div className="flex items-center justify-between p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-white rounded shadow-sm text-emerald-600">
-                                                <Home className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-bold text-slate-700">{labels.mtgRepaid}</div>
-                                                <div className="text-[10px] text-slate-500 font-mono">Liability Reduction</div>
-                                            </div>
-                                        </div>
-                                        <div className="font-serif text-emerald-700 font-medium">+{formatCurrency(stats.mortgagePrincipalRepaid)}</div>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -182,18 +177,46 @@ export const ReturnStudio = () => {
                                     </div>
                                     <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.loanInterest)}</div>
                                 </div>
-                                {stats.mortgageInterest > 0 && (
+                                {stats.bondLoanInterest > 0 && (
+                                    <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-white rounded shadow-sm text-red-600">
+                                                <Landmark className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-slate-700">{labels.bondLoanInterest}</div>
+                                                <div className="text-[10px] text-slate-500 font-mono">Rate: {bondLoanRate.toFixed(2)}%</div>
+                                            </div>
+                                        </div>
+                                        <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.bondLoanInterest)}</div>
+                                    </div>
+                                )}
+                                {stats.bondFee > 0 && (
+                                    <div className="flex items-center justify-between p-4 bg-red-50/50 border border-red-100 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-white rounded shadow-sm text-red-600">
+                                                <MinusCircle className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-slate-700">{labels.oneOffDeduction}</div>
+                                                <div className="text-[10px] text-slate-500 font-mono">{labels.handlingFee}</div>
+                                            </div>
+                                        </div>
+                                        <div className="font-serif text-red-700 font-medium">-{formatCurrency(stats.bondFee)}</div>
+                                    </div>
+                                )}
+                                {stats.mortgageBalance > 0 && (
                                     <div className="flex items-center justify-between p-4 bg-orange-50/50 border border-orange-100 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-white rounded shadow-sm text-orange-600">
                                                 <Home className="w-5 h-5" />
                                             </div>
                                             <div>
-                                                <div className="text-sm font-bold text-slate-700">{labels.mortgageInterest}</div>
-                                                <div className="text-[10px] text-slate-500 font-mono">Interest Portion</div>
+                                                <div className="text-sm font-bold text-slate-700">{labels.mortgageBalance}</div>
+                                                <div className="text-[10px] text-slate-500 font-mono">Paid to date: {formatCurrency(stats.cumulativeMortgageCost)}</div>
                                             </div>
                                         </div>
-                                        <div className="font-serif text-orange-700 font-medium">-{formatCurrency(stats.mortgageInterest)}</div>
+                                        <div className="font-serif text-orange-700 font-medium">-{formatCurrency(stats.mortgageBalance)}</div>
                                     </div>
                                 )}
                             </div>
@@ -223,7 +246,7 @@ export const ReturnStudio = () => {
                                     { name: labels.chartBond, value: stats.bondIncome, fill: '#059669' },
                                     { name: labels.chartPolicy, value: stats.policyGrowth, fill: stats.policyGrowth >= 0 ? '#10b981' : '#ef4444' },
                                     { name: labels.chartInterest, value: -stats.loanInterest, fill: '#dc2626' },
-                                    ...(stats.mortgagePrincipalRepaid > 0 ? [{ name: labels.mtgRepaid, value: stats.mortgagePrincipalRepaid, fill: '#c5a059' }] : []),
+                                    ...(stats.mortgageBalance > 0 ? [{ name: labels.mortgageBalance, value: -stats.mortgageBalance, fill: '#c5a059' }] : []),
                                     { name: labels.chartEnd, value: stats.closingEquity, fill: '#0f172a' },
                                 ]}
                                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -250,7 +273,7 @@ export const ReturnStudio = () => {
                                     <Cell fill="#059669" />
                                     <Cell fill={stats.policyGrowth >= 0 ? "#10b981" : "#ef4444"} />
                                     <Cell fill="#ef4444" />
-                                    {stats.mortgagePrincipalRepaid > 0 && <Cell fill="#c5a059" />}
+                                    {stats.mortgageBalance > 0 && <Cell fill="#c5a059" />}
                                     <Cell fill="#020617" />
                                 </Bar>
                             </BarChart>

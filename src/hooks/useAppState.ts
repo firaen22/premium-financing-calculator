@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
     calculateProjection, calculateStressTest, calculatePMT,
-    deriveUnlockedCash, deriveEffectiveMortgageRate
+    deriveMortgageCashOut, deriveEffectiveMortgageRate, MortgageProperty
 } from '../utils/calculations';
 import { checkAssumptions } from '../utils/advisories';
 import { DEFAULT_CLIENT_NAME, DEFAULT_INPUTS } from '../constants/defaults';
@@ -44,13 +44,18 @@ export const useAppState = () => {
     const [representativeName, setRepresentativeName] = useState('Private Wealth Advisory Team');
 
     // Mortgage Refi State
-    const [propertyValue, setPropertyValue] = useState(DEFAULT_INPUTS.propertyValue);
-    const [existingMortgage, setExistingMortgage] = useState(DEFAULT_INPUTS.existingMortgage);
-    const [mortgageLtv, setMortgageLtv] = useState(DEFAULT_INPUTS.mortgageLtv);
+    const [properties, setProperties] = useState<MortgageProperty[]>([{
+        value: DEFAULT_INPUTS.propertyValue,
+        ltv: DEFAULT_INPUTS.mortgageLtv,
+        existingMortgage: DEFAULT_INPUTS.existingMortgage,
+        tenor: DEFAULT_INPUTS.mortgageTenor,
+        rate: deriveEffectiveMortgageRate(
+            DEFAULT_INPUTS.hibor, DEFAULT_INPUTS.mortgageHSpread,
+            DEFAULT_INPUTS.primeRate, DEFAULT_INPUTS.mortgagePModifier),
+    }]);
     const [primeRate, setPrimeRate] = useState(DEFAULT_INPUTS.primeRate);
     const [mortgageHSpread, setMortgageHSpread] = useState(DEFAULT_INPUTS.mortgageHSpread);
     const [mortgagePModifier, setMortgagePModifier] = useState(DEFAULT_INPUTS.mortgagePModifier);
-    const [mortgageTenor, setMortgageTenor] = useState(DEFAULT_INPUTS.mortgageTenor);
 
     // Market Risk & Sensitivity
     const [sensitivityYear, setSensitivityYear] = useState(DEFAULT_INPUTS.sensitivityYear);
@@ -78,22 +83,41 @@ export const useAppState = () => {
         loan: true
     });
 
-    // Both derivations are bounded at the source in calculations.ts, where they are also
-    // unit-tested against the full propertyValue x mortgageLtv overflow surface.
-    const unlockedCash = deriveUnlockedCash(propertyValue, mortgageLtv, existingMortgage);
+    const addProperty = () => setProperties(prev => prev.length >= 8 ? prev : [...prev, {
+        value: 0,
+        ltv: DEFAULT_INPUTS.mortgageLtv,
+        existingMortgage: 0,
+        tenor: DEFAULT_INPUTS.mortgageTenor,
+        rate: effectiveMortgageRate,
+    }]);
+
+    const removeProperty = (index: number) => setProperties(prev =>
+        prev.length <= 1 ? prev : prev.filter((_, i) => i !== index));
+
+    const updateProperty = (index: number, patch: Partial<MortgageProperty>) =>
+        setProperties(prev => prev.map((property, i) => i === index ? { ...property, ...patch } : property));
+
+    const unlockedCash = deriveMortgageCashOut(properties);
     const effectiveMortgageRate = deriveEffectiveMortgageRate(
         hibor, mortgageHSpread, primeRate, mortgagePModifier);
 
-    const monthlyMortgagePmt = calculatePMT(effectiveMortgageRate, mortgageTenor, unlockedCash);
+    const monthlyMortgagePmt = properties.reduce((sum, property) => {
+        const grossLoan = property.value * (property.ltv / 100);
+        return sum + calculatePMT(property.rate, property.tenor, grossLoan);
+    }, 0);
+    // Vestigial compatibility field: the engine uses properties when present, but this
+    // scalar remains required by SimulationInput. Downstream checks therefore see the
+    // first property's tenor only.
+    const mortgageTenor = properties[0]?.tenor ?? DEFAULT_INPUTS.mortgageTenor;
 
     // Built once and reused for both the engine and the assumption checker below, so the
     // two never drift out of sync on which fields make up a SimulationInput.
     const simulationInput = useMemo(() => ({
         budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread,
         leverageLTV, capRate, handlingFee, fundSource, unlockedCash,
-        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor,
+        effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties,
         bondCollateralLTV, bondLoanSpread
-    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, bondCollateralLTV, bondLoanSpread]);
+    }), [budget, cashReserve, bondAlloc, bondYield, hibor, cofRate, interestBasis, spread, leverageLTV, capRate, handlingFee, fundSource, unlockedCash, effectiveMortgageRate, monthlyMortgagePmt, mortgageTenor, properties, bondCollateralLTV, bondLoanSpread]);
 
     const projection = useMemo(() => {
         return calculateProjection(simulationInput);
@@ -139,7 +163,6 @@ export const useAppState = () => {
             cashReserve: [cashReserve, value => { setCashReserve(value); setTempCashReserve(value); }],
             bondAlloc: [bondAlloc, setBondAlloc],
             bondCollateralLTV: [bondCollateralLTV, setBondCollateralLTV],
-            mortgageTenor: [mortgageTenor, setMortgageTenor],
             simulatedHibor: [simulatedHibor, setSimulatedHibor],
             bondPriceDrop: [bondPriceDrop, setBondPriceDrop],
             sensitivityYear: [sensitivityYear, setSensitivityYear],
@@ -195,13 +218,10 @@ export const useAppState = () => {
         cofRate, setCofRate,
         clientName, setClientName,
         representativeName, setRepresentativeName,
-        propertyValue, setPropertyValue,
-        existingMortgage, setExistingMortgage,
-        mortgageLtv, setMortgageLtv,
+        properties, addProperty, removeProperty, updateProperty,
         primeRate, setPrimeRate,
         mortgageHSpread, setMortgageHSpread,
         mortgagePModifier, setMortgagePModifier,
-        mortgageTenor, setMortgageTenor,
         sensitivityYear, setSensitivityYear,
         globalMinSpread, setGlobalMinSpread,
         globalMaxLTV, setGlobalMaxLTV,

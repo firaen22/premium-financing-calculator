@@ -42,6 +42,10 @@ const ENGINE_FIELDS = [
     'finalNetEquity', 'roi', 'monthlyBondIncome', 'monthlyLoanInterest',
     'monthlyNetCashflow', 'oneOffBondFee', 'netBondPrincipal', 'monthlyMortgagePmt',
     'stressedProjection', 'stressStats', 'sensitivityData',
+    // Phase 4 rebate/fee scalars — the PDF reads all of these, so the same
+    // top-level-vs-`projection` trap applies to them.
+    'policyRebate', 'policyRebateRate', 'bankCashRebate', 'fundFeeRebate',
+    'assetLoanFee', 'belowMinPremium',
 ];
 
 const COMPONENTS = [

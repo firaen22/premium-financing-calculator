@@ -357,6 +357,36 @@ const compactRow = (row: unknown): unknown => {
     return compacted;
 };
 
+// Top-level scalars spread through compactBranch untouched, so every field added to
+// SimulationOutput silently grows this payload — the capital-basis trio below pushed it
+// from 8,9xx to 9,062 bytes the moment the engine gained them. The budget is not
+// cosmetic: exceeding it is what caused the 502s that the compaction exists to fix.
+// Anything listed here is derivable by the assistant from fields it already receives
+// (deployedCapital = budget + extraCash; ownCapital differs only by mortgageCashOut), so
+// dropping them costs no answer quality. Adding an output field that an answer DOES need
+// to cite means re-measuring this payload, not quietly relying on the slack.
+// All six Phase 4 rebate/fee scalars are dropped, and the measurement is why: keeping
+// just `policyRebate` (34 bytes) and `belowMinPremium` (24) lands at 9,036 and 9,012 —
+// both over. Keeping only the advisory is worse than it looks, because it costs its 24
+// bytes precisely when it is true, so the payload would breach in exactly the ineligible
+// -deal case the field exists to flag. So they all go, and the rebate and the advisory
+// reach the user through the UI instead, which has no byte budget.
+//
+// This leaves ~22 bytes of headroom on a 9,000-byte ceiling. The next output field to be
+// added does not fit, whatever it is; that is a compaction problem to solve on its own
+// terms, not by shaving one more scalar off this list.
+const OMITTED_SCALARS = [
+    'mortgageCashOut', 'ownCapital', 'deployedCapital',
+    'policyRebate', 'policyRebateRate', 'bankCashRebate', 'fundFeeRebate',
+    'assetLoanFee', 'belowMinPremium',
+] as const;
+
+const withoutOmittedScalars = (branch: PlainObject): PlainObject => {
+    const kept: PlainObject = { ...branch };
+    for (const field of OMITTED_SCALARS) delete kept[field];
+    return kept;
+};
+
 // output.projectionData and stress.stressedProjection are different field names for
 // the same shape (ProjectionData[]) — the stress branch's rows additionally carry
 // baselineNetEquity/ltv, which is why PROJECTION_FIELDS keeps them. Anything else —
@@ -364,10 +394,10 @@ const compactRow = (row: unknown): unknown => {
 const compactBranch = (branch: unknown): unknown => {
     if (!isPlainObject(branch)) return branch;
     if (Array.isArray(branch.projectionData)) {
-        return { ...branch, projectionData: branch.projectionData.map(compactRow) };
+        return { ...withoutOmittedScalars(branch), projectionData: branch.projectionData.map(compactRow) };
     }
     if (Array.isArray(branch.stressedProjection)) {
-        return { ...branch, stressedProjection: branch.stressedProjection.map(compactRow) };
+        return { ...withoutOmittedScalars(branch), stressedProjection: branch.stressedProjection.map(compactRow) };
     }
     return branch;
 };
