@@ -1,0 +1,29 @@
+# Server-side counterpart of .claude/hooks/debt-tripwire.sh: the same two
+# coupled-dependency checks, but enforced for every contributor and every push,
+# not just Claude Code sessions.
+#
+#   tsc --noEmit  -> the _zhHkCoversEveryLabel i18n parity gate in
+#                    src/i18n/translations.ts is compile-time only; no npm
+#                    script runs tsc, so without this job it never fires in CI.
+#   vitest run    -> the golden projection snapshot in calculations.test.ts
+#                    must acknowledge any change to src/constants/defaults.ts.
+
+name: debt-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  debt-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
