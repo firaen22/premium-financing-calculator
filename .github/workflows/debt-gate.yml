@@ -22,10 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Must match the Node major the inline golden snapshot was frozen
-          # under: irr is iteratively solved and its last ~3 decimal digits
-          # differ across Node majors (22 vs 26 diverged at ~1e-13).
-          node-version: 26
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
