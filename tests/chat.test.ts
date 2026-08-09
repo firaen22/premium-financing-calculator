@@ -113,7 +113,7 @@ describe('/api/chat', () => {
         expect(get.body).toEqual({ error: 'method_not_allowed', allowed: ['POST', 'OPTIONS'] });
         const options = await call(undefined, 'OPTIONS');
         expect(options.statusCode).toBe(204);
-        expect(options.headers['Access-Control-Allow-Origin']).toBe('*');
+        expect(options.headers['Access-Control-Allow-Origin']).toBeUndefined();
         expect(options.headers['Cache-Control']).toBe('no-store');
     });
 
@@ -214,6 +214,49 @@ describe('/api/chat', () => {
         expect(run?.function.parameters.properties).not.toHaveProperty('input');
         expect(stress?.function.parameters.properties.showGuaranteed).toMatchObject({ type: 'boolean' });
         expect(stress?.function.parameters.properties.sensitivityYear).toMatchObject({ type: 'integer' });
+        const explore = TOOL_DEFINITIONS.find(tool => tool.function.name === 'explore_structures');
+        expect(explore?.function.parameters.properties.base).toBeUndefined();
+        expect(explore?.function.parameters.additionalProperties).toBe(false);
+    });
+
+    // The JSON Schema already omits `base` from what the model can declare, but a
+    // model can still emit args that don't match its own schema. This proves the
+    // runtime dispatch defends the rate-lock guarantee even then: any field outside
+    // the explore whitelist (including a smuggled `base` trying to override
+    // rate-locked fields) is rejected, never merged into the request sent to the
+    // engine, and context.input remains the only source of `base`.
+    it('rejects an explore_structures call carrying a field outside the whitelist and never merges it in', async () => {
+        process.env.GROQ_API_KEY = 'test-key';
+        let toolContent = '';
+        const args = JSON.stringify({ metric: 'finalNetEquity', base: { hibor: 999 } });
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'explore-1', type: 'function', function: { name: 'explore_structures', arguments: args } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'That is not possible.' });
+            });
+        const response = await call({ ...validBody(), context: { input: baseInput() } });
+        expect(response.statusCode).toBe(200);
+        expect(bodyOf(response).toolCalls).toEqual([]);
+        expect(toolContent).toContain('not_settable');
+        expect(toolContent).toContain('base');
+    });
+
+    it('rejects an explore_structures call when client context carries an out-of-range rate', async () => {
+        process.env.GROQ_API_KEY = 'test-key';
+        let toolContent = '';
+        fetchMock
+            .mockResolvedValueOnce(upstream({ tool_calls: [{ id: 'explore-invalid-base', type: 'function', function: { name: 'explore_structures', arguments: JSON.stringify({ metric: 'roi' }) } }] }))
+            .mockImplementationOnce(async (_url: string, options: { body: string }) => {
+                const sent = JSON.parse(options.body) as { messages: Array<{ role: string; content: string }> };
+                toolContent = sent.messages.find(message => message.role === 'tool')?.content ?? '';
+                return upstream({ content: 'The supplied assumptions are outside the accepted range.' });
+            });
+        const response = await call({ ...validBody(), context: { input: { ...baseInput(), hibor: 101 } } });
+        expect(response.statusCode).toBe(200);
+        expect(bodyOf(response).toolCalls).toEqual([]);
+        expect(toolContent).toContain('hibor');
     });
 
     it('executes run_simulation locally and feeds the result back to Groq', async () => {

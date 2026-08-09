@@ -34,11 +34,17 @@ Errors are JSON: `{ "error": "invalid_input", "fields": [{ "field": "...", "reas
 ## MCP endpoint
 
 An MCP server is available at `/api/mcp` (Streamable HTTP, stateless, no authentication).
-It exposes three read-only tools — `run_simulation`, `run_stress_test`, and
-`check_assumptions` (which returns the advisory findings alone, without the projection) —
+It exposes four read-only tools — `run_simulation`, `run_stress_test`, `check_assumptions`, and
+`explore_structures` (which ranks bounded illustrative candidate structures by one selected
+metric, filters blockers, and returns a fixed disclaimer) —
 and two resources: `range://accepted` for the accepted input ranges and `doc://about` for
 this document. Prefer it over the REST endpoint if your client speaks MCP: the tools carry
 typed schemas with units and bounds, so malformed calls are caught before they are sent.
+`explore_structures` accepts a full base input, the metric `finalNetEquity`, `roi`, or
+`monthlyNetCashflow`, optional grid sizes, and an optional stress scenario. The MCP endpoint
+may require an `Authorization: Bearer <key>` header when the operator has configured
+`MCP_API_KEY`. Origin checks on browser-facing endpoints mitigate cross-origin browser abuse
+only; they are not authentication.
 
 ## Accepted ranges
 
