@@ -76,6 +76,11 @@ push and PR, since neither is wired into `npm test` on its own — `tsc` catches
 
 ## PDF generation
 
+The MCP endpoint exposes four read-only tools, including `explore_structures` for ranked
+illustrative scenarios. An optional `MCP_API_KEY` gates `/api/mcp`; `/api/chat` and
+`/api/generate-pdf` use an allowlist for browser origins. Origin checks mitigate casual
+cross-origin browser abuse, not direct HTTP access.
+
 Two paths, and the difference matters when debugging output.
 
 The primary path posts the report markup **and the page's compiled stylesheet** to

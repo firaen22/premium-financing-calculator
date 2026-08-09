@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { originAllowed } from './_guard.js';
 import {
     ENUM_VALUES,
     INPUT_RANGES,
@@ -11,6 +12,7 @@ import {
     type SimulateResult,
     type ValidationField,
 } from '../src/utils/engineApi.js';
+import { exploreStructures, type ExploreMetric } from '../src/utils/explore.js';
 
 const MAX_PAYLOAD_BYTES = 100 * 1024;
 const MAX_MESSAGES = 20;
@@ -27,10 +29,13 @@ type ChatContext = { input?: PlainObject; lang?: ChatLang };
 type ChatRequest = { messages: ChatMessage[]; context?: ChatContext };
 
 type JsonProperty = {
-    type: 'number' | 'integer' | 'string' | 'boolean';
+    type: 'number' | 'integer' | 'string' | 'boolean' | 'object';
     minimum?: number;
     maximum?: number;
     enum?: readonly string[];
+    properties?: Record<string, JsonProperty>;
+    required?: string[];
+    additionalProperties?: boolean;
     description: string;
 };
 type JsonSchema = {
@@ -70,7 +75,7 @@ const INPUT_FIELDS = [
 ] as const;
 const STRESS_FIELDS = ['simulatedHibor', 'bondPriceDrop', 'showGuaranteed', 'sensitivityYear'] as const;
 const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCash', 'monthlyMortgagePmt']);
-const TOOL_NAMES = ['run_simulation', 'run_stress_test', 'check_assumptions', 'set_inputs'] as const;
+const TOOL_NAMES = ['run_simulation', 'run_stress_test', 'check_assumptions', 'explore_structures', 'set_inputs'] as const;
 type ToolName = typeof TOOL_NAMES[number];
 
 // Fields set_inputs may change on screen. unlockedCash, effectiveMortgageRate and
@@ -91,12 +96,14 @@ const RATE_LOCKED_FIELDS = new Set([
     'hibor', 'cofRate', 'spread', 'bondLoanSpread', 'capRate', 'bondYield',
     'handlingFee', 'leverageLTV', 'interestBasis',
 ]);
+const EXPLORE_FIELDS = new Set(['metric', 'topN', 'budgetSteps', 'reserveSteps', 'bondSteps', 'stress', 'maxStressLTV']);
 
 const UPSTREAM_TIMEOUT = Symbol('upstream_timeout');
 const UPSTREAM_ERROR = Symbol('upstream_error');
 
-const cors = (res: VercelResponse): void => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+const cors = (req: VercelRequest, res: VercelResponse): void => {
+    const origin = req.headers.origin;
+    if (typeof origin === 'string' && originAllowed(req)) res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Cache-Control', 'no-store');
@@ -238,6 +245,35 @@ const setInputsParameters = (): JsonSchema => {
     return { type: 'object', properties, required: [], additionalProperties: false };
 };
 
+const exploreParameters = (): JsonSchema => ({
+    type: 'object',
+    properties: {
+        metric: {
+            type: 'string', enum: ['finalNetEquity', 'roi', 'monthlyNetCashflow'],
+            description: 'single metric used to rank illustrative scenarios',
+        },
+        topN: { type: 'integer', minimum: 2, maximum: 5, description: 'number of scenarios to return, at least 2' },
+        budgetSteps: { type: 'integer', minimum: 1, maximum: 6, description: 'budget grid resolution' },
+        reserveSteps: { type: 'integer', minimum: 1, maximum: 5, description: 'cash reserve grid resolution' },
+        bondSteps: { type: 'integer', minimum: 1, maximum: 5, description: 'bond allocation grid resolution' },
+        stress: {
+            type: 'object',
+            properties: {
+                simulatedHibor: numberProperty('simulatedHibor', true),
+                bondPriceDrop: numberProperty('bondPriceDrop', true),
+                showGuaranteed: { type: 'boolean', description: 'whether to show guaranteed values' },
+                sensitivityYear: numberProperty('sensitivityYear', true),
+            },
+            required: [...Object.keys(STRESS_RANGES), 'showGuaranteed'],
+            additionalProperties: false,
+            description: 'optional bounded stress-test assumptions',
+        },
+        maxStressLTV: { type: 'number', minimum: 0, maximum: 100, description: 'optional maximum stressed LTV in percentage points, 0-100' },
+    },
+    required: ['metric'],
+    additionalProperties: false,
+});
+
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
     {
         type: 'function',
@@ -261,6 +297,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
             name: 'check_assumptions',
             description: 'Returns assumption findings for an ILLUSTRATION, not financial advice.',
             parameters: toolParameters(false),
+        },
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'explore_structures',
+            description: "Ranks candidate structures by a stated computed metric and returns an ILLUSTRATION search result — not financial advice, not a recommendation, not a suitability assessment. Present multiple candidates with their tradeoffs; do not declare a single 'best' option.",
+            parameters: exploreParameters(),
         },
     },
     {
@@ -521,7 +565,8 @@ const success = (res: VercelResponse, reply: string, toolCalls: { name: string; 
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     const deadline = Date.now() + REQUEST_BUDGET_MS;
-    cors(res);
+    if (!originAllowed(req)) return res.status(403).json({ error: 'origin_not_allowed' });
+    cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed', allowed: ['POST', 'OPTIONS'] });
     if (bodyBytes(req) > MAX_PAYLOAD_BYTES) return res.status(413).json({ error: 'payload_too_large' });
@@ -570,6 +615,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     else {
                         result = { applied: true, patch: parsed.args };
                         toolCalls.push(toolCallInfo(name, parsed.args));
+                    }
+                // `base` is taken from body.context.input and never from model-supplied arguments, so the MODEL cannot re-price a structure. body.context.input is nonetheless CLIENT-supplied, so this is a model-containment boundary and NOT an authentication boundary. validateSimulateRequest enforces INPUT_RANGES on every field inside exploreStructures, so out-of-range rates are rejected rather than computed.
+                } else if (name === 'explore_structures') {
+                    const unknown = Object.keys(parsed.args).filter(field => !EXPLORE_FIELDS.has(field));
+                    if (unknown.length > 0) {
+                        result = unknown.map(field => ({ field, reason: 'not_settable' }));
+                    } else if (body.context?.input === undefined) {
+                        result = [{ field: 'base', reason: 'missing_context' }];
+                    } else {
+                        const request = {
+                            base: body.context.input,
+                            metric: parsed.args.metric as ExploreMetric,
+                            topN: parsed.args.topN as number | undefined,
+                            budgetSteps: parsed.args.budgetSteps as number | undefined,
+                            reserveSteps: parsed.args.reserveSteps as number | undefined,
+                            bondSteps: parsed.args.bondSteps as number | undefined,
+                            stress: parsed.args.stress as PlainObject | null | undefined,
+                            maxStressLTV: parsed.args.maxStressLTV as number | undefined,
+                        };
+                        result = exploreStructures(request);
+                        if (!Array.isArray(result)) toolCalls.push(toolCallInfo(name, parsed.args));
                     }
                 } else {
                     // Validation is checked here rather than inferred from executeTool's

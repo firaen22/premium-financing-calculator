@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { originAllowed } from './_guard.js';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -36,6 +37,7 @@ const s3 = new S3Client({
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!originAllowed(req)) return res.status(403).json({ error: 'origin_not_allowed' });
   // Check for env vars inside the handler to return proper error
   if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) {
     const missing = [];
