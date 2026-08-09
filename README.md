@@ -70,6 +70,10 @@ view pulls an engine field straight off `useApp()` instead of from `.projection`
 both places holding *different* numbers, so that one is silently wrong. The gate also holds
 the props interfaces at their post-refactor size.
 
+**CI** (`.github/workflows/debt-gate.yml`) runs `tsc --noEmit` and `vitest run` on every
+push and PR, since neither is wired into `npm test` on its own — `tsc` catches the
+`zh_hk`/`zh_cn` i18n parity check, which is compile-time only.
+
 ## PDF generation
 
 Two paths, and the difference matters when debugging output.
