@@ -23,7 +23,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const hibor1M = record['hibor_fixing_1m'];
             const date = record['end_of_date'];
 
-            if (hibor1M !== undefined) {
+            // `!== undefined` let null through: HKMA publishes a null fixing on holidays
+            // and before the daily fixing lands, so the endpoint answered 200 with
+            // `rate: null` and pushed a non-numeric rate at every caller. A string would
+            // be worse still — `hibor + spread` would concatenate rather than add.
+            if (typeof hibor1M === 'number' && Number.isFinite(hibor1M)) {
                 return res.status(200).json({
                     rate: hibor1M,
                     date: date,

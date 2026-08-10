@@ -209,6 +209,35 @@ describe('Tier 1 wiring gate', () => {
         }
     });
 
+    it('7. the exported PDF is passed every prop the on-screen preview is', () => {
+        // PDFProposal destructures `: any` props, so tsc cannot see a missing one, and
+        // no render test covers it. App.tsx renders the hidden container that is actually
+        // captured into the client PDF; PDFPreview renders the copy the advisor reviews
+        // on screen. App.tsx had fallen seven props behind, so the exported PDF silently
+        // dropped the entire rebate/fee block (netRebate summed to 0, so the block hid
+        // itself), the below-minimum-premium warning, and the USD column's fxRate — while
+        // the on-screen review still showed all three. Nothing failed; the advisor
+        // reviewed one document and sent a different one.
+        const propsAt = (rel: string): string[] => {
+            const src = read(rel);
+            const start = src.indexOf('<PDFProposal');
+            expect(start, `${rel} must render PDFProposal`).toBeGreaterThan(-1);
+            const body = src.slice(start, src.indexOf('/>', start))
+                .split('\n').map(line => line.replace(/\/\/.*$/, '')).join('\n');
+            return [...body.matchAll(/^\s+([A-Za-z][\w]*)=/gm)].map(m => m[1]).sort();
+        };
+        const exported = propsAt('App.tsx');
+        const onScreen = propsAt('views/PDFPreview.tsx');
+
+        // Guards the extraction itself: a regex that matched nothing would pass vacuously.
+        expect(exported.length).toBeGreaterThan(20);
+        expect(onScreen.length).toBeGreaterThan(20);
+        expect(
+            onScreen.filter(prop => !exported.includes(prop)),
+            'props reach the on-screen report but not the exported PDF',
+        ).toEqual([]);
+    });
+
     it('5. both context hooks fail loudly outside their provider', () => {
         for (const rel of ['state/AppStateContext.tsx', 'state/AppServicesContext.tsx']) {
             expect(read(rel), `${rel} must throw when used outside its provider`).toMatch(/throw new Error/);

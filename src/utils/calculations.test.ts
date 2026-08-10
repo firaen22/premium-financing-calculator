@@ -2032,6 +2032,44 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             expect(year6.netEquity - year5.netEquity).toBeLessThan(500000);
         });
 
+        it('capitalises mortgage interest that the payment cannot cover', () => {
+            // A payment below the month's interest cannot amortise, and the unpaid
+            // interest does not vanish. The balance used to sit frozen at the original
+            // principal for all 30 years while interest accrued, understating the
+            // liability and overstating net equity by the whole unpaid amount — a
+            // plausible-looking projection that is simply too good. Reachable from
+            // /api/simulate, which accepts any positive monthlyMortgagePmt.
+            // 12% on $1,000,000 accrues $10,000 in month 1 against a $1 payment, so the
+            // balance must compound to roughly 1e6 * 1.01^360.
+            const projection = calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage', unlockedCash: 1_000_000, mortgageTenor: 30,
+                monthlyMortgagePmt: 1, effectiveMortgageRate: 12,
+            }));
+            const year30 = projection.projectionData[30];
+
+            expect(year30.mortgageBalance).toBeGreaterThan(30_000_000);
+            expect(year30.mortgageBalance).toBeCloseTo(35_946_146.36, 1);
+            // Year-30 assets here are $12,999,071. With the balance frozen at the
+            // original $1,000,000 the projection reported roughly +$12.0M of net equity
+            // on a position that is actually $22.9M underwater — the sign flip is the
+            // whole point of the guard.
+            expect(year30.netEquity).toBeLessThan(-20_000_000);
+        });
+
+        it('still amortises to zero when the payment covers the interest', () => {
+            // Guards the fix above: the capitalisation term is exactly 0 whenever the
+            // payment clears the month's interest, so a properly-sized PMT must still
+            // retire the loan by the end of its tenor.
+            const pmt = calculatePMT(5, 20, 1_000_000);
+            const projection = calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage', unlockedCash: 1_000_000, mortgageTenor: 20,
+                monthlyMortgagePmt: pmt, effectiveMortgageRate: 5,
+            }));
+
+            expect(projection.projectionData[20].mortgageBalance).toBeCloseTo(0, 6);
+            expect(projection.projectionData[10].mortgageBalance).toBeGreaterThan(0);
+        });
+
         it('offsets break-even HIBOR by the COF gap', () => {
             // rate = cofRate + (H - hibor) + spread, so break-even H sits below the
             // HIBOR-basis answer by exactly (cofRate - hibor).

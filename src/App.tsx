@@ -121,6 +121,20 @@ const AppShell = () => {
                         sensitivityYear={state.sensitivityYear}
                         interestBasis={state.interestBasis}
                         loanRate={state.projection.effectiveRate}
+                        // These seven reach PDFProposal in PDFPreview but were missing
+                        // here, and THIS is the element that gets captured into the
+                        // client PDF. PDFProposal takes `: any` props, so nothing failed
+                        // — the rebate/fee block simply computed netRebate = 0 and hid
+                        // itself, the below-minimum-premium warning never rendered, and
+                        // the USD column lost its rate. The advisor reviewed a complete
+                        // report on screen and sent a quietly different one.
+                        fxRate={state.fxRate}
+                        policyRebate={state.projection.policyRebate}
+                        policyRebateRate={state.projection.policyRebateRate}
+                        bankCashRebate={state.projection.bankCashRebate}
+                        fundFeeRebate={state.projection.fundFeeRebate}
+                        assetLoanFee={state.projection.assetLoanFee}
+                        belowMinPremium={state.projection.belowMinPremium}
                     />
                 </Suspense>
             </div>

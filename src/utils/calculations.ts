@@ -408,8 +408,13 @@ export const deriveMortgageSchedule = (properties?: MortgageProperty[]): Mortgag
             if (month <= tenor * 12) {
                 interest = balance * rate / 1200;
                 const principal = Math.max(0, Math.min(balance, pmt - interest));
-                payment = principal + interest;
-                balance -= principal;
+                // Same capitalisation rule as the scalar fallback above. A derived PMT
+                // normally covers the interest, so `shortfall` is 0 and this path is
+                // bit-identical; it only bites when calculatePMT degenerates (a rate so
+                // small that growth === 1 returns a principal-only payment).
+                const shortfall = Math.max(0, interest - pmt);
+                payment = shortfall > 0 ? Math.max(0, pmt) : principal + interest;
+                balance = balance - principal + shortfall;
                 if (balance < 1e-9) balance = 0;
             }
 
@@ -706,8 +711,16 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
             if (month <= mortgageTenor * 12) {
                 const interest = balance * effectiveMortgageRate / 1200;
                 const principal = Math.max(0, Math.min(balance, monthlyMortgagePmt - interest));
-                const payment = principal + interest;
-                balance -= principal;
+                // A payment that does not cover the month's interest cannot amortise, and
+                // the unpaid interest does not vanish — it capitalises into the balance.
+                // Without this the schedule reported a liability frozen at the original
+                // principal for the full 30 years while interest accrued, which overstates
+                // net equity by the entire unpaid amount: a plausible-looking number that
+                // is simply too good. `shortfall` is exactly 0 whenever the payment covers
+                // interest, so the normal amortising path is bit-identical to before.
+                const shortfall = Math.max(0, interest - monthlyMortgagePmt);
+                const payment = shortfall > 0 ? Math.max(0, monthlyMortgagePmt) : principal + interest;
+                balance = balance - principal + shortfall;
                 if (balance < 1e-9) balance = 0;
                 cumulativePayments += payment;
                 cumulativeInterest += interest;
