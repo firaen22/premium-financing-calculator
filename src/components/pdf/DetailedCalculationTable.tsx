@@ -77,7 +77,12 @@ export const DetailedCalculationTable = ({ dataY10, dataY15, dataY20, dataY30, l
 
             <div className={sectionHeaderStyle}>{t.cumulativeCashFlow}</div>
             <CalculationRow label={t.cumulativeBondInterest} dataKey="cumulativeBondInterest" />
-            <CalculationRow label={t.lessCumulativeMortgagePayments} dataKey="cumulativeMortgageCost" isNeg />
+            {/* No "less cumulative mortgage payments" row here: netEquity below only ever
+                deducts the mortgage's current outstanding balance (the row above), not the
+                cash paid toward it. Printing cumulativeMortgageCost (principal+interest)
+                as a further deduction double-charged the principal already reflected in
+                the declining balance row, so this section's rows summed to $17.5M below
+                the NET EQUITY total printed underneath on a 30-year mortgage case. */}
             <CalculationRow label={t.lessCumulativeLoanInterests} dataKey="cumulativeInterest" isNeg />
 
             <div className="grid grid-cols-5 bg-slate-100 py-3 mt-4 border-y border-slate-900 font-bold">

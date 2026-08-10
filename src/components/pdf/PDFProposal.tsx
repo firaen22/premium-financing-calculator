@@ -267,7 +267,19 @@ export const PDFProposal = ({
                             <div key={i} className="text-center">
                                 <div className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1">{m.l || t.yearProjection.replace('{year}', m.y)}</div>
                                 <div className="text-xl font-serif text-slate-900 border-b border-slate-100 pb-2 mb-2">{formatCurrency(m.v)}</div>
-                                {m.g !== 0 && <div className="text-[9px] font-bold text-emerald-600 font-mono">+{formatCurrency(m.g)} {t.gain}</div>}
+                                {/* The '+' and the green were unconditional, so a negative
+                                    cumulative gain printed as '+-$7,954,386 Gain' in
+                                    emerald — reachable on any mortgage-funded case that is
+                                    underwater at the milestone year. Whole class literals
+                                    per branch: Tailwind scans source text, so an assembled
+                                    `text-${x}-600` would ship unstyled. */}
+                                {m.g !== 0 && (
+                                    <div className={m.g < 0
+                                        ? "text-[9px] font-bold text-red-600 font-mono"
+                                        : "text-[9px] font-bold text-emerald-600 font-mono"}>
+                                        {m.g > 0 ? '+' : ''}{formatCurrency(m.g)} {t.gain}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -468,7 +480,12 @@ export const PDFProposal = ({
                                                 if (lang === 'en') return formatCurrency(val);
                                                 return `${(val / 10000).toFixed(1).replace('.0', '')}萬${isHkd ? '港元' : '美元'}`;
                                             };
-                                            return t.riskMitigation3.replace('{reserveAmount}', formatWan(cashReserve, false));
+                                            // cashReserve is HKD — sanitize(input.cashReserve, 0, totalCapital)
+                                            // clamps it against the HKD capital base, and the sibling line
+                                            // above passes `true` for the same class of figure. Passing
+                                            // `false` labelled a HK$200,000 buffer as US$200,000 in the
+                                            // Chinese client PDF: the client's liquidity is overstated 7.8x.
+                                            return t.riskMitigation3.replace('{reserveAmount}', formatWan(cashReserve, true));
                                         })()}
                                     </span>
                                 </li>

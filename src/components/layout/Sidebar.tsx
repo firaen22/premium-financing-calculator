@@ -81,6 +81,11 @@ export const Sidebar = ({
         // injection out of equity while still inflating the ROI denominator, so entering
         // Input Cash lowered the quoted return without buying any more policy.
         setBudget(unlockedCash);
+        // Mirror the write like handleApplyCash and applyInputPatch do. tempBudget is
+        // the cash panel's pending edit; leaving it behind here meant that after a
+        // mortgage Apply, the Total Budget field displayed the stale cash-mode figure,
+        // and one click of the cash panel's Apply silently reverted the engine to it.
+        setTempBudget(unlockedCash);
         setCashReserve(tempCashReserve);
         addNotification({
             title: 'Capital Applied',

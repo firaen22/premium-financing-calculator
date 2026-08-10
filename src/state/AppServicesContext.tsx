@@ -81,7 +81,13 @@ export const AppServicesProvider = ({ children }: { children: React.ReactNode })
     }, [liveRate, liveDate, state.dataSource]);
 
     const onExportCSV = () => {
-        const headers = ['Year', 'Bond Interest', 'Cash Value', 'Bond Principal', 'Policy Value', 'Loan', 'Mortgage Balance', 'Mortgage Principal Repaid', 'Net Equity'];
+        // Headers must name what the row builder below actually emits. 'Bond Interest'
+        // over row.cumulativeBondInterest read as an annual figure but exported the
+        // running total — identical at year 1 (the trap), 30x apart by year 30 for
+        // anyone summing or charting the column. Every other surface qualifies it
+        // (t.cumulativeBondInterest); the CSV was the only one that dropped the word.
+        // 'Policy Loan' likewise: the column is row.loan alone, excluding bondLoan.
+        const headers = ['Year', 'Cumulative Bond Interest', 'Cash Value', 'Bond Principal', 'Policy Value', 'Policy Loan', 'Mortgage Balance', 'Mortgage Principal Repaid', 'Net Equity'];
         const projData = state.projection.projectionData;
         const initialMtgBalance = projData[0]?.mortgageBalance || 0;
         const csvContent = [

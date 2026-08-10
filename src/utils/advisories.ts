@@ -178,7 +178,15 @@ export const checkAssumptions = (
             cofRate: rate(input.cofRate), hibor: rate(input.hibor),
         }));
     }
-    if (reads('fundSource', 'unlockedCash') && input.fundSource === 'mortgage' && input.unlockedCash <= 0) {
+    // A pure refinance (mortgageFacility/properties stated, unlockedCash 0) legitimately draws
+    // a gross facility while releasing no net cash — that's not "no cash to fund the policy",
+    // it's a valid deal shape the mortgageFacility fallback (calculations.ts) made reachable.
+    // Read the engine's own resolved Year-0 balance rather than re-deriving it, since it's
+    // correct regardless of which input path (properties, mortgageFacility, or payment
+    // inference) produced it.
+    const yr0MortgageBalance = rows.find(row => row.year === 0)?.mortgageBalance;
+    if (reads('fundSource', 'unlockedCash') && input.fundSource === 'mortgage' && input.unlockedCash <= 0 &&
+        !(finite(yr0MortgageBalance) && yr0MortgageBalance > 0)) {
         groups.push(finding('A6_NO_UNLOCKED_CASH', 'blocker', 'unlockedCash', { unlockedCash: money(input.unlockedCash) }));
     }
     const monthlyNetCashflow = outputNumber('monthlyNetCashflow');

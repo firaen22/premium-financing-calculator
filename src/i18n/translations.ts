@@ -120,6 +120,8 @@ export const TRANSLATIONS = {
     breakEvenHibor: "Break-even HIBOR",
     breakEvenNever: "Not Reached",
     breakEvenNeverSub: "Rate cap binds — no HIBOR level produces a loss",
+    breakEvenUnderwater: "Negative Carry",
+    breakEvenUnderwaterSub: "Loss-making even at 0% HIBOR — spreads outrun income",
     lowestNetEquity: "Lowest Net Equity",
     ltvMonitor: "LTV Monitor (Margin Call Risk)",
     netWorthComparison: "Net Worth Comparison",
@@ -519,6 +521,8 @@ export const TRANSLATIONS = {
     breakEvenHibor: "收支平衡 HIBOR",
     breakEvenNever: "不適用",
     breakEvenNeverSub: "利率上限生效——任何 HIBOR 水平均不會虧損",
+    breakEvenUnderwater: "負利差",
+    breakEvenUnderwaterSub: "即使 HIBOR 為 0% 仍然虧損——息差高於總收益",
     lowestNetEquity: "最低淨權益",
     ltvMonitor: "LTV 監控 (追收保證金風險)",
     netWorthComparison: "淨資產比較",
@@ -820,8 +824,11 @@ const TRAD_TO_SIMP = new Map<string, string>([
   ['傑','杰'],['極','极'],['樓','楼'],['檔','档'],['歲','岁'],['獎','奖'],['瑣','琐'],['環','环'],['異','异'],
   ['範','范'],['網','网'],['線','线'],['練','练'],['緊','紧'],['縮','缩'],['繳','缴'],['聲','声'],['腦','脑'],
   ['臺','台'],['興','兴'],['舊','旧'],['蘋','苹'],['蘭','兰'],['蟲','虫'],['補','补'],['裝','装'],
-  ['覆','复'],['親','亲'],['託','托'],['訂','订'],['診','诊'],['詞','词'],['話','话'],['該','该'],['誤','误'],
+  ['親','亲'],['託','托'],['訂','订'],['診','诊'],['詞','词'],['話','话'],['該','该'],['誤','误'],
   ['課','课'],['論','论'],['譯','译'],['讀','读'],['豐','丰'],['跡','迹'],['輛','辆'],
+  // NOTE: 覆 deliberately has no entry. It is unchanged in Simplified (覆蓋 -> 覆盖), and
+  // the ['覆','复'] entry that used to sit here would have silently produced 复盖. It was
+  // dead only because no zh_hk string happens to contain 覆 today.
   ['輸','输'],['轉','转'],['辭','辞'],['錄','录'],['錢','钱'],['錯','错'],['鋼','钢'],['鎖','锁'],['鏡','镜'],
   ['階','阶'],['隊','队'],['韓','韩'],['頭','头'],['顏','颜'],['餘','余'],['馬','马'],['駕','驾'],
   ['魯','鲁'],['鳥','鸟'],['麼','么'],['黃','黄'],['齒','齿'],
@@ -829,6 +836,22 @@ const TRAD_TO_SIMP = new Map<string, string>([
   ['僱','雇'],['遺','遗'],['囑','嘱'],['殲','歼'],
   ['歡','欢'],['殺','杀'],['滬','沪'],['無','无'],['燈','灯'],['獸','兽'],['獵','猎'],
   ['築','筑'],['紅','红'],['紐','纽'],['紛','纷'],['繪','绘'],
+  // Characters that actually occur in zh_hk above and were missing here, so zh_cn rendered
+  // them in Traditional. The map covered 123 of the 196 zh_hk characters that need
+  // converting — a mainland client read roughly a third of the UI in the wrong script
+  // ("國", "業", "問", "見", "銀" all leaked through). Derived by running OpenCC's t2s
+  // table over the exact character set of zh_hk rather than by eye; the parity test in
+  // translations.test.ts fails if zh_hk ever gains another unmapped Traditional character.
+  ['並','并'],['佔','占'],['來','来'],['債','债'],['償','偿'],['內','内'],['別','别'],['則','则'],
+  ['協','协'],['參','参'],['問','问'],['啟','启'],['嚴','严'],['國','国'],['圍','围'],['圖','图'],
+  ['執','执'],['壽','寿'],['實','实'],['審','审'],['帶','带'],['擇','择'],['擋','挡'],['擬','拟'],
+  ['攬','揽'],['於','于'],['暫','暂'],['桿','杆'],['業','业'],['槓','杠'],['樣','样'],['檢','检'],
+  ['檻','槛'],['沒','没'],['沖','冲'],['淨','净'],['潛','潜'],['潤','润'],['熱','热'],['狀','状'],
+  ['産','产'],['畫','画'],['礎','础'],['稱','称'],['筆','笔'],['級','级'],['細','细'],['終','终'],
+  ['給','给'],['綠','绿'],['維','维'],['緒','绪'],['編','编'],['緩','缓'],['虧','亏'],['見','见'],
+  ['視','视'],['觸','触'],['註','注'],['試','试'],['諮','咨'],['變','变'],['負','负'],['責','责'],
+  ['贈','赠'],['軸','轴'],['針','针'],['銀','银'],['銷','销'],['閉','闭'],['頂','顶'],['項','项'],
+  ['須','须'],
 ]);
 
 function traditionalToSimplified(text: string): string {
