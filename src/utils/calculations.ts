@@ -885,10 +885,17 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
         const annualLoanInterest = cumulativeInterest - prev.cumulativeInterest;
         const annualBondLoanInterest = cumulativeBondLoanInterest - prev.cumulativeBondLoanInterest;
         const annualPolicyGrowth = surrenderValue - prev.surrenderValue;
+        // netEquity (line 879) already deducts the falling mortgage BALANCE, which
+        // implicitly credits the principal repaid this year. Charging the full
+        // annualMtgPmt (principal + interest) here as well double-counted the
+        // principal, so this column stopped summing to cumulativeNetGain under
+        // mortgage funding — by exactly the principal repaid, reaching the full
+        // original facility by the final year. Only the interest belongs here;
+        // annualMtgPmt itself still reports the full cash outflow correctly.
+        const annualMtgInterest = cumMtgInt - prev.cumulativeMortgageInterest;
 
-        // Note: annualMtgPmt is local here, but we are using it for Net Gain calc
         let annualNetGain = (annualBondIncome + annualPolicyGrowth) - annualLoanInterest
-            - annualBondLoanInterest - annualMtgPmt - topUp.annualInterest;
+            - annualBondLoanInterest - annualMtgInterest - topUp.annualInterest;
 
         // Same capital base as roi (calculateRowRoi): budget + extraCash. A budget-only
         // denominator overstated the annual return whenever extraCash > 0, and read 0

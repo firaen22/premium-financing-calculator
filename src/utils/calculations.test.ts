@@ -2070,6 +2070,47 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             expect(projection.projectionData[10].mortgageBalance).toBeGreaterThan(0);
         });
 
+        it('sums annualNetGain to cumulativeNetGain under mortgage funding', () => {
+            // annualNetGain used to charge the FULL mortgage payment (principal + interest)
+            // while netEquity already credits the principal repayment via the falling
+            // mortgage balance, so this column stopped summing to cumulativeNetGain under
+            // mortgage funding — by exactly the principal repaid, reaching the full original
+            // facility (10,500,000) by year 30. Only the interest belongs in the annual
+            // figure; the principal side already nets to zero via the balance sheet.
+            const projection = calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage',
+                properties: [{ value: 15_000_000, ltv: 70, existingMortgage: 6_000_000, tenor: 30, rate: 3.75 }],
+            } as any));
+            const rows = projection.projectionData;
+            const summedAnnual = rows.slice(1, 31).reduce((sum, row) => sum + row.annualNetGain, 0);
+
+            expect(rows[30].cumulativeNetGain).toBeCloseTo(rows[0].cumulativeNetGain + summedAnnual, 4);
+        });
+
+        it('reconciles DetailedCalculationTable\'s itemised PDF rows to the printed net equity total', () => {
+            // Page 6 of the client PDF (DetailedCalculationTable) prints these fields as
+            // itemised rows directly above a "NET EQUITY (HKD)" total pulled from
+            // row.netEquity. It used to also print a "less cumulative mortgage payments"
+            // row (cumulativeMortgageCost — principal + interest), which double-counted
+            // the principal already reflected in the declining mortgageBalance row above
+            // it: the itemised rows summed to HK$17.5M below the printed total on a
+            // 30-year mortgage case. netEquity only ever nets the mortgage's current
+            // outstanding balance, never cumulative payments, so that row must stay out.
+            const projection = calculateProjection(inputFromDefaults({
+                fundSource: 'mortgage',
+                properties: [{ value: 15_000_000, ltv: 70, existingMortgage: 6_000_000, tenor: 30, rate: 3.75 }],
+            } as any));
+
+            for (const yr of [10, 20, 30]) {
+                const row = projection.projectionData[yr];
+                const itemisedSum = row.surrenderValue + row.bondPrincipal + row.cashValue
+                    - row.loan - row.mortgageBalance
+                    + row.cumulativeBondInterest - row.cumulativeInterest;
+
+                expect(itemisedSum).toBeCloseTo(row.netEquity, 4);
+            }
+        });
+
         it('offsets break-even HIBOR by the COF gap', () => {
             // rate = cofRate + (H - hibor) + spread, so break-even H sits below the
             // HIBOR-basis answer by exactly (cofRate - hibor).
