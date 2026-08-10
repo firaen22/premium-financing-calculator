@@ -193,10 +193,22 @@ export interface StressTestInput {
     extraCash?: number;
 }
 
+/**
+ * Why the break-even KPI is not a bare number.
+ *
+ * `reachable` — breakEvenHibor is a real rate the market could print.
+ * `never`     — income outruns interest even at the contractual cap; breakEvenHibor is 100.
+ * `underwater`— loss-making already at HIBOR 0; breakEvenHibor is 0, which is a FLOOR, not
+ *               a threshold. Read the status before the number.
+ */
+export type BreakEvenStatus = 'reachable' | 'never' | 'underwater';
+
 export interface StressTestOutput {
     stressedProjection: ProjectionData[];
     stressStats: {
         breakEvenHibor: number;
+        /** Qualifies breakEvenHibor; see BreakEvenStatus. Never omitted. */
+        breakEvenStatus: BreakEvenStatus;
         lowestEquity: number;
     };
     sensitivityData: {
@@ -1012,6 +1024,29 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
 
     const factors = showGuaranteed ? GUARANTEED_FACTORS : BASE_FACTORS;
 
+    // The stressed series reads surrender values off `factors`, which showGuaranteed
+    // switches to GUARANTEED_FACTORS. `baselineData` always carries illustrated values:
+    // calculateProjection is deliberately fixed to BASE_FACTORS, because currentFactors[0]
+    // also sizes tPremium (line 643), so a guaranteed-factor projection would resize the
+    // whole deal rather than merely re-read the cash-value table. Comparing the two series
+    // directly therefore rendered the guaranteed-vs-illustrated gap as a stress loss: with
+    // ZERO shock applied, year 30 plotted 9,894,329 against a 12,999,071 baseline — a 3.1M
+    // phantom drop produced by ticking a display toggle, exactly the divergence the
+    // zero-shock test at calculations.test.ts:439 pins for every other input.
+    // Surrender value enters netEquity with coefficient +1, and the top-up schedule is held
+    // fixed rather than re-derived (the same convention baselineTopUpInterest below uses),
+    // so re-basing the baseline is exactly this shift — verified to 0.000000 against the
+    // stressed series with topUpMode off and annual.
+    // Only the plotted baseline needs it. The heatmap nets `result` against
+    // (baselineNetEquity - baselineCumulativeNetGain), a capital basis that does not move
+    // with the factor table, so both terms would shift by this same gap and cancel — that
+    // path is already correct and is deliberately left alone.
+    const comparableBaselineEquity = (yr: number): number => {
+        const equity = baselineData?.[yr]?.netEquity || 0;
+        if (!showGuaranteed) return equity;
+        return equity - totalPremium * ((BASE_FACTORS[yr] ?? 0) - (GUARANTEED_FACTORS[yr] ?? 0));
+    };
+
     // 1. Bond Shock
     const stressedBondPrincipal = netBondPrincipal * (1 - bondPriceDrop / 100);
 
@@ -1055,7 +1090,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     data.push({
         year: 0,
         netEquity: yr0NetEquity,
-        baselineNetEquity: baselineData?.[0]?.netEquity || 0,
+        baselineNetEquity: comparableBaselineEquity(0),
         ltv: yr0Collateral > 0
             ? (bankLoan / yr0Collateral) * 100
             : (bankLoan > 0 ? LTV_IMPAIRED : 0),
@@ -1103,7 +1138,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         data.push({
             year: yr,
             netEquity,
-            baselineNetEquity: baselineData[yr]?.netEquity || 0,
+            baselineNetEquity: comparableBaselineEquity(yr),
             ltv,
             bondLtv: bondGearing(bondFundNetValue),
             surrenderValue,
@@ -1132,6 +1167,11 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     //     = (income - mortgage) * 100
     // With bondLoan = 0 this reduces exactly to the previous single-facility formula.
     let breakEvenHibor = 0;
+    // Carried beside the number because 100 already means "never breaks even": overloading
+    // 0 as a second sentinel would make "underwater at any rate" and "breaks even at
+    // exactly 0.00%" the same value to every downstream reader, including the chat/MCP
+    // surface, which passes stressStats through untyped.
+    let breakEvenStatus: BreakEvenStatus = 'reachable';
     const totalDebt = bankLoan + bondLoan;
     if (totalDebt > 0) {
         const incomeAvailable = totalAnnualIncome - annualMtgPmt;
@@ -1161,6 +1201,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         }
         if (!Number.isFinite(base)) {
             breakEvenHibor = 100;
+            breakEvenStatus = 'never';
         } else if (interestBasis === 'hibor') {
             breakEvenHibor = base;
         } else {
@@ -1170,6 +1211,25 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         }
     } else {
         breakEvenHibor = 100;
+        breakEvenStatus = 'never';
+    }
+
+    // A solved threshold below zero is not a rate any market can reach; it means the
+    // structure is ALREADY loss-making at HIBOR 0, because the spreads alone outrun the
+    // income. The tile rendered it literally: bondYield 0 / spread 8 / cap 20 printed
+    // "-2.26%", which reads as 2.26 points of headroom BELOW zero — the opposite of the
+    // truth. Classified rather than clamped, because a clamp alone would make a structure
+    // that genuinely breaks even at 0.00% indistinguishable from one losing 8% a year.
+    // The check runs after the COF conversion above, not on `base`: a perfectly valid base
+    // solution converts to a negative HIBOR whenever cofRate exceeds hibor by more than
+    // the solved base, so screening `base` would have left the COF path reporting negatives.
+    // EPS keeps a -1e-15 rounding artefact classified as a real 0.00% break-even.
+    const BREAK_EVEN_EPS = 1e-9;
+    if (breakEvenStatus === 'reachable' && breakEvenHibor < -BREAK_EVEN_EPS) {
+        breakEvenStatus = 'underwater';
+        breakEvenHibor = 0;
+    } else if (breakEvenStatus === 'reachable') {
+        breakEvenHibor = Math.max(0, breakEvenHibor);
     }
 
     // Sensitivity Heatmap
@@ -1225,6 +1285,7 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
         stressedProjection: data,
         stressStats: {
             breakEvenHibor,
+            breakEvenStatus,
             lowestEquity
         },
         sensitivityData: {

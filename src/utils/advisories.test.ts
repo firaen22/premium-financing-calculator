@@ -36,7 +36,7 @@ const projectionFor = (overrides: Partial<SimulationInput> = {}) => {
 const outputWith = (base: SimulationOutput, overrides: Partial<SimulationOutput>): SimulationOutput => ({ ...base, ...overrides });
 const row = (year: number, netEquity: number, ltv?: number): ProjectionData => ({ year, netEquity, ...(ltv === undefined ? {} : { ltv }) } as ProjectionData);
 const stressWith = (rows: ProjectionData[]): StressTestOutput => ({
-    stressedProjection: rows, stressStats: { breakEvenHibor: 0, lowestEquity: 0 },
+    stressedProjection: rows, stressStats: { breakEvenHibor: 0, breakEvenStatus: 'reachable', lowestEquity: 0 },
     sensitivityData: { xLabels: [], yLabels: [], data: [] },
 });
 const ids = (findings: Finding[]) => findings.map(finding => finding.id);

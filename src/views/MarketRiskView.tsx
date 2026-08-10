@@ -21,12 +21,23 @@ export const MarketRiskView = () => {
                     subtext={t.projectedMinimum}
                     alert={stressStats.lowestEquity < 0}
                 />
-                {/* 100 is the engine's "never breaks even" sentinel (calculations.ts) —
-                    rendering it as a literal 100.00% reads as an anomaly, not a safety. */}
+                {/* Read stressStats.breakEvenStatus, not the number: 100 means "no HIBOR
+                    level produces a loss" and 0 can mean "already loss-making at 0%", so
+                    rendering either literally inverts its meaning. 'underwater' is an alert
+                    state — the structure loses money at every reachable rate. */}
                 <KPICard
                     label={t.breakEvenHibor}
-                    value={stressStats.breakEvenHibor >= 100 ? t.breakEvenNever : formatPercent(stressStats.breakEvenHibor)}
-                    subtext={stressStats.breakEvenHibor >= 100 ? t.breakEvenNeverSub : t.netCarryNeutral}
+                    value={
+                        stressStats.breakEvenStatus === 'never' ? t.breakEvenNever
+                            : stressStats.breakEvenStatus === 'underwater' ? t.breakEvenUnderwater
+                                : formatPercent(stressStats.breakEvenHibor)
+                    }
+                    subtext={
+                        stressStats.breakEvenStatus === 'never' ? t.breakEvenNeverSub
+                            : stressStats.breakEvenStatus === 'underwater' ? t.breakEvenUnderwaterSub
+                                : t.netCarryNeutral
+                    }
+                    alert={stressStats.breakEvenStatus === 'underwater'}
                 />
             </div>
 

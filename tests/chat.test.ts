@@ -326,7 +326,12 @@ describe('/api/chat', () => {
         // Stress rows carry the comparison figures a stress-test answer would cite.
         expect(toolContent).toContain('baselineNetEquity');
         expect(toolContent).not.toContain('formattedNetEquity');
-        expect(toolContent.length).toBeLessThan(9000);
+        // Headroom, not a protocol limit: this guards against the stress branch going
+        // UNCOMPACTED, which measured ~10.7 KB above. 9000 happened to sit ~21 bytes above
+        // the payload, so adding stressStats.breakEvenStatus — the field that tells the
+        // assistant whether breakEvenHibor is a real rate, a "never" 100 or an "underwater"
+        // 0 — tripped it. Raised to keep a wide margin below the uncompacted size.
+        expect(toolContent.length).toBeLessThan(9500);
     });
 
     it('feeds tool validation failures back instead of returning 500', async () => {

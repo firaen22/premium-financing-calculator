@@ -11,6 +11,7 @@ import {
     deriveMortgageSchedule,
     deriveTopUpSchedule,
     deriveUnlockedCash,
+    GUARANTEED_FACTORS,
     LTV_IMPAIRED,
     lookupRebateRate,
     type SimulationInput,
@@ -447,6 +448,80 @@ describe('premium-financing arithmetic engine golden regressions', () => {
                 Math.abs(stressed.stressedProjection[year].netEquity - row.netEquity)));
 
             expect(worst).toBeLessThan(1);
+        });
+
+        // The zero-shock cases above all run showGuaranteed=false, which is exactly how the
+        // guaranteed toggle escaped: it swaps the stressed series onto GUARANTEED_FACTORS
+        // while baselineNetEquity stays on the illustrated table, so at year 30 the chart
+        // plotted 9,894,329 against a 12,999,071 baseline — a 3.1M "stress loss" produced by
+        // ticking a display checkbox with no shock applied.
+        it('has no zero-shock divergence when the guaranteed toggle is on', () => {
+            const projection = calculateProjection(inputFromDefaults());
+            const stressed = calculateStressTest(stressInput(projection, {
+                showGuaranteed: true, simulatedHibor: DEFAULT_INPUTS.hibor, bondPriceDrop: 0,
+            }));
+
+            const worst = Math.max(...stressed.stressedProjection.map(row =>
+                Math.abs(row.netEquity - (row.baselineNetEquity ?? 0))));
+
+            expect(worst).toBeLessThan(1);
+        });
+
+        // The guaranteed baseline must be a re-read of the cash-value table, not a different
+        // deal: currentFactors[0] also sizes tPremium, so anything that recomputed the
+        // projection on guaranteed factors would shrink the premium and the bank loan too.
+        it('keeps the guaranteed toggle a display re-basing, not a smaller deal', () => {
+            const projection = calculateProjection(inputFromDefaults());
+            const off = calculateStressTest(stressInput(projection, { showGuaranteed: false }));
+            const on = calculateStressTest(stressInput(projection, { showGuaranteed: true }));
+
+            for (const yr of [10, 20, 30]) {
+                const gap = projection.totalPremium * (BASE_FACTORS[yr] - GUARANTEED_FACTORS[yr]);
+                expect(gap).toBeGreaterThan(0);
+                expect((off.stressedProjection[yr].baselineNetEquity ?? 0)
+                    - (on.stressedProjection[yr].baselineNetEquity ?? 0)).toBeCloseTo(gap, 4);
+            }
+        });
+
+        // Break-even below zero is not a rate any market reaches — it means the spreads
+        // already outrun the income at HIBOR 0. It used to print literally ("-2.26%"), which
+        // reads as headroom below zero rather than as a structure losing money every year.
+        it('reports a negative break-even as underwater rather than printing the rate', () => {
+            const projection = calculateProjection(inputFromDefaults({ bondYield: 0, spread: 8, capRate: 20 }));
+            const stressed = calculateStressTest(stressInput(projection, {
+                bondYield: 0, spread: 8, capRate: 20,
+            }));
+
+            expect(stressed.stressStats.breakEvenStatus).toBe('underwater');
+            expect(stressed.stressStats.breakEvenHibor).toBe(0);
+        });
+
+        // Same screen on the COF basis, which converts the solved base back to a HIBOR via
+        // (base - cofRate + hibor). A perfectly valid base solution lands below zero whenever
+        // cofRate exceeds hibor by more than the base, so screening before the conversion
+        // would have left this path still emitting negatives.
+        it('screens the underwater case after the COF basis conversion, not before', () => {
+            const projection = calculateProjection(inputFromDefaults({
+                interestBasis: 'cof', cofRate: 9, bondYield: 0.5, spread: 4, capRate: 25,
+            }));
+            const stressed = calculateStressTest(stressInput(projection, {
+                interestBasis: 'cof', cofRate: 9, bondYield: 0.5, spread: 4, capRate: 25,
+            }));
+
+            expect(stressed.stressStats.breakEvenHibor).toBeGreaterThanOrEqual(0);
+            if (stressed.stressStats.breakEvenStatus === 'underwater') {
+                expect(stressed.stressStats.breakEvenHibor).toBe(0);
+            }
+        });
+
+        // 'never' must stay distinguishable from 'underwater': both are non-rates, but one is
+        // the safest possible outcome and the other the worst. Collapsing them onto a single
+        // clamped number was the reason for adding the status field rather than a floor.
+        it('keeps never-breaks-even distinct from already-underwater', () => {
+            const safe = calculateStressTest(stressInput(calculateProjection(inputFromDefaults())));
+
+            expect(safe.stressStats.breakEvenStatus).toBe('never');
+            expect(safe.stressStats.breakEvenHibor).toBe(100);
         });
 
         // Regression for the Year-0 basis mismatch: the baseline's Year-0 mortgage
