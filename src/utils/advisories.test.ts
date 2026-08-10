@@ -93,6 +93,14 @@ describe('checkAssumptions', () => {
         expect(ids(checkAssumptions(inputFromDefaults({ capRate: 5 }), clean.output))).toContain('A4_CAP_BINDS_IMMEDIATELY');
         expect(ids(checkAssumptions(inputFromDefaults({ interestBasis: 'cof', cofRate: 5, hibor: 4 }), clean.output))).toContain('A5_STALE_COF_BASIS');
         expect(ids(checkAssumptions(inputFromDefaults({ fundSource: 'mortgage', unlockedCash: 0 }), clean.output))).toContain('A6_NO_UNLOCKED_CASH');
+        // A pure refinance (mortgageFacility stated, unlockedCash 0) draws a real gross
+        // facility while releasing no net cash — that's a valid deal, not "no cash to fund
+        // the policy". A6 must key off the engine's resolved Year-0 balance, not unlockedCash
+        // alone, or every pure refinance trips a spurious blocker.
+        const pureRefiInput = inputFromDefaults({ fundSource: 'mortgage', unlockedCash: 0, mortgageFacility: 10_000_000 });
+        const pureRefiOutput = calculateProjection(pureRefiInput);
+        expect(pureRefiOutput.projectionData[0]?.mortgageBalance).toBe(10_000_000);
+        expect(ids(checkAssumptions(pureRefiInput, pureRefiOutput))).not.toContain('A6_NO_UNLOCKED_CASH');
         expect(ids(checkAssumptions(clean.input, outputWith(clean.output, { monthlyNetCashflow: -1 })))).toContain('A7_NEGATIVE_YEAR1_CASHFLOW');
         expect(ids(checkAssumptions(inputFromDefaults({ cashReserve: 1 }), outputWith(clean.output, { monthlyNetCashflow: -1 })))).toContain('A8_FUNDING_GAP');
         expect(ids(checkAssumptions(clean.input, outputWith(clean.output, { projectionData: [row(0, -1)], finalNetEquity: -1 })))).toContain('A9_ENDS_NEGATIVE');

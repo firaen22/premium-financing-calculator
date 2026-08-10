@@ -24,9 +24,10 @@ const INPUT_FIELDS = [
     'budget', 'cashReserve', 'bondAlloc', 'bondYield', 'hibor', 'cofRate',
     'interestBasis', 'spread', 'leverageLTV', 'capRate', 'handlingFee', 'fundSource',
     'unlockedCash', 'effectiveMortgageRate', 'monthlyMortgagePmt', 'mortgageTenor',
+    'mortgageFacility',
 ] as const;
 const STRESS_FIELDS = ['simulatedHibor', 'bondPriceDrop', 'showGuaranteed', 'sensitivityYear'] as const;
-const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCash', 'monthlyMortgagePmt']);
+const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCash', 'monthlyMortgagePmt', 'mortgageFacility']);
 const MAX_PAYLOAD_BYTES = 100 * 1024;
 
 const fieldDescription = (field: string): string => MONEY_FIELDS.has(field) ? `${field}, in HKD` : `${field}, as a percent`;
@@ -43,6 +44,11 @@ const inputSchema = (): Record<string, z.ZodTypeAny> => {
     for (const field of Object.keys(INPUT_RANGES)) schema[field] = numberSchema(field);
     schema.interestBasis = z.enum(ENUM_VALUES.interestBasis).describe('interest basis: hibor or cof');
     schema.fundSource = z.enum(ENUM_VALUES.fundSource).describe('funding source: cash or mortgage');
+    // Optional, but the only way a scalar caller can state the gross facility rather than
+    // have it inferred from monthlyMortgagePmt. Omitting it on a mortgage deal whose
+    // payment is coherent with the facility changes nothing.
+    schema.mortgageFacility = numberSchema('mortgageFacility').optional()
+        .describe('gross mortgage facility drawn, in HKD (property value x LTV, BEFORE repaying any existing mortgage). Defaults to the facility implied by monthlyMortgagePmt.');
     return schema;
 };
 

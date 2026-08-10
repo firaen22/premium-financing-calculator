@@ -5,6 +5,7 @@ import {
     calculateIRR,
     calculatePMT,
     calculateProjection,
+    calculatePV,
     calculateStressTest,
     deriveEffectiveMortgageRate,
     deriveMortgageCashOut,
@@ -670,6 +671,164 @@ describe('premium-financing arithmetic engine golden regressions', () => {
             }]);
             expect(straightLine[1].balance).toBeCloseTo(0, 9);
             expect(straightLine[1].cumulativeInterest).toBe(0);
+        });
+    });
+
+    // The UI always supplies `properties`; the API/MCP/chat surface never can, so it lands
+    // on the scalar fallback. That fallback amortised `unlockedCash` — the NET cash
+    // released — against a payment sized for the GROSS facility, so the same deal came out
+    // opposite-signed depending on which door the caller walked through.
+    describe('11b. scalar mortgage fallback (API/MCP/chat path)', () => {
+        const RATE = 3.75, TENOR = 30;
+        const GROSS = 15_000_000 * 0.70;          // property value x LTV
+        const EXISTING = 6_000_000;
+        const NET = GROSS - EXISTING;             // what deriveMortgageCashOut releases
+        const property = {
+            value: 15_000_000, ltv: 70, existingMortgage: EXISTING, tenor: TENOR, rate: RATE,
+        };
+        // The payment the mortgage panel actually derives: PMT over the GROSS facility.
+        const grossPmt = calculatePMT(RATE, TENOR, GROSS);
+
+        const scalarInput = (overrides: Partial<SimulationInput> = {}) => inputFromDefaults({
+            fundSource: 'mortgage',
+            unlockedCash: NET,
+            effectiveMortgageRate: RATE,
+            monthlyMortgagePmt: grossPmt,
+            mortgageTenor: TENOR,
+            ...overrides,
+        });
+
+        it('inverts calculatePMT exactly, including its degenerate branches', () => {
+            for (const rate of [0, 0.0001, 0.5, 3.75, 12, 100]) {
+                for (const nper of [1, 5, 30, 50]) {
+                    for (const pv of [1, 250_000, GROSS, 1e12]) {
+                        // Relative, not absolute: at pv = 1e12 an absolute cent tolerance
+                        // would be far below double precision and pass vacuously.
+                        expect(calculatePV(rate, nper, calculatePMT(rate, nper, pv)) / pv)
+                            .toBeCloseTo(1, 12);
+                    }
+                }
+            }
+            // Zero rate is straight-line over MONTHS, mirroring calculatePMT's own branch.
+            expect(calculatePV(0, 30, 1_000)).toBe(360_000);
+        });
+
+        it('returns 0 rather than Infinity or NaN for degenerate arguments', () => {
+            expect(calculatePV(3, 0, 100)).toBe(0);
+            expect(calculatePV(3, 30, 0)).toBe(0);
+            expect(calculatePV(3, 30, -100)).toBe(0);
+            expect(calculatePV(Number.NaN, 30, 100)).toBe(0);
+            expect(calculatePV(3, Number.POSITIVE_INFINITY, 100)).toBe(0);
+            // Not decoration by way of an unconditional 0: the same function returns real
+            // principals for real arguments, so these zeros are the guards firing.
+            expect(calculatePV(3.75, 30, 48_627.13711507305)).toBeGreaterThan(10_000_000);
+        });
+
+        // The two branches the round-trip grid above cannot reach: a rate small enough that
+        // (1 + r) rounds to exactly 1.0, and a tenor large enough to overflow. calculatePMT
+        // degenerates to straight-line and to 0 respectively, and calculatePV must mirror it
+        // rather than hand back Infinity — the engine sanitizes the result, but this is an
+        // exported helper.
+        it('mirrors calculatePMT at the growth===1 and overflow branches', () => {
+            const tinyRate = 1e-15;
+            expect(1 + tinyRate / 100 / 12).toBe(1);           // the branch is genuinely hit
+            expect(calculatePV(tinyRate, 30, 1_000)).toBe(360_000);
+            expect(calculatePMT(tinyRate, 30, 360_000)).toBe(1_000);
+
+            for (const nper of [1e308, 1e300, 1e10]) {
+                expect(Number.isFinite(calculatePV(100, nper, 1))).toBe(true);
+                expect(Number.isFinite(calculatePMT(100, nper, 1))).toBe(true);
+            }
+            expect(calculatePV(100, 1e308, 1)).toBe(0);        // was Infinity
+        });
+
+        // The regression itself. Before the fix the scalar path opened at 4,500,000 against
+        // a 10,500,000 payment, cleared the loan outright by year 10 and reported year-10
+        // net equity at +5,590,643 where the properties path says -2,611,094.
+        it('matches the properties path year for year on the same deal', () => {
+            const viaProperties = calculateProjection(scalarInput({ properties: [property] }));
+            const viaScalars = calculateProjection(scalarInput());
+
+            expect(viaScalars.projectionData[0].mortgageBalance).toBeCloseTo(GROSS, 6);
+            for (let year = 0; year <= 30; year++) {
+                expect(viaScalars.projectionData[year].mortgageBalance)
+                    .toBeCloseTo(viaProperties.projectionData[year].mortgageBalance, 6);
+                expect(viaScalars.projectionData[year].netEquity)
+                    .toBeCloseTo(viaProperties.projectionData[year].netEquity, 6);
+            }
+        });
+
+        it('takes an explicit mortgageFacility as authoritative', () => {
+            expect(calculateProjection(scalarInput({ mortgageFacility: 9_000_000 }))
+                .projectionData[0].mortgageBalance).toBe(9_000_000);
+            // Explicit zero is a real answer (an unfunded facility), not "unset".
+            expect(calculateProjection(scalarInput({ mortgageFacility: 0 }))
+                .projectionData[0].mortgageBalance).toBe(0);
+        });
+
+        it('ignores mortgageFacility when properties are supplied', () => {
+            expect(calculateProjection(scalarInput({ properties: [property], mortgageFacility: 1 }))
+                .projectionData[0].mortgageBalance).toBeCloseTo(GROSS, 6);
+        });
+
+        // Inference cannot recover a principal from a payment that never amortises it, so
+        // the floor bounds the error in the safe direction instead of pretending to fix it.
+        // Understating the client's debt is the failure that reads as a better deal.
+        it('never reports a balance below the cash the caller says was released', () => {
+            const interestOnly = calculateProjection(
+                scalarInput({ monthlyMortgagePmt: GROSS * RATE / 1200 })).projectionData[0].mortgageBalance;
+            expect(interestOnly).toBeGreaterThan(NET);
+            expect(interestOnly).toBeLessThan(GROSS);   // honest about the residual gap
+
+            for (const monthlyMortgagePmt of [0, 1, 100]) {
+                expect(calculateProjection(scalarInput({ monthlyMortgagePmt }))
+                    .projectionData[0].mortgageBalance).toBe(NET);
+            }
+        });
+
+        // inputFromDefaults models exactly this caller: PMT derived from unlockedCash. The
+        // fix must be a no-op for them, which is why the pre-existing suite did not move.
+        it('leaves a self-consistent scalar caller untouched', () => {
+            const selfConsistent = inputFromDefaults({
+                fundSource: 'mortgage',
+                unlockedCash: NET,
+                effectiveMortgageRate: RATE,
+                monthlyMortgagePmt: calculatePMT(RATE, TENOR, NET),
+                mortgageTenor: TENOR,
+            });
+            expect(calculateProjection(selfConsistent).projectionData[0].mortgageBalance)
+                .toBeCloseTo(NET, 6);
+        });
+
+        // The same net-for-gross substitution lived a second time in calculateStressTest's
+        // Year-0 fallback, reached whenever a caller passes an empty projectionData. It
+        // read +694,286 where the real Year-0 position is -5,305,714 — the 6,000,000
+        // existing mortgage, again in the flattering direction.
+        it('does not fall back to net cash for the stressed Year-0 balance', () => {
+            const projection = calculateProjection(scalarInput());
+            const withBaseline = calculateStressTest(stressInput(projection, {
+                fundSource: 'mortgage', unlockedCash: NET, simulatedHibor: DEFAULT_INPUTS.hibor,
+            }));
+            const noBaseline = calculateStressTest(stressInput(projection, {
+                fundSource: 'mortgage', unlockedCash: NET, simulatedHibor: DEFAULT_INPUTS.hibor,
+                projectionData: [], mortgageFacility: GROSS,
+            }));
+            expect(withBaseline.stressedProjection[0].netEquity).toBeCloseTo(
+                noBaseline.stressedProjection[0].netEquity, 6);
+
+            // Without either signal there is no correct answer left, but the terminal
+            // fallback must still be a lower bound on the debt, never zero.
+            const blind = calculateStressTest(stressInput(projection, {
+                fundSource: 'mortgage', unlockedCash: NET, simulatedHibor: DEFAULT_INPUTS.hibor,
+                projectionData: [],
+            }));
+            expect(blind.stressedProjection[0].netEquity)
+                .toBeGreaterThan(noBaseline.stressedProjection[0].netEquity);
+        });
+
+        it('leaves cash funding with no mortgage at all', () => {
+            expect(calculateProjection(scalarInput({ fundSource: 'cash', mortgageFacility: 9_000_000 }))
+                .projectionData[0].mortgageBalance).toBe(0);
         });
     });
 

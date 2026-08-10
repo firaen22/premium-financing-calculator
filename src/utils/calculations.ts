@@ -109,6 +109,11 @@ export interface SimulationInput {
     monthlyMortgagePmt: number;
     mortgageTenor: number;
     properties?: MortgageProperty[];
+    // GROSS mortgage facility drawn, for scalar callers that cannot supply `properties`
+    // (the API/MCP/chat surface). Ignored when `properties` is present, which carries the
+    // gross per property already. See the fallback block in calculateProjection for why
+    // unlockedCash — the NET cash released — cannot stand in for it.
+    mortgageFacility?: number;
     extraCash?: number;
     // Second leverage layer: pledge the bond fund as collateral and borrow against it to
     // top up the policy down payment. Optional and 0 by default, so every existing caller
@@ -175,6 +180,10 @@ export interface StressTestInput {
     sensitivityYear: number;
     fundSource: 'cash' | 'mortgage';
     unlockedCash: number; // Needed for Year 0 mortgage check
+    // GROSS facility, mirrored from SimulationInput. Only consulted when `projectionData`
+    // carries no Year-0 row to read the resolved balance from; see yr0MortgageBal below
+    // for why unlockedCash is the wrong number to fall back on.
+    mortgageFacility?: number;
     // The stressed loan rate must be built on the SAME basis the baseline used,
     // otherwise the stressed projection is not comparable to baselineNetEquity.
     interestBasis: 'hibor' | 'cof';
@@ -284,6 +293,33 @@ export const calculatePMT = (rate: number, nper: number, pv: number) => {
     const growth = Math.pow(1 + r, n);
     if (!isFinite(growth) || growth === 1) return pv / (nper * 12);
     return (pv * r * growth) / (growth - 1);
+};
+
+/** Algebraic inverse of calculatePMT: the loan principal a given monthly payment
+ * amortises to zero over `nper` years. Both degenerate branches mirror calculatePMT's
+ * (rate 0, and a `growth` that overflows or rounds to 1), so the round trip
+ * calculatePV(rate, nper, calculatePMT(rate, nper, pv)) recovers `pv` to within a unit in
+ * the last place across every tenor and rate the mortgage panel can produce — which is
+ * what lets the scalar API path recover the gross facility from a caller that supplies
+ * only a payment. It is a round trip through two divisions, not a bit-exact identity: on
+ * the app's default deal it returns 10,500,000.000000002.
+ *
+ * Total, like calculatePMT: a non-finite result is reported as 0 rather than propagated,
+ * because `pmt * nper * 12` overflows to Infinity for an astronomical tenor where
+ * calculatePMT's mirror-image branch underflows to 0. Only the guard direction matters at
+ * the one call site — mortgageTenor is already sanitized to <= 50 there, and the result is
+ * clamped again — but an exported helper that can hand back Infinity is a trap. */
+export const calculatePV = (rate: number, nper: number, pmt: number) => {
+    if (!isFinite(nper) || !isFinite(pmt) || !isFinite(rate)) return 0;
+    if (nper <= 0 || pmt <= 0) return 0;
+    const straightLine = pmt * nper * 12;
+    if (rate === 0) return isFinite(straightLine) ? straightLine : 0;
+    const r = rate / 100 / 12;
+    const n = nper * 12;
+    const growth = Math.pow(1 + r, n);
+    if (!isFinite(growth) || growth === 1) return isFinite(straightLine) ? straightLine : 0;
+    const pv = (pmt * (growth - 1)) / (r * growth);
+    return isFinite(pv) ? pv : 0;
 };
 
 /** Excel-XIRR-style root of the NPV function over annual periods (integer t, no dates).
@@ -705,16 +741,50 @@ export const calculateProjection = (input: SimulationInput): SimulationOutput =>
     // fields remain a compatibility fallback for callers that predate `properties`
     // (the current UI always supplies the list). The fallback amortises monthly,
     // matching deriveMortgageSchedule, but honours the caller's monthlyMortgagePmt
-    // rather than re-deriving it — the two paths still differ when that payment is
-    // not the PMT of unlockedCash (e.g. a payment summed across gross per-property
-    // loans against a cash-out balance net of existing mortgages).
+    // rather than re-deriving it.
+    //
+    // Its opening balance is the GROSS facility drawn — the same quantity as
+    // mortgageSchedule[0].balance on the properties path, and the Year-0 contract the
+    // stress test already documents at its own yr0MortgageBal. It amortised
+    // `unlockedCash` instead, which is the NET cash released: gross minus the existing
+    // mortgage being refinanced away. Paying a gross-sized payment against a net-sized
+    // balance cleared a HK$10.5M facility by year 10 and put year-10 net equity at
+    // +5,590,643 where the UI's own numbers for the same deal say -2,611,094 — the
+    // Year-0 gap being exactly the 6,000,000 existing mortgage.
+    //
+    // `mortgageFacility` states the gross directly and is authoritative when supplied.
+    // Absent it, the gross is recovered from the caller's own payment: calculatePV
+    // inverts the very formula useAppState uses to derive that payment from gross, so a
+    // coherent scalar caller lands back on the facility exactly (verified on the default
+    // deal: 10,500,000.000000002 against a true 10,500,000).
+    //
+    // Inference is not accuracy, and this rule is not universally closer to the truth than
+    // the old one — it is only never further in the direction that matters. Two measured
+    // cases where it still misses, both of which `mortgageFacility` exists to settle:
+    //   - an interest-only payment on the same deal implies a PV of 7,085,164 against a
+    //     true 10,500,000, because such a payment does not identify a principal at all;
+    //   - two properties on 30y and 10y tenors sum to a payment that, read against the
+    //     single `mortgageTenor` scalar, implies 22,124,274 against a true 14,000,000.
+    // The second OVERSTATES, and the absolute error is larger than the old rule's. That is
+    // the deliberate trade: across a 864-case sweep of rates, tenors, existing-mortgage
+    // fractions and over/under-payments, the new rule never understates by more than the
+    // old one, because grossFacility = unlockedCash + existingMortgage with
+    // existingMortgage >= 0 puts the floor at or below the true facility by construction.
+    // Understating a client's liability is what ships a flattering, plausible, unchallenged
+    // number; overstating it is conservative and gets questioned.
     const hasProperties = input.properties !== undefined;
     let mortgageSchedule: MortgageYear[] | undefined;
     if (fundSource === 'mortgage' && hasProperties) {
         mortgageSchedule = deriveMortgageSchedule(input.properties);
     } else if (fundSource === 'mortgage') {
+        const statedFacility = input.mortgageFacility === undefined
+            ? undefined
+            : sanitize(input.mortgageFacility, 0, MAX_MONEY);
         mortgageSchedule = Array.from({ length: 31 }, zeroMortgageYear);
-        let balance = unlockedCash;
+        let balance = statedFacility ?? Math.max(
+            unlockedCash,
+            sanitize(calculatePV(effectiveMortgageRate, mortgageTenor, monthlyMortgagePmt), 0, MAX_MONEY),
+        );
         let cumulativePayments = 0;
         let cumulativeInterest = 0;
         let annualPayment = 0;
@@ -1081,8 +1151,16 @@ export const calculateStressTest = (input: StressTestInput): StressTestOutput =>
     // new loan), not unlockedCash (net of the existing mortgage that's being refinanced
     // away) — otherwise a zero-shock stress run diverges from the baseline by exactly the
     // existing-mortgage amount, rendering a phantom Year-0-to-Year-1 equity drop.
+    //
+    // The `?? unlockedCash` tail did exactly that whenever a caller passed an empty
+    // projectionData: measured at +694,286 against the true -5,305,714, the 6,000,000 gap
+    // being the existing mortgage, and flattering. `mortgageFacility` is consulted first
+    // so the documented GROSS contract is reachable without a baseline. unlockedCash
+    // remains the terminal fallback only for a caller who supplied neither — there is no
+    // correct answer left at that point, and it is at least a lower bound on the debt.
     const yr0MortgageBal = fundSource === 'mortgage'
-        ? (baselineData?.[0]?.mortgageBalance ?? unlockedCash)
+        ? (baselineData?.[0]?.mortgageBalance
+            ?? (input.mortgageFacility === undefined ? unlockedCash : sanitize(input.mortgageFacility, 0, MAX_MONEY)))
         : 0;
     const yr0NetEquity = yr0Assets - yr0Liabilities - yr0MortgageBal;
 

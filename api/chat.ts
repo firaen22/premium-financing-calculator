@@ -72,9 +72,10 @@ const INPUT_FIELDS = [
     'budget', 'cashReserve', 'bondAlloc', 'bondYield', 'hibor', 'cofRate',
     'interestBasis', 'spread', 'leverageLTV', 'capRate', 'handlingFee', 'fundSource',
     'unlockedCash', 'effectiveMortgageRate', 'monthlyMortgagePmt', 'mortgageTenor',
+    'mortgageFacility',
 ] as const;
 const STRESS_FIELDS = ['simulatedHibor', 'bondPriceDrop', 'showGuaranteed', 'sensitivityYear'] as const;
-const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCash', 'monthlyMortgagePmt']);
+const MONEY_FIELDS = new Set(['budget', 'cashReserve', 'bondAlloc', 'unlockedCash', 'monthlyMortgagePmt', 'mortgageFacility']);
 const TOOL_NAMES = ['run_simulation', 'run_stress_test', 'check_assumptions', 'explore_structures', 'set_inputs'] as const;
 type ToolName = typeof TOOL_NAMES[number];
 
@@ -207,6 +208,13 @@ const inputProperties = (): Record<string, JsonProperty> => {
     };
     properties.fundSource = {
         type: 'string', enum: ENUM_VALUES.fundSource, description: 'funding source: cash or mortgage',
+    };
+    // Deliberately absent from `required` below: the only way a scalar caller can state
+    // the gross facility instead of having it inferred from monthlyMortgagePmt, but a
+    // caller whose payment is coherent with the facility gets the same answer either way.
+    properties.mortgageFacility = {
+        ...numberProperty('mortgageFacility'),
+        description: 'gross mortgage facility drawn, in HKD (property value x LTV, BEFORE repaying any existing mortgage) — not the net cash released. Defaults to the facility implied by monthlyMortgagePmt.',
     };
     return properties;
 };
